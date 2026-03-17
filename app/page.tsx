@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useCallback } from 'react';
+import React, { useMemo, useRef, useCallback, useEffect } from 'react';
 import ReactFlow, {
     Background,
     Controls,
@@ -18,11 +18,8 @@ import EngineControl from '@/components/EngineControl';
 import Toolbar from '@/components/Toolbar';
 
 // Actual rendered widths from Tailwind classes on each component:
-//   ControllerNode  → w-72  = 288px
-//   GeneratorNode   → w-56  = 224px
-//   EffectNode      → w-56  = 224px
-//   SpeakerNode     → w-56  = 224px
-// Heights are approximate maximums (expanded state).
+//   ControllerNode → w-72 = 288px
+//   GeneratorNode / EffectNode / SpeakerNode → w-56 = 224px
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     generator:  { w: 224, h: 220 },
@@ -30,11 +27,10 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     speaker:    { w: 224, h: 200 },
 };
 const DEFAULT_DIMS = { w: 224, h: 220 };
+const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
 const SNAP_GRID = 15;
 const snap = (v: number) => Math.round(v / SNAP_GRID) * SNAP_GRID;
-
-const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
 function BloopCanvasInner() {
     const {
@@ -50,6 +46,11 @@ function BloopCanvasInner() {
 
     const { screenToFlowPosition } = useReactFlow();
     const edgeUpdateSuccessful = useRef(true);
+
+    // Run adjacency check once on mount for the default nodes
+    useEffect(() => {
+        useStore.getState().recalculateAdjacency();
+    }, []);
 
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
@@ -101,10 +102,13 @@ function BloopCanvasInner() {
             position,
             data: { label: '', subType, isPlaying: false },
         });
+
+        // New node may be adjacent to existing ones
+        setTimeout(() => useStore.getState().recalculateAdjacency(), 0);
     }, [screenToFlowPosition, addNode]);
 
     const onNodeDragStop = useCallback((event: any, draggedNode: any) => {
-        // Trash bin check — must run synchronously before the setTimeout
+        // Trash bin check — synchronous, before the setTimeout
         const trashBin = document.getElementById('trash-bin');
         if (trashBin) {
             const rect = trashBin.getBoundingClientRect();
@@ -119,14 +123,9 @@ function BloopCanvasInner() {
             }
         }
 
-        // Defer the overlap correction by one tick so ReactFlow can finish
-        // writing its own final snapped position to the store first.
-        // Without this, ReactFlow's onNodesChange fires after ours and wins.
+        // Defer one tick so ReactFlow finishes writing its own snapped position first
         setTimeout(() => {
             const allNodes = useStore.getState().nodes;
-
-            // Use the position now in the store (post-snap) rather than the
-            // stale value captured in draggedNode at drag-end time.
             const currentNode = allNodes.find(n => n.id === draggedNode.id);
             if (!currentNode) return;
 
@@ -134,8 +133,6 @@ function BloopCanvasInner() {
             let x = currentNode.position.x;
             let y = currentNode.position.y;
 
-            // Multi-pass: each pass resolves all current overlaps.
-            // Repeating handles chain reactions (A pushes into B which also overlaps C).
             for (let pass = 0; pass < 10; pass++) {
                 let moved = false;
 
@@ -144,20 +141,17 @@ function BloopCanvasInner() {
 
                     const nDims = getDims(n.type);
 
-                    // Strict bounding-box overlap — touching edges (flush) is NOT overlap
+                    // Strict overlap — touching edges (flush) is fine
                     const overlapX = x < n.position.x + nDims.w && x + draggedDims.w > n.position.x;
                     const overlapY = y < n.position.y + nDims.h && y + draggedDims.h > n.position.y;
 
                     if (overlapX && overlapY) {
-                        // Amount of horizontal penetration in each direction
-                        const penRight = n.position.x + nDims.w - x;      // how far dragged must go RIGHT to clear
-                        const penLeft  = x + draggedDims.w - n.position.x; // how far dragged must go LEFT to clear
+                        const penRight = n.position.x + nDims.w - x;
+                        const penLeft  = x + draggedDims.w - n.position.x;
 
                         if (penRight <= penLeft) {
-                            // Less travel going right → place dragged node's LEFT edge flush with obstacle's RIGHT edge
                             x = snap(n.position.x + nDims.w);
                         } else {
-                            // Less travel going left → place dragged node's RIGHT edge flush with obstacle's LEFT edge
                             x = snap(n.position.x - draggedDims.w);
                         }
                         moved = true;
@@ -175,6 +169,9 @@ function BloopCanvasInner() {
                     dragging: false,
                 }]);
             }
+
+            // Always recalculate adjacency after a drag settles
+            useStore.getState().recalculateAdjacency();
         }, 0);
     }, [removeNodeAndCleanUp]);
 

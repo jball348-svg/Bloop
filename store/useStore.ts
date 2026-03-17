@@ -33,12 +33,28 @@ export type AppNode = Node & {
     type: AudioNodeType;
 };
 
+// Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
+const NODE_DIMS: Record<string, { w: number; h: number }> = {
+    controller: { w: 288, h: 320 },
+    generator:  { w: 224, h: 220 },
+    effect:     { w: 224, h: 260 },
+    speaker:    { w: 224, h: 200 },
+};
+const DEFAULT_DIMS = { w: 224, h: 220 };
+const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
+
+// Two nodes are "adjacent" if their boxes are within this many px of touching
+const ADJ_TOUCH_THRESHOLD = 32;
+// Y centres must be within this many px of each other
+const ADJ_Y_THRESHOLD = 100;
+
 type AppState = {
     nodes: AppNode[];
     edges: Edge[];
     audioNodes: Map<string, Tone.ToneAudioNode>;
     patterns: Map<string, Tone.Pattern<any>>;
     activeGenerators: Set<string>;
+    adjacentNodeIds: Set<string>;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -59,6 +75,7 @@ type AppState = {
     removeNodeAndCleanUp: (id: string) => void;
     rebuildAudioGraph: () => void;
     initializeDefaultNodes: () => void;
+    recalculateAdjacency: () => void;
 };
 
 export const useStore = create<AppState>((set: any, get: any) => ({
@@ -86,6 +103,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     audioNodes: new Map(),
     patterns: new Map(),
     activeGenerators: new Set(),
+    adjacentNodeIds: new Set(),
 
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -96,7 +114,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     onEdgesChange: (changes: EdgeChange[]) => {
         const currentEdges = get().edges;
         const nextEdges = applyEdgeChanges(changes, currentEdges);
-
         set({ edges: nextEdges });
         get().rebuildAudioGraph();
     },
@@ -126,12 +143,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         let node: Tone.ToneAudioNode | null = null;
 
         if (type === 'generator') {
-            const actualSubType = subType || 'none';
-            // Generators are now PolySynths to handle MIDI data
-            const synth = new Tone.PolySynth();
-            node = synth;
+            node = new Tone.PolySynth();
         } else if (type === 'controller') {
-            // Controllers don't have audio nodes
             return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
@@ -226,7 +239,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const node = get().audioNodes.get(id);
         if (!node) return;
 
-        // WaveShape logic
         if (value.waveShape) {
             if (node instanceof Tone.Oscillator) {
                 node.set({ type: value.waveShape });
@@ -237,7 +249,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             set({ nodes });
         }
 
-
         if (node instanceof Tone.Volume && typeof value.volume === 'number') {
             if (value.volume === 0 || value.mute) {
                 node.volume.rampTo(-Infinity, 0.1);
@@ -247,7 +258,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
-        // Effect parameter mapping - only apply params that the effect supports
         if (node instanceof Tone.Freeverb) {
             if (typeof value.roomSize === 'number') node.roomSize.value = value.roomSize;
             if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
@@ -266,12 +276,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             if (typeof value.bits === 'number') node.bits.value = value.bits;
         }
 
-        // Generic wet parameter handling for bypass toggle
-        if ('wet' in node && typeof value.wet === 'number' && !(node instanceof Tone.Freeverb || node instanceof Tone.FeedbackDelay || node instanceof Tone.Distortion || node instanceof Tone.Phaser)) {
-            (node as any).wet.rampTo(value.wet, 0.1);
-        }
-
-        
         if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
             node.frequency.rampTo(value.frequency, 0.1);
         }
@@ -299,16 +303,16 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
             node.triggerRelease(note);
-            const newActiveGenerators = new Set(get().activeGenerators);
-            newActiveGenerators.delete(id);
-            set({ activeGenerators: newActiveGenerators });
+            const next = new Set(get().activeGenerators);
+            next.delete(id);
+            set({ activeGenerators: next });
         }
     },
 
     fireNoteOn: (controllerId: string, note: string) => {
         const { edges, audioNodes } = get();
         const targetIds: string[] = [];
-        edges.filter(e => e.source === controllerId).forEach(edge => {
+        edges.filter((e: Edge) => e.source === controllerId).forEach((edge: Edge) => {
             const targetNode = audioNodes.get(edge.target);
             if (targetNode && 'triggerAttack' in targetNode && typeof (targetNode as any).triggerAttack === 'function') {
                 (targetNode as any).triggerAttack(note);
@@ -323,7 +327,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     fireNoteOff: (controllerId: string, note: string) => {
         const { edges, audioNodes } = get();
         const targetIds: string[] = [];
-        edges.filter(e => e.source === controllerId).forEach(edge => {
+        edges.filter((e: Edge) => e.source === controllerId).forEach((edge: Edge) => {
             const targetNode = audioNodes.get(edge.target);
             if (targetNode && 'triggerRelease' in targetNode && typeof (targetNode as any).triggerRelease === 'function') {
                 (targetNode as any).triggerRelease(note);
@@ -331,9 +335,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         });
         if (targetIds.length > 0) {
-            const newActiveGenerators = new Set(get().activeGenerators);
-            targetIds.forEach(id => newActiveGenerators.delete(id));
-            set({ activeGenerators: newActiveGenerators });
+            const next = new Set(get().activeGenerators);
+            targetIds.forEach(id => next.delete(id));
+            set({ activeGenerators: next });
         }
     },
 
@@ -361,23 +365,24 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const { nodes, edges } = get();
         get().removeAudioNode(id);
         set({
-            nodes: nodes.filter(n => n.id !== id),
-            edges: edges.filter(e => e.source !== id && e.target !== id)
+            nodes: nodes.filter((n: AppNode) => n.id !== id),
+            edges: edges.filter((e: Edge) => e.source !== id && e.target !== id)
         });
         get().rebuildAudioGraph();
+        get().recalculateAdjacency();
     },
 
     rebuildAudioGraph: () => {
         const { audioNodes, edges, nodes } = get();
         audioNodes.forEach(node => node.disconnect());
-        edges.forEach(edge => {
-            const sourceInfo = nodes.find(n => n.id === edge.source);
+        edges.forEach((edge: Edge) => {
+            const sourceInfo = nodes.find((n: AppNode) => n.id === edge.source);
             if (sourceInfo?.type === 'controller') return;
             const sourceNode = audioNodes.get(edge.source);
             const targetNode = audioNodes.get(edge.target);
             if (sourceNode && targetNode) sourceNode.connect(targetNode);
         });
-        nodes.forEach(node => {
+        nodes.forEach((node: AppNode) => {
             if (node.type === 'speaker') {
                 const audioNode = audioNodes.get(node.id);
                 if (audioNode) audioNode.toDestination();
@@ -387,7 +392,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     initializeDefaultNodes: () => {
         const { nodes } = get();
-        nodes.forEach(node => {
+        nodes.forEach((node: AppNode) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
             } else if (node.type === 'speaker') {
@@ -395,5 +400,37 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         });
         get().rebuildAudioGraph();
+    },
+
+    recalculateAdjacency: () => {
+        const { nodes } = get();
+        const adjacent = new Set<string>();
+
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i];
+                const b = nodes[j];
+                const aDims = getDims(a.type);
+                const bDims = getDims(b.type);
+
+                // Horizontal gap between the two boxes (negative = overlapping)
+                const gapRight = b.position.x - (a.position.x + aDims.w); // b is to the right of a
+                const gapLeft  = a.position.x - (b.position.x + bDims.w); // a is to the right of b
+                const horizGap = Math.min(gapRight, gapLeft);
+
+                // Y-centre distance
+                const aCentreY = a.position.y + aDims.h / 2;
+                const bCentreY = b.position.y + bDims.h / 2;
+                const vertDist = Math.abs(aCentreY - bCentreY);
+
+                // Adjacent = horizontally close (gap within threshold) AND vertically aligned
+                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                    adjacent.add(a.id);
+                    adjacent.add(b.id);
+                }
+            }
+        }
+
+        set({ adjacentNodeIds: adjacent });
     },
 }));
