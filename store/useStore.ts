@@ -125,14 +125,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
         if (type === 'generator') {
             const actualSubType = subType || 'none';
-            // Generators are now PolySynths by default to handle MIDI data
+            // Generators are now PolySynths to handle MIDI data
             const synth = new Tone.PolySynth().toDestination();
             node = synth;
-
-            if (actualSubType === 'wave') {
-                synth.dispose(); // Replace with simple oscillator if purely continuous
-                node = new Tone.Oscillator('C4', 'sine').toDestination();
-            }
         } else if (type === 'controller') {
             // Controllers don't have audio nodes
             return;
@@ -302,7 +297,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const { edges, audioNodes } = get();
         edges.filter(e => e.source === controllerId).forEach(edge => {
             const targetNode = audioNodes.get(edge.target);
-            if (targetNode instanceof Tone.PolySynth) targetNode.triggerAttack(note);
+            if (targetNode && 'triggerAttack' in targetNode && typeof (targetNode as any).triggerAttack === 'function') {
+                (targetNode as any).triggerAttack(note);
+            }
         });
     },
 
@@ -310,7 +307,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const { edges, audioNodes } = get();
         edges.filter(e => e.source === controllerId).forEach(edge => {
             const targetNode = audioNodes.get(edge.target);
-            if (targetNode instanceof Tone.PolySynth) targetNode.triggerRelease(note);
+            if (targetNode && 'triggerRelease' in targetNode && typeof (targetNode as any).triggerRelease === 'function') {
+                (targetNode as any).triggerRelease(note);
+            }
         });
     },
 

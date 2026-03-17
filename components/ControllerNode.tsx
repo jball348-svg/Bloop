@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useStore, ROOT_NOTES } from '@/store/useStore';
 import { Scale } from '@tonaljs/tonal';
+import * as Tone from 'tone';
 
 const TONAL_SCALES = [
     'major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian',
@@ -24,6 +25,7 @@ export default function ControllerNode({ id }: { id: string }) {
     const scaleType = nodeData?.scaleType || 'major pentatonic';
 
     const [isPlaying, setIsPlaying] = useState(false);
+    const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
     const heldKeys = useRef<Set<string>>(new Set());
     const arpRef = useRef<any>(null);
 
@@ -36,7 +38,9 @@ export default function ControllerNode({ id }: { id: string }) {
             const key = e.key.toLowerCase();
             const note = KEY_TO_NOTE[key];
             if (note && !heldKeys.current.has(key)) {
+                e.preventDefault();
                 heldKeys.current.add(key);
+                setActiveKeys(new Set(heldKeys.current));
                 fireNoteOn(id, note);
             }
         };
@@ -46,6 +50,7 @@ export default function ControllerNode({ id }: { id: string }) {
             const note = KEY_TO_NOTE[key];
             if (note) {
                 heldKeys.current.delete(key);
+                setActiveKeys(new Set(heldKeys.current));
                 fireNoteOff(id, note);
             }
         };
@@ -58,10 +63,11 @@ export default function ControllerNode({ id }: { id: string }) {
             window.removeEventListener('keyup', handleKeyUp);
             heldKeys.current.forEach(key => fireNoteOff(id, KEY_TO_NOTE[key]));
             heldKeys.current.clear();
+            setActiveKeys(new Set());
         };
     }, [subType, id, fireNoteOn, fireNoteOff]);
 
-    // Arpeggiator Logic (using a local interval for simplicity and true modularity)
+    // Arpeggiator Logic
     useEffect(() => {
         if (subType !== 'arp' || !isPlaying) {
             if (arpRef.current) clearInterval(arpRef.current);
@@ -87,8 +93,24 @@ export default function ControllerNode({ id }: { id: string }) {
         changeNodeSubType(id, 'controller', e.target.value);
     };
 
+    const handleMouseDown = (key: string, note: string) => {
+        if (!heldKeys.current.has(key)) {
+            heldKeys.current.add(key);
+            setActiveKeys(new Set(heldKeys.current));
+            fireNoteOn(id, note);
+        }
+    };
+
+    const handleMouseUp = (key: string, note: string) => {
+        if (heldKeys.current.has(key)) {
+            heldKeys.current.delete(key);
+            setActiveKeys(new Set(heldKeys.current));
+            fireNoteOff(id, note);
+        }
+    };
+
     return (
-        <div className="bg-slate-900 border-2 border-yellow-500 rounded-2xl p-5 shadow-2xl text-white w-56 min-h-[160px] flex flex-col transition-all hover:shadow-yellow-500/20 group relative">
+        <div className="bg-slate-900 border-2 border-yellow-500 rounded-2xl p-5 shadow-2xl text-white w-72 min-h-[160px] flex flex-col transition-all hover:shadow-yellow-500/20 group relative">
             <div className="relative z-10 flex-1 flex flex-col justify-between">
                 <div className="flex justify-between items-center mb-6">
                     <select 
@@ -96,7 +118,7 @@ export default function ControllerNode({ id }: { id: string }) {
                         onChange={handleSubTypeChange}
                         className="nodrag w-full bg-yellow-500/10 text-[10px] font-black uppercase text-yellow-400 tracking-[0.2em] border-none outline-none cursor-pointer hover:bg-yellow-500/20 rounded px-1 py-1 truncate"
                     >
-                        <option value="none" className="bg-slate-900 text-slate-500 italic">Select Controller...</option>
+
                         <option value="arp" className="bg-slate-900 text-yellow-400">Arpeggiator</option>
                         <option value="keys" className="bg-slate-900 text-yellow-400">QWERTY Keyboard</option>
                     </select>
@@ -127,10 +149,13 @@ export default function ControllerNode({ id }: { id: string }) {
                             </div>
                         </div>
                         <button
-                            onClick={() => setIsPlaying(!isPlaying)}
+                            onClick={async () => {
+                                await Tone.start();
+                                setIsPlaying(!isPlaying);
+                            }}
                             className={`w-full py-2.5 rounded-xl font-bold transition-all transform active:scale-95 flex items-center justify-center gap-2 ${isPlaying
-                                ? 'bg-red-500/20 text-red-400 border-2 border-red-500/50 hover:bg-red-500/30'
-                                : 'bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 hover:bg-emerald-500/30'
+                                ? 'bg-yellow-500/20 text-yellow-500 border-2 border-yellow-500/50 hover:bg-yellow-500/30'
+                                : 'bg-yellow-500 text-slate-900 hover:bg-yellow-600'
                             }`}
                         >
                             {isPlaying ? 'STOP' : 'PLAY'}
@@ -139,24 +164,65 @@ export default function ControllerNode({ id }: { id: string }) {
                 )}
 
                 {subType === 'keys' && (
-                    <div className="flex flex-col gap-2 bg-slate-800/50 p-3 rounded-lg border border-yellow-500/20">
-                        <div className="grid grid-cols-7 gap-1 mb-1">
-                            {['A','W','S','E','D','F','T'].map(k => (
-                                <div key={k} className="flex flex-col items-center">
-                                    <span className="text-[8px] text-slate-500 font-bold">{k}</span>
-                                    <div className={`w-4 h-6 rounded-sm border ${['W','E','T'].includes(k) ? 'bg-slate-900 border-yellow-500/50' : 'bg-yellow-500/20 border-yellow-500/50'}`} />
-                                </div>
-                            ))}
+                    <div className="flex flex-col items-center bg-slate-800/50 p-4 rounded-xl border border-yellow-500/20">
+                        <div className="relative flex h-32 w-full justify-center select-none nodrag">
+                            {/* White Keys */}
+                            <div className="flex">
+                                {[
+                                    { k: 'a', n: 'C4' },
+                                    { k: 's', n: 'D4' },
+                                    { k: 'd', n: 'E4' },
+                                    { k: 'f', n: 'F4' },
+                                    { k: 'g', n: 'G4' },
+                                    { k: 'h', n: 'A4' },
+                                    { k: 'j', n: 'B4' },
+                                    { k: 'k', n: 'C5' }
+                                ].map(({ k, n }) => (
+                                    <div
+                                        key={k}
+                                        onMouseDown={async () => {
+                                            await Tone.start();
+                                            handleMouseDown(k, n);
+                                        }}
+                                        onMouseUp={() => handleMouseUp(k, n)}
+                                        onMouseLeave={() => handleMouseUp(k, n)}
+                                        className={`w-7 h-24 border border-slate-300 flex items-end justify-center pb-2 text-[10px] font-bold rounded-b-md cursor-pointer transition-colors ${
+                                            activeKeys.has(k) ? 'bg-yellow-400 text-slate-900 border-yellow-500' : 'bg-white text-slate-400'
+                                        }`}
+                                    >
+                                        {k.toUpperCase()}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Black Keys */}
+                            <div className="absolute top-0 left-[22px] flex pointer-events-none">
+                                {[
+                                    { k: 'w', n: 'C#4', offset: 0 },
+                                    { k: 'e', n: 'D#4', offset: 28 },
+                                    // Gap
+                                    { k: 't', n: 'F#4', offset: 84 },
+                                    { k: 'y', n: 'G#4', offset: 112 },
+                                    { k: 'u', n: 'A#4', offset: 140 }
+                                ].map(({ k, n, offset }) => (
+                                    <div
+                                        key={k}
+                                        onMouseDown={async () => {
+                                            await Tone.start();
+                                            handleMouseDown(k, n);
+                                        }}
+                                        onMouseUp={() => handleMouseUp(k, n)}
+                                        onMouseLeave={() => handleMouseUp(k, n)}
+                                        style={{ left: `${offset}px` }}
+                                        className={`absolute w-5 h-16 border border-slate-700 flex items-end justify-center pb-2 text-[8px] font-bold rounded-b-sm cursor-pointer pointer-events-auto transition-colors z-20 ${
+                                            activeKeys.has(k) ? 'bg-yellow-400 text-slate-900 border-yellow-500' : 'bg-black text-slate-500'
+                                        }`}
+                                    >
+                                        {k.toUpperCase()}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                        <div className="grid grid-cols-6 gap-1">
-                            {['G','Y','H','U','J','K'].map(k => (
-                                <div key={k} className="flex flex-col items-center">
-                                    <span className="text-[8px] text-slate-500 font-bold">{k}</span>
-                                    <div className={`w-4 h-6 rounded-sm border ${['Y','U'].includes(k) ? 'bg-slate-900 border-yellow-500/50' : 'bg-yellow-500/20 border-yellow-500/50'}`} />
-                                </div>
-                            ))}
-                        </div>
-                        <span className="text-[8px] text-yellow-300/50 font-bold uppercase tracking-tighter text-center mt-2">QWERTY KEYBOARD ACTIVE</span>
                     </div>
                 )}
             </div>

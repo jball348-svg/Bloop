@@ -81,11 +81,16 @@ function BloopCanvasInner() {
                 y: event.clientY,
             });
 
+            let subType = 'none';
+            if (type === 'controller') subType = 'arp';
+            if (type === 'generator') subType = 'wave';
+            if (type === 'effect') subType = 'reverb';
+
             const newNode = {
                 id: crypto.randomUUID(),
                 type,
                 position,
-                data: { label: '', subType: 'none', isPlaying: false },
+                data: { label: '', subType, isPlaying: false },
             };
 
             addNode(newNode);

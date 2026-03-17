@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bloop: Modular Nodes Synthesizer
 
-## Getting Started
+Bloop is a high-performance, visually stunning modular audio synthesizer built with **Next.js**, **React Flow**, and **Tone.js**. It allows users to create complex audio patches by connecting functional nodes—Generators, Effects, Controllers, and Speakers—in a dynamic, interactive canvas.
 
-First, run the development server:
+![Bloop Header](public/screenshot.png) (Coming soon!)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Key Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Visual Modular Patching**: Intuitive drag-and-drop interface powered by React Flow.
+- **Dynamic Audio Engine**: Real-time sound synthesis using Tone.js.
+- **Multi-Generator Support**: Choose between classic Waveform oscillators and Polyphonic Synths.
+- **Rich Effect Suite**: Chain Reverb, Delay, Distortion, Phaser, and BitCrusher to sculpt your sound.
+- **Interactive Controllers**:
+  - **Arpeggiator**: Generate complex rhythmic patterns with selectable scales (Major, Minor, Pentatonic, etc.) and root notes.
+  - **QWERTY Keyboard**: Play the synthesizer directly from your computer keyboard with visual feedback.
+- **Real-time Parameter Smoothing**: All sliders use `rampTo` to ensure glitch-free audio adjustments.
+- **Custom Design System**: Premium dark-mode aesthetic with vibrant accent colors for different node types.
+- **Trash Bin**: Drag nodes to the red bin to delete them and instantly clean up the audio graph.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Framework**: [Next.js](https://nextjs.org/) (App Router)
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) (Store-driven audio lifecycle)
+- **Audio Engine**: [Tone.js](https://tonejs.github.io/)
+- **Visuals/Graph**: [React Flow](https://reactflow.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Music Theory Logic**: [@tonaljs/tonal](https://github.com/tonaljs/tonal)
 
-## Learn More
+## 📁 File Structure & Functionality
 
-To learn more about Next.js, take a look at the following resources:
+### Core Logic
+- `store/useStore.ts`: The "brain" of the app. Manages the React Flow nodes/edges, Tone.js audio node instances, and the logic for connecting/disconnecting the audio graph. It ensures that the audio state remains perfectly synced with the UI.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Components
+- `components/ControllerNode.tsx`: Handles MIDI-like input. Contains logic for the Arpeggiator and the QWERTY Playable Keyboard.
+- `components/GeneratorNode.tsx`: The source of sound. Currently supports multiple waveforms and polyphonic synthesis.
+- `components/EffectNode.tsx`: Audio processors. Dynamically switches between Reverb, Delay, Distortion, Phaser, and BitCrusher.
+- `components/SpeakerNode.tsx`: The final output stage with volume and mute controls.
+- `components/Toolbar.tsx`: Floating UI for adding new nodes to the canvas.
+- `components/EngineControl.tsx`: Global audio engine start/stop and master controls.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### App Pages
+- `app/page.tsx`: The main canvas setup, handling drag-and-drop registration and the React Flow provider.
+- `app/layout.tsx`: Root layout with font and SEO configuration.
 
-## Deploy on Vercel
+## 🚦 Getting Started
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Open [http://localhost:3000](http://localhost:3000)** in your browser and start patching!
+
+---
+
+Built with ❤️ by the Bloop Team.

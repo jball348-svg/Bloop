@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useStore } from '@/store/useStore';
 
@@ -11,16 +10,8 @@ export default function GeneratorNode({ id }: { id: string }) {
     const subType = nodeData?.subType || 'none';
     const waveShape = nodeData?.waveShape || 'sine';
 
-    const [freq, setFreq] = useState(440);
-
     const handleWaveShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         updateNodeValue(id, { waveShape: e.target.value });
-    };
-
-    const handleFreqChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseInt(e.target.value);
-        setFreq(val);
-        updateNodeValue(id, { frequency: val });
     };
 
     return (
@@ -49,23 +40,6 @@ export default function GeneratorNode({ id }: { id: string }) {
                             {WAVE_SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                     </div>
-
-                    {subType === 'wave' && (
-                        <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-end">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Frequency</label>
-                                <span className="text-[10px] font-mono text-blue-400 font-bold">{freq}Hz</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="20"
-                                max="2000"
-                                value={freq}
-                                onChange={handleFreqChange}
-                                className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                            />
-                        </div>
-                    )}
                 </div>
             </div>
 
