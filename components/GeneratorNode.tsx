@@ -1,22 +1,28 @@
 import { Handle, Position } from 'reactflow';
-import { useStore } from '@/store/useStore';
+import {
+    AUDIO_INPUT_HANDLE_ID,
+    AUDIO_OUTPUT_HANDLE_ID,
+    type WaveShape,
+    isAudioEdge,
+    useStore,
+} from '@/store/useStore';
 
-const WAVE_SHAPES = ['sine', 'square', 'triangle', 'sawtooth'];
+const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth'];
 
 export default function GeneratorNode({ id }: { id: string }) {
-    const updateNodeValue = useStore((state: any) => state.updateNodeValue);
-    const nodeData = useStore((state: any) => state.nodes.find((n: any) => n.id === id)?.data);
-    const isActive = useStore((state: any) => state.activeGenerators.has(id));
-    const isAdjacent = useStore((state: any) => state.adjacentNodeIds.has(id));
-    const isUnconnected = useStore((state: any) => {
+    const updateNodeValue = useStore((state) => state.updateNodeValue);
+    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const isActive = useStore((state) => state.activeGenerators.has(id));
+    const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
+    const isUnconnected = useStore((state) => {
         const edges = state.edges;
-        return !edges.some((e: any) => e.source === id || e.target === id);
+        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
 
     const waveShape = nodeData?.waveShape || 'sine';
 
     const handleWaveShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        updateNodeValue(id, { waveShape: e.target.value });
+        updateNodeValue(id, { waveShape: e.target.value as WaveShape });
     };
 
     return (
@@ -35,6 +41,7 @@ export default function GeneratorNode({ id }: { id: string }) {
             {/* Input handle for MIDI data from Controller */}
             <Handle
                 type="target"
+                id={AUDIO_INPUT_HANDLE_ID}
                 position={Position.Top}
                 className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-yellow-400"
             />
@@ -74,6 +81,7 @@ export default function GeneratorNode({ id }: { id: string }) {
             {/* Audio output port at the bottom */}
             <Handle
                 type="source"
+                id={AUDIO_OUTPUT_HANDLE_ID}
                 position={Position.Bottom}
                 className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-red-500"
             />

@@ -1,8 +1,11 @@
 'use client';
 
 import React from 'react';
+import { useStore } from '@/store/useStore';
 
 const Toolbar = () => {
+    const hasTempoNode = useStore((state) => state.nodes.some((node) => node.type === 'tempo'));
+
     const onDragStart = (event: React.DragEvent, nodeType: string) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
@@ -13,6 +16,7 @@ const Toolbar = () => {
         { type: 'generator', label: 'Generator', color: 'bg-red-500' },
         { type: 'effect', label: 'Effect', color: 'bg-fuchsia-500' },
         { type: 'speaker', label: 'Speaker', color: 'bg-emerald-500' },
+        ...(!hasTempoNode ? [{ type: 'tempo', label: 'Tempo', color: 'bg-indigo-500' }] : []),
     ];
 
     return (

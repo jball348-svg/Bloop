@@ -5,15 +5,24 @@ import ReactFlow, {
     Background,
     Controls,
     BackgroundVariant,
+    Connection,
     Edge,
+    Node as FlowNode,
+    OnConnectStartParams,
     useReactFlow,
     ReactFlowProvider,
 } from 'reactflow';
-import { useStore, AudioNodeType } from '@/store/useStore';
+import {
+    useStore,
+    AudioNodeType,
+    DEFAULT_TRANSPORT_BPM,
+    TEMPO_OUTPUT_HANDLE_ID,
+} from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
 import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
+import TempoNode from '@/components/TempoNode';
 import EngineControl from '@/components/EngineControl';
 import Toolbar from '@/components/Toolbar';
 
@@ -25,6 +34,7 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     generator:  { w: 224, h: 220 },
     effect:     { w: 224, h: 260 },
     speaker:    { w: 224, h: 200 },
+    tempo:      { w: 256, h: 240 },
 };
 const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
@@ -43,11 +53,14 @@ function BloopCanvasInner() {
         addNode,
         removeNodeAndCleanUp,
     } = useStore();
+    const isDraggingTempoConnection = useStore((state) => state.isDraggingTempoConnection);
+    const setTempoConnectionDragState = useStore((state) => state.setTempoConnectionDragState);
+    const validateConnection = useStore((state) => state.isValidConnection);
 
     const { screenToFlowPosition } = useReactFlow();
     const edgeUpdateSuccessful = useRef(true);
 
-    const recalculateAdjacency = useStore((state: any) => state.recalculateAdjacency);
+    const recalculateAdjacency = useStore((state) => state.recalculateAdjacency);
     useEffect(() => {
         recalculateAdjacency();
     }, [recalculateAdjacency]);
@@ -57,6 +70,7 @@ function BloopCanvasInner() {
         controller: ControllerNode,
         effect: EffectNode,
         speaker: SpeakerNode,
+        tempo: TempoNode,
     }), []);
 
     const defaultEdgeOptions = useMemo(() => ({
@@ -68,16 +82,24 @@ function BloopCanvasInner() {
         edgeUpdateSuccessful.current = false;
     }, []);
 
-    const onEdgeUpdate = useCallback((oldEdge: Edge, newConnection: any) => {
+    const onEdgeUpdate = useCallback((oldEdge: Edge, newConnection: Connection) => {
         edgeUpdateSuccessful.current = true;
         storeOnEdgeUpdate(oldEdge, newConnection);
     }, [storeOnEdgeUpdate]);
 
-    const onEdgeUpdateEnd = useCallback((_: any, edge: Edge) => {
+    const onEdgeUpdateEnd = useCallback((_: MouseEvent | TouchEvent, edge: Edge) => {
         if (!edgeUpdateSuccessful.current) {
             onEdgesChange([{ id: edge.id, type: 'remove' }]);
         }
     }, [onEdgesChange]);
+
+    const onConnectStart = useCallback((_: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
+        setTempoConnectionDragState(params.handleType === 'source' && params.handleId === TEMPO_OUTPUT_HANDLE_ID);
+    }, [setTempoConnectionDragState]);
+
+    const onConnectEnd = useCallback(() => {
+        setTempoConnectionDragState(false);
+    }, [setTempoConnectionDragState]);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
@@ -92,21 +114,24 @@ function BloopCanvasInner() {
         const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
         let subType = 'none';
+        let label = '';
+        const bpm = DEFAULT_TRANSPORT_BPM;
         if (type === 'controller') subType = 'arp';
         if (type === 'generator') subType = 'wave';
         if (type === 'effect') subType = 'reverb';
+        if (type === 'tempo') label = 'Tempo';
 
         addNode({
             id: crypto.randomUUID(),
             type,
             position,
-            data: { label: '', subType, isPlaying: false },
+            data: { label, subType, isPlaying: false, bpm },
         });
 
         setTimeout(() => useStore.getState().recalculateAdjacency(), 0);
     }, [screenToFlowPosition, addNode]);
 
-    const onNodeDragStop = useCallback((event: any, draggedNode: any) => {
+    const onNodeDragStop = useCallback((event: React.MouseEvent, draggedNode: FlowNode) => {
         // Trash bin check — synchronous, before the setTimeout
         const trashBin = document.getElementById('trash-bin');
         if (trashBin) {
@@ -128,7 +153,7 @@ function BloopCanvasInner() {
             const currentNode = allNodes.find(n => n.id === draggedNode.id);
             if (!currentNode) return;
 
-            const draggedDims = getDims(draggedNode.type);
+            const draggedDims = getDims(draggedNode.type ?? currentNode.type);
             let x = currentNode.position.x;
             let y = currentNode.position.y;
 
@@ -196,12 +221,20 @@ function BloopCanvasInner() {
                 onEdgeUpdate={onEdgeUpdate}
                 onEdgeUpdateStart={onEdgeUpdateStart}
                 onEdgeUpdateEnd={onEdgeUpdateEnd}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 onNodeDragStop={onNodeDragStop}
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={defaultEdgeOptions}
-                connectionLineStyle={{ stroke: '#475569', strokeWidth: 2, strokeDasharray: '5 5' }}
+                isValidConnection={(connection: Connection) => validateConnection(connection)}
+                connectionLineStyle={{
+                    stroke: isDraggingTempoConnection ? '#818cf8' : '#475569',
+                    strokeWidth: 2.5,
+                    strokeDasharray: isDraggingTempoConnection ? '0' : '5 5',
+                    filter: isDraggingTempoConnection ? 'drop-shadow(0 0 6px rgba(129,140,248,0.85))' : undefined,
+                }}
                 fitView
                 className="bg-slate-950"
                 edgesUpdatable={true}

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
-import { useStore } from '@/store/useStore';
+import { AUDIO_INPUT_HANDLE_ID, isAudioEdge, useStore } from '@/store/useStore';
 
 export default function SpeakerNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
-    const isAdjacent = useStore((state: any) => state.adjacentNodeIds.has(id));
-    const isUnconnected = useStore((state: any) => {
+    const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
+    const isUnconnected = useStore((state) => {
         const edges = state.edges;
-        return !edges.some((e: any) => e.source === id || e.target === id);
+        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
 
     const [volume, setVolume] = useState(80);
@@ -84,6 +84,7 @@ export default function SpeakerNode({ id }: { id: string }) {
 
             <Handle
                 type="target"
+                id={AUDIO_INPUT_HANDLE_ID}
                 position={Position.Top}
                 className="w-4 h-4 bg-emerald-500 border-4 border-slate-900 !-top-2 hover:scale-125 transition-transform"
             />

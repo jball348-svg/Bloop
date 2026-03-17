@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import * as Tone from 'tone';
-import { Scale } from '@tonaljs/tonal';
 import {
     Connection,
     Edge,
@@ -18,8 +17,38 @@ import {
 } from 'reactflow';
 
 export const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+export const DEFAULT_TRANSPORT_BPM = 120;
+export const MIN_TEMPO_BPM = 40;
+export const MAX_TEMPO_BPM = 200;
+export const AUDIO_INPUT_HANDLE_ID = 'audio-in';
+export const AUDIO_OUTPUT_HANDLE_ID = 'audio-out';
+export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
+export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo';
+export type ConnectionKind = 'audio' | 'tempo';
+export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth';
+type AppEdgeData = {
+    kind?: ConnectionKind;
+};
+type AppEdge = Edge<AppEdgeData>;
+type DisposablePattern = {
+    stop: () => DisposablePattern;
+    dispose: () => void;
+};
+type NodeValueUpdate = {
+    waveShape?: WaveShape;
+    volume?: number;
+    mute?: boolean;
+    roomSize?: number;
+    wet?: number;
+    delayTime?: number;
+    feedback?: number;
+    distortion?: number;
+    frequency?: number;
+    octaves?: number;
+    bits?: number;
+};
 
 export type AppNode = Node & {
     data: {
@@ -28,8 +57,9 @@ export type AppNode = Node & {
         isPlaying?: boolean;
         rootNote?: string;
         scaleType?: string;
-        waveShape?: string;
+        waveShape?: WaveShape;
         octave?: number;
+        bpm?: number;
     };
     type: AudioNodeType;
 };
@@ -40,6 +70,7 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     generator:  { w: 224, h: 220 },
     effect:     { w: 224, h: 260 },
     speaker:    { w: 224, h: 200 },
+    tempo:      { w: 256, h: 240 },
 };
 const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
@@ -52,6 +83,7 @@ const ADJ_Y_THRESHOLD = 100;
 const AUTO_EDGE_PREFIX = 'auto-';
 
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
+    tempo: -1,
     controller: 0,
     generator: 1,
     effect: 2,
@@ -66,14 +98,136 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'effect->speaker',
 ]);
 
+const clampTempoBpm = (bpm: number) =>
+    Math.min(MAX_TEMPO_BPM, Math.max(MIN_TEMPO_BPM, Math.round(bpm)));
+
+export const isTempoEdge = (edge: Edge<AppEdgeData>) =>
+    edge.data?.kind === 'tempo' ||
+    edge.sourceHandle === TEMPO_OUTPUT_HANDLE_ID ||
+    edge.targetHandle === TEMPO_INPUT_HANDLE_ID;
+
+export const isAudioEdge = (edge: Edge<AppEdgeData>) => !isTempoEdge(edge);
+
+const isTempoCapableNode = (node?: AppNode) =>
+    Boolean(node && node.type === 'controller' && node.data.subType === 'arp');
+
+const isValidGraphConnection = (
+    connection: Connection,
+    nodes: AppNode[],
+    edges: Edge<AppEdgeData>[],
+    ignoredEdgeId?: string
+) => {
+    if (!connection.source || !connection.target || connection.source === connection.target) {
+        return false;
+    }
+
+    const sourceNode = nodes.find((node) => node.id === connection.source);
+    const targetNode = nodes.find((node) => node.id === connection.target);
+
+    if (!sourceNode || !targetNode) {
+        return false;
+    }
+
+    const isTempoConnection =
+        sourceNode.type === 'tempo' ||
+        targetNode.type === 'tempo' ||
+        connection.sourceHandle === TEMPO_OUTPUT_HANDLE_ID ||
+        connection.targetHandle === TEMPO_INPUT_HANDLE_ID;
+
+    if (isTempoConnection) {
+        if (
+            sourceNode.type !== 'tempo' ||
+            targetNode.type === 'tempo' ||
+            connection.sourceHandle !== TEMPO_OUTPUT_HANDLE_ID ||
+            connection.targetHandle !== TEMPO_INPUT_HANDLE_ID ||
+            !isTempoCapableNode(targetNode)
+        ) {
+            return false;
+        }
+
+        return !edges.some((edge) =>
+            edge.id !== ignoredEdgeId &&
+            isTempoEdge(edge) &&
+            edge.target === connection.target
+        );
+    }
+
+    if (
+        sourceNode.type === 'tempo' ||
+        targetNode.type === 'tempo' ||
+        (connection.sourceHandle && connection.sourceHandle !== AUDIO_OUTPUT_HANDLE_ID) ||
+        (connection.targetHandle && connection.targetHandle !== AUDIO_INPUT_HANDLE_ID)
+    ) {
+        return false;
+    }
+
+    const pairKey = `${sourceNode.type}->${targetNode.type}`;
+    if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) {
+        return false;
+    }
+
+    return !edges.some((edge) =>
+        edge.id !== ignoredEdgeId &&
+        !edge.id.startsWith(AUTO_EDGE_PREFIX) &&
+        isAudioEdge(edge) &&
+        edge.source === connection.source &&
+        edge.target === connection.target &&
+        edge.sourceHandle === connection.sourceHandle &&
+        edge.targetHandle === connection.targetHandle
+    );
+};
+
+const getConnectionKind = (
+    connection: Connection,
+    nodes: AppNode[]
+): ConnectionKind | null => {
+    const sourceNode = nodes.find((node) => node.id === connection.source);
+    const targetNode = nodes.find((node) => node.id === connection.target);
+
+    if (!sourceNode || !targetNode) {
+        return null;
+    }
+
+    if (
+        sourceNode.type === 'tempo' ||
+        targetNode.type === 'tempo' ||
+        connection.sourceHandle === TEMPO_OUTPUT_HANDLE_ID ||
+        connection.targetHandle === TEMPO_INPUT_HANDLE_ID
+    ) {
+        return 'tempo';
+    }
+
+    return 'audio';
+};
+
+const getEdgePresentation = (kind: ConnectionKind) =>
+    kind === 'tempo'
+        ? {
+            style: {
+                stroke: '#818cf8',
+                strokeWidth: 2.5,
+                filter: 'drop-shadow(0 0 6px rgba(129,140,248,0.85))',
+            },
+            data: { kind },
+        }
+        : {
+            style: {
+                stroke: '#22d3ee',
+                strokeWidth: 2.5,
+                filter: 'drop-shadow(0 0 6px #22d3ee)',
+            },
+            data: { kind },
+        };
+
 type AppState = {
     nodes: AppNode[];
-    edges: Edge[];
+    edges: AppEdge[];
     audioNodes: Map<string, Tone.ToneAudioNode>;
-    patterns: Map<string, Tone.Pattern<any>>;
+    patterns: Map<string, DisposablePattern>;
     activeGenerators: Set<string>;
     adjacentNodeIds: Set<string>;
     autoEdgeIds: Set<string>;
+    isDraggingTempoConnection: boolean;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -83,7 +237,8 @@ type AppState = {
     initAudioNode: (id: string, type: AudioNodeType, subType?: string) => void;
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => void;
     removeAudioNode: (id: string) => void;
-    updateNodeValue: (id: string, value: any) => void;
+    updateNodeValue: (id: string, value: NodeValueUpdate) => void;
+    updateTempoBpm: (id: string, bpm: number) => void;
     updateArpScale: (id: string, root: string, scale: string) => void;
     updateOctave: (id: string, octave: number) => void;
     triggerNoteOn: (id: string, note: string) => void;
@@ -93,13 +248,15 @@ type AppState = {
     toggleNodePlayback: (id: string, isPlaying: boolean) => void;
     addNode: (node: AppNode) => void;
     removeNodeAndCleanUp: (id: string) => void;
+    setTempoConnectionDragState: (isDragging: boolean) => void;
+    isValidConnection: (connection: Connection, ignoredEdgeId?: string) => boolean;
     rebuildAudioGraph: () => void;
     initializeDefaultNodes: () => void;
     recalculateAdjacency: () => void;
     autoWireAdjacentNodes: () => void;
 };
 
-export const useStore = create<AppState>((set: any, get: any) => ({
+export const useStore = create<AppState>((set, get) => ({
     nodes: [
         {
             id: 'node-1',
@@ -140,6 +297,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     activeGenerators: new Set(),
     adjacentNodeIds: new Set(),
     autoEdgeIds: new Set(['auto-node-1-node-2', 'auto-node-2-node-3']),
+    isDraggingTempoConnection: false,
 
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -151,25 +309,49 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const currentEdges = get().edges;
         const nextEdges = applyEdgeChanges(changes, currentEdges);
         set({ edges: nextEdges });
-        get().rebuildAudioGraph();
+        get().autoWireAdjacentNodes();
     },
 
     onEdgeUpdateStart: () => {},
 
     onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => {
+        if (!get().isValidConnection(newConnection, oldEdge.id)) {
+            return;
+        }
+
+        const kind = getConnectionKind(newConnection, get().nodes);
+        if (!kind) {
+            return;
+        }
+
         set({
-            edges: updateEdge(oldEdge, newConnection, get().edges),
+            edges: updateEdge(oldEdge, {
+                ...newConnection,
+                ...getEdgePresentation(kind),
+            }, get().edges),
         });
-        get().rebuildAudioGraph();
+        get().autoWireAdjacentNodes();
     },
 
     onEdgeUpdateEnd: () => {},
 
     onConnect: (connection: Connection) => {
+        if (!get().isValidConnection(connection)) {
+            return;
+        }
+
+        const kind = getConnectionKind(connection, get().nodes);
+        if (!kind) {
+            return;
+        }
+
         set({
-            edges: addEdge(connection, get().edges),
+            edges: addEdge({
+                ...connection,
+                ...getEdgePresentation(kind),
+            }, get().edges),
         });
-        get().rebuildAudioGraph();
+        get().autoWireAdjacentNodes();
     },
 
     initAudioNode: (id: string, type: AudioNodeType, subType?: string) => {
@@ -180,7 +362,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
         if (type === 'generator') {
             node = new Tone.PolySynth();
-        } else if (type === 'controller') {
+        } else if (type === 'controller' || type === 'tempo') {
             return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
@@ -209,7 +391,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
-        const { audioNodes, patterns, nodes } = get();
+        const { audioNodes, patterns, nodes, edges } = get();
         const wasPlaying = nodes.find((n: AppNode) => n.id === id)?.data.isPlaying || false;
 
         const oldNode = audioNodes.get(id);
@@ -231,16 +413,22 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
         get().initAudioNode(id, mainType, subType);
 
+        const nextEdges =
+            mainType === 'controller' && subType !== 'arp'
+                ? edges.filter((edge: AppEdge) => !(isTempoEdge(edge) && edge.target === id))
+                : edges;
+
         set({
             nodes: nodes.map((n: AppNode) =>
                 n.id === id
                     ? { ...n, data: { ...n.data, subType, isPlaying: wasPlaying } }
                     : n
             ),
+            edges: nextEdges,
         });
 
         const handleRebuild = () => {
-            get().rebuildAudioGraph();
+            get().autoWireAdjacentNodes();
             if (wasPlaying) get().toggleNodePlayback(id, true);
         };
 
@@ -271,7 +459,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    updateNodeValue: (id: string, value: any) => {
+    updateNodeValue: (id: string, value: NodeValueUpdate) => {
         const node = get().audioNodes.get(id);
         if (!node) return;
 
@@ -279,7 +467,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             if (node instanceof Tone.Oscillator) {
                 node.set({ type: value.waveShape });
             } else if (node instanceof Tone.PolySynth) {
-                node.set({ oscillator: { type: value.waveShape } });
+                node.set({ oscillator: { type: value.waveShape } as never });
             }
             const nodes = get().nodes.map((n: AppNode) =>
                 n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n
@@ -317,6 +505,25 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
             node.frequency.rampTo(value.frequency, 0.1);
         }
+    },
+
+    updateTempoBpm: (id: string, bpm: number) => {
+        const nextBpm = clampTempoBpm(bpm);
+        const { nodes } = get();
+        const hasTempoNode = nodes.some((node: AppNode) => node.id === id && node.type === 'tempo');
+
+        if (!hasTempoNode) {
+            return;
+        }
+
+        Tone.getTransport().bpm.rampTo(nextBpm, 0.1);
+        set({
+            nodes: nodes.map((node: AppNode) =>
+                node.id === id
+                    ? { ...node, data: { ...node.data, bpm: nextBpm } }
+                    : node
+            ),
+        });
     },
 
     updateArpScale: (id: string, root: string, scale: string) => {
@@ -360,14 +567,10 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     fireNoteOn: (controllerId: string, note: string) => {
         const { edges, audioNodes } = get();
         const targetIds: string[] = [];
-        edges.filter((e: Edge) => e.source === controllerId).forEach((edge: Edge) => {
+        edges.filter((e: AppEdge) => isAudioEdge(e) && e.source === controllerId).forEach((edge: Edge) => {
             const targetNode = audioNodes.get(edge.target);
-            if (
-                targetNode &&
-                'triggerAttack' in targetNode &&
-                typeof (targetNode as any).triggerAttack === 'function'
-            ) {
-                (targetNode as any).triggerAttack(note);
+            if (targetNode instanceof Tone.PolySynth) {
+                targetNode.triggerAttack(note);
                 targetIds.push(edge.target);
             }
         });
@@ -379,14 +582,10 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     fireNoteOff: (controllerId: string, note: string) => {
         const { edges, audioNodes } = get();
         const targetIds: string[] = [];
-        edges.filter((e: Edge) => e.source === controllerId).forEach((edge: Edge) => {
+        edges.filter((e: AppEdge) => isAudioEdge(e) && e.source === controllerId).forEach((edge: Edge) => {
             const targetNode = audioNodes.get(edge.target);
-            if (
-                targetNode &&
-                'triggerRelease' in targetNode &&
-                typeof (targetNode as any).triggerRelease === 'function'
-            ) {
-                (targetNode as any).triggerRelease(note);
+            if (targetNode instanceof Tone.PolySynth) {
+                targetNode.triggerRelease(note);
                 targetIds.push(edge.target);
             }
         });
@@ -397,11 +596,15 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
     },
 
-    toggleNodePlayback: (id, isPlaying) => {
+    toggleNodePlayback: (id: string, isPlaying: boolean) => {
         const { audioNodes, nodes } = get();
         const node = audioNodes.get(id);
         if (node instanceof Tone.Oscillator) {
-            isPlaying ? node.start() : node.stop();
+            if (isPlaying) {
+                node.start();
+            } else {
+                node.stop();
+            }
         }
         set({
             nodes: nodes.map((n: AppNode) =>
@@ -411,36 +614,70 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     addNode: (node: AppNode) => {
-        set((state: AppState) => ({ nodes: [...state.nodes, node] }));
-        if (node.data.subType && node.data.subType !== 'none') {
-            get().initAudioNode(node.id, node.type, node.data.subType);
-        } else if (node.type === 'speaker') {
-            get().initAudioNode(node.id, 'speaker');
+        if (node.type === 'tempo' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'tempo')) {
+            return;
+        }
+
+        const nextNode =
+            node.type === 'tempo'
+                ? {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: node.data.label || 'Tempo',
+                        bpm: clampTempoBpm(node.data.bpm ?? DEFAULT_TRANSPORT_BPM),
+                    },
+                }
+                : node;
+
+        set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
+
+        if (nextNode.type === 'tempo') {
+            Tone.getTransport().bpm.rampTo(nextNode.data.bpm ?? DEFAULT_TRANSPORT_BPM, 0.1);
+            return;
+        }
+
+        if (nextNode.data.subType && nextNode.data.subType !== 'none') {
+            get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
+        } else if (nextNode.type === 'speaker') {
+            get().initAudioNode(nextNode.id, 'speaker');
         }
     },
 
     removeNodeAndCleanUp: (id: string) => {
         const { nodes, edges } = get();
+        const removedNode = nodes.find((node: AppNode) => node.id === id);
         get().removeAudioNode(id);
         set({
             nodes: nodes.filter((n: AppNode) => n.id !== id),
-            edges: edges.filter((e: Edge) => e.source !== id && e.target !== id),
+            edges: edges.filter((e: AppEdge) => e.source !== id && e.target !== id),
+            isDraggingTempoConnection: false,
         });
-        get().rebuildAudioGraph();
+        if (removedNode?.type === 'tempo') {
+            Tone.getTransport().bpm.rampTo(DEFAULT_TRANSPORT_BPM, 0.1);
+        }
         get().recalculateAdjacency();
     },
+
+    setTempoConnectionDragState: (isDragging: boolean) => {
+        set({ isDraggingTempoConnection: isDragging });
+    },
+
+    isValidConnection: (connection: Connection, ignoredEdgeId?: string) =>
+        isValidGraphConnection(connection, get().nodes, get().edges, ignoredEdgeId),
 
     rebuildAudioGraph: () => {
         const { audioNodes, edges, nodes } = get() as AppState;
         audioNodes.forEach((node: Tone.ToneAudioNode) => node.disconnect());
-        // Route ALL edges — including hidden auto-edges — so audio flows through snapped chains
-        edges.forEach((edge: Edge) => {
-            const sourceInfo = nodes.find((n: AppNode) => n.id === edge.source);
-            if (sourceInfo?.type === 'controller') return;
-            const sourceNode = audioNodes.get(edge.source);
-            const targetNode = audioNodes.get(edge.target);
-            if (sourceNode && targetNode) sourceNode.connect(targetNode);
-        });
+        edges
+            .filter((edge: AppEdge) => isAudioEdge(edge))
+            .forEach((edge: AppEdge) => {
+                const sourceInfo = nodes.find((n: AppNode) => n.id === edge.source);
+                if (sourceInfo?.type === 'controller' || sourceInfo?.type === 'tempo') return;
+                const sourceNode = audioNodes.get(edge.source);
+                const targetNode = audioNodes.get(edge.target);
+                if (sourceNode && targetNode) sourceNode.connect(targetNode);
+            });
         nodes.forEach((node: AppNode) => {
             if (node.type === 'speaker') {
                 const audioNode = audioNodes.get(node.id);
@@ -451,6 +688,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     initializeDefaultNodes: () => {
         const { nodes } = get();
+        const tempoNode = nodes.find((node: AppNode) => node.type === 'tempo');
+        Tone.getTransport().bpm.value = tempoNode?.data.bpm ?? DEFAULT_TRANSPORT_BPM;
         nodes.forEach((node: AppNode) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
@@ -478,6 +717,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             for (let j = i + 1; j < nodes.length; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
+                if (a.type === 'tempo' || b.type === 'tempo') {
+                    continue;
+                }
                 const aDims = getDims(a.type);
                 const bDims = getDims(b.type);
 
@@ -527,14 +769,15 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const desiredIds = new Set(desiredAutoEdges.map(e => e.id));
 
         // Keep all manually drawn edges; rebuild the auto set from scratch
-        const manualEdges = edges.filter((e: Edge) => !managedIds.has(e.id));
+        const manualEdges = edges.filter((e: AppEdge) => !managedIds.has(e.id));
 
         // Auto-edges are hidden: audio routes through them, no visual wire rendered
-        const nextAutoEdges: Edge[] = desiredAutoEdges.map(({ source, target, id }) => ({
+        const nextAutoEdges: AppEdge[] = desiredAutoEdges.map(({ source, target, id }) => ({
             id,
             source,
             target,
             hidden: true, // invisible — connection is implied by the snap/glow, not a cable
+            data: { kind: 'audio' },
         }));
 
         set({
@@ -553,6 +796,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             for (let j = i + 1; j < nodes.length; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
+                if (a.type === 'tempo' || b.type === 'tempo') {
+                    continue;
+                }
                 const aDims = getDims(a.type);
                 const bDims = getDims(b.type);
 

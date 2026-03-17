@@ -1,6 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
-import { useStore, ROOT_NOTES } from '@/store/useStore';
+import {
+    AUDIO_OUTPUT_HANDLE_ID,
+    ROOT_NOTES,
+    TEMPO_INPUT_HANDLE_ID,
+    isAudioEdge,
+    isTempoEdge,
+    useStore,
+} from '@/store/useStore';
 import { Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 
@@ -27,21 +34,25 @@ const BLACK_KEYS = [
 ];
 
 export default function ControllerNode({ id }: { id: string }) {
-    const changeNodeSubType = useStore((state: any) => state.changeNodeSubType);
-    const fireNoteOn = useStore((state: any) => state.fireNoteOn);
-    const fireNoteOff = useStore((state: any) => state.fireNoteOff);
-    const updateArpScale = useStore((state: any) => state.updateArpScale);
-    const updateOctave = useStore((state: any) => state.updateOctave);
-    const isAdjacent = useStore((state: any) => state.adjacentNodeIds.has(id));
-    const isUnconnected = useStore((state: any) => {
+    const changeNodeSubType = useStore((state) => state.changeNodeSubType);
+    const fireNoteOn = useStore((state) => state.fireNoteOn);
+    const fireNoteOff = useStore((state) => state.fireNoteOff);
+    const updateArpScale = useStore((state) => state.updateArpScale);
+    const updateOctave = useStore((state) => state.updateOctave);
+    const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
+    const isDraggingTempoConnection = useStore((state) => state.isDraggingTempoConnection);
+    const isUnconnected = useStore((state) => {
         const edges = state.edges;
-        return !edges.some((e: any) => e.source === id || e.target === id);
+        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
-    const octave = useStore((state: any) =>
-        state.nodes.find((n: any) => n.id === id)?.data.octave ?? 4
+    const isTempoConnected = useStore((state) =>
+        state.edges.some((edge) => isTempoEdge(edge) && edge.target === id)
+    );
+    const octave = useStore((state) =>
+        state.nodes.find((node) => node.id === id)?.data.octave ?? 4
     );
 
-    const nodeData = useStore((state: any) => state.nodes.find((n: any) => n.id === id)?.data);
+    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const subType = nodeData?.subType || 'none';
     const rootNote = nodeData?.rootNote || 'C';
     const scaleType = nodeData?.scaleType || 'major pentatonic';
@@ -51,6 +62,7 @@ export default function ControllerNode({ id }: { id: string }) {
     const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
     const heldKeys = useRef<Set<string>>(new Set());
     const seqRef = useRef<Tone.Sequence | null>(null);
+    const shouldHighlightTempoTarget = subType === 'arp' && isDraggingTempoConnection;
 
     useEffect(() => {
         if (subType !== 'keys') return;
@@ -104,7 +116,6 @@ export default function ControllerNode({ id }: { id: string }) {
                 seqRef.current.dispose();
                 seqRef.current = null;
             }
-            Tone.getTransport().stop();
             return;
         }
 
@@ -127,8 +138,6 @@ export default function ControllerNode({ id }: { id: string }) {
         );
 
         seqRef.current.start(0);
-        Tone.getTransport().bpm.value = 120;
-        Tone.getTransport().start();
 
         return () => {
             if (seqRef.current) {
@@ -289,8 +298,25 @@ export default function ControllerNode({ id }: { id: string }) {
                 )}
             </div>
 
+            {subType === 'arp' && (
+                <Handle
+                    type="target"
+                    id={TEMPO_INPUT_HANDLE_ID}
+                    position={Position.Right}
+                    style={{ top: 18, right: -8 }}
+                    className={`w-4 h-4 border-4 border-slate-900 transition-all ${
+                        shouldHighlightTempoTarget
+                            ? 'bg-indigo-300 scale-125 shadow-[0_0_18px_rgba(165,180,252,0.95)]'
+                            : isTempoConnected
+                                ? 'bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.8)]'
+                                : 'bg-slate-600'
+                    }`}
+                />
+            )}
+
             <Handle
                 type="source"
+                id={AUDIO_OUTPUT_HANDLE_ID}
                 position={Position.Bottom}
                 className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-yellow-400"
             />
