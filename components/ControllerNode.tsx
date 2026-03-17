@@ -52,7 +52,6 @@ export default function ControllerNode({ id }: { id: string }) {
     const heldKeys = useRef<Set<string>>(new Set());
     const seqRef = useRef<Tone.Sequence | null>(null);
 
-    // Keyboard Logic
     useEffect(() => {
         if (subType !== 'keys') return;
         const currentKeyMap = buildKeyMap(octave);
@@ -60,9 +59,7 @@ export default function ControllerNode({ id }: { id: string }) {
         const releaseHeldKeys = () => {
             heldKeys.current.forEach((key) => {
                 const note = currentKeyMap[key];
-                if (note) {
-                    fireNoteOff(id, note);
-                }
+                if (note) fireNoteOff(id, note);
             });
             heldKeys.current.clear();
             setActiveKeys(new Set());
@@ -100,7 +97,6 @@ export default function ControllerNode({ id }: { id: string }) {
         };
     }, [subType, id, fireNoteOn, fireNoteOff, octave]);
 
-    // Arpeggiator Logic
     useEffect(() => {
         if (subType !== 'arp' || !isPlaying) {
             if (seqRef.current) {
@@ -115,7 +111,6 @@ export default function ControllerNode({ id }: { id: string }) {
         const notes = Scale.get(`${rootNote}4 ${scaleType}`).notes;
         if (notes.length === 0) return;
 
-        // Dispose any existing sequence before creating a new one
         if (seqRef.current) {
             seqRef.current.stop();
             seqRef.current.dispose();
@@ -124,7 +119,6 @@ export default function ControllerNode({ id }: { id: string }) {
         seqRef.current = new Tone.Sequence(
             (time, note) => {
                 fireNoteOn(id, note);
-                // Schedule the note-off slightly before the next step
                 Tone.getDraw().schedule(() => {}, time);
                 setTimeout(() => fireNoteOff(id, note), 80);
             },
@@ -169,6 +163,15 @@ export default function ControllerNode({ id }: { id: string }) {
         <div className={`bg-slate-900 border-2 border-yellow-500 rounded-2xl p-5 shadow-2xl text-white w-72 min-h-[160px] flex flex-col transition-all hover:shadow-yellow-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
+            {/* Controller pattern — horizontal staff lines, like music notation */}
+            <div
+                className="absolute inset-0 opacity-[0.04] pointer-events-none rounded-2xl overflow-hidden"
+                style={{
+                    backgroundImage: 'repeating-linear-gradient(0deg, #eab308 0, #eab308 1px, transparent 0, transparent 100%)',
+                    backgroundSize: '100% 12px',
+                }}
+            />
+
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between items-center mb-6">
@@ -280,9 +283,7 @@ export default function ControllerNode({ id }: { id: string }) {
                 {isUnconnected && (
                     <div className="mt-3 flex items-center gap-1.5 opacity-40 text-yellow-500">
                         <div className="flex-1 h-px bg-current" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest">
-                            not connected
-                        </span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest">not connected</span>
                         <div className="flex-1 h-px bg-current" />
                     </div>
                 )}
