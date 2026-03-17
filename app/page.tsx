@@ -6,10 +6,11 @@ import ReactFlow, {
     Controls,
     BackgroundVariant,
     Edge,
+    Node,
     useReactFlow,
     ReactFlowProvider,
 } from 'reactflow';
-import { useStore, AudioNodeType } from '@/store/useStore';
+import { useStore, AudioNodeType, AppNode } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
 import EffectNode from '@/components/EffectNode';
@@ -98,7 +99,7 @@ function BloopCanvasInner() {
         [screenToFlowPosition, addNode]
     );
 
-    const onNodeDragStop = useCallback((event: React.MouseEvent, node: any) => {
+    const onNodeDragStop = useCallback((event: any, draggedNode: any) => {
         const trashBin = document.getElementById('trash-bin');
         if (trashBin) {
             const rect = trashBin.getBoundingClientRect();
@@ -108,8 +109,55 @@ function BloopCanvasInner() {
                 event.clientY >= rect.top &&
                 event.clientY <= rect.bottom
             ) {
-                removeNodeAndCleanUp(node.id);
+                removeNodeAndCleanUp(draggedNode.id);
+                return;
             }
+        }
+
+        const allNodes = useStore.getState().nodes;
+        const W = 224;
+        const H = 200;
+        const PAD = 12;
+
+        const overlaps = (ax: number, ay: number, bx: number, by: number) =>
+            ax < bx + W + PAD &&
+            ax + W + PAD > bx &&
+            ay < by + H + PAD &&
+            ay + H + PAD > by;
+
+        let { x, y } = draggedNode.position;
+        let hasOverlap = true;
+        let iterations = 0;
+        const maxIterations = 10;
+
+        // Keep adjusting until no overlap or max iterations reached
+        while (hasOverlap && iterations < maxIterations) {
+            hasOverlap = false;
+            iterations++;
+
+            allNodes.forEach(n => {
+                if (n.id === draggedNode.id) return;
+                if (overlaps(x, y, n.position.x, n.position.y)) {
+                    hasOverlap = true;
+                    // Push horizontally to whichever side is closer
+                    const overlapRight = n.position.x + W + PAD - x;
+                    const overlapLeft = x + W + PAD - n.position.x;
+                    if (overlapRight < overlapLeft) {
+                        x = n.position.x + W + PAD;
+                    } else {
+                        x = n.position.x - W - PAD;
+                    }
+                }
+            });
+        }
+
+        if (x !== draggedNode.position.x || y !== draggedNode.position.y) {
+            useStore.getState().onNodesChange([{
+                id: draggedNode.id,
+                type: 'position',
+                position: { x, y },
+                dragging: false,
+            }]);
         }
     }, [removeNodeAndCleanUp]);
 
