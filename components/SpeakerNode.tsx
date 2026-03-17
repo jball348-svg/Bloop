@@ -23,9 +23,9 @@ export default function SpeakerNode({ id }: { id: string }) {
     };
 
     return (
-        <div className="bg-slate-900 border-2 border-emerald-500 rounded-2xl p-5 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative overflow-hidden">
+        <div className="bg-slate-900 border-2 border-emerald-500 rounded-2xl p-5 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative">
             {/* Speaker Grill Aesthetic */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none" 
+            <div className="absolute inset-0 opacity-10 pointer-events-none rounded-2xl" 
                  style={{ backgroundImage: 'radial-gradient(circle, #34d399 1px, transparent 1px)', backgroundSize: '4px 4px' }} />
             
             <div className="relative z-10">
@@ -60,11 +60,11 @@ export default function SpeakerNode({ id }: { id: string }) {
                 </div>
             </div>
 
-            {/* The input port at the top */}
+            {/* The input handle */}
             <Handle
                 type="target"
                 position={Position.Top}
-                className="w-4 h-4 bg-emerald-500 border-4 border-slate-900 !-top-2 hover:scale-125 transition-transform"
+                className="w-4 h-4 bg-fuchsia-500 border-4 border-slate-900 !-top-2 hover:scale-125 transition-transform"
             />
         </div>
     );

@@ -59,3 +59,13 @@ body {
   background: #1e293b !important;
 }
 
+/* Hide React Flow attribution */
+.react-flow__attribution {
+  display: none !important;
+}
+
+/* Hide Turbopack logo/button at bottom left */
+[id^="__next-ext-"] {
+    display: none !important;
+}
+

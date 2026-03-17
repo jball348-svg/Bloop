@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import ReactFlow, {
     Background,
     Controls,
     BackgroundVariant,
+    Edge,
 } from 'reactflow';
 import { useStore } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
@@ -13,7 +14,18 @@ import SpeakerNode from '@/components/SpeakerNode';
 import EngineControl from '@/components/EngineControl';
 
 export default function BloopCanvas() {
-    const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useStore();
+    const { 
+        nodes, 
+        edges, 
+        onNodesChange, 
+        onEdgesChange, 
+        onConnect,
+        onEdgeUpdate: storeOnEdgeUpdate,
+        onEdgeUpdateStart: storeOnEdgeUpdateStart,
+        onEdgeUpdateEnd: storeOnEdgeUpdateEnd
+    } = useStore();
+
+    const edgeUpdateSuccessful = useRef(true);
 
     // Register our custom node types
     const nodeTypes = useMemo(() => ({
@@ -21,6 +33,26 @@ export default function BloopCanvas() {
         effect: EffectNode,
         speaker: SpeakerNode,
     }), []);
+
+    const defaultEdgeOptions = useMemo(() => ({
+        style: { stroke: '#94a3b8', strokeWidth: 2 },
+        focusable: false,
+    }), []);
+
+    const onEdgeUpdateStart = () => {
+        edgeUpdateSuccessful.current = false;
+    };
+
+    const onEdgeUpdate = (oldEdge: any, newConnection: any) => {
+        edgeUpdateSuccessful.current = true;
+        storeOnEdgeUpdate(oldEdge, newConnection);
+    };
+
+    const onEdgeUpdateEnd = (_: any, edge: Edge) => {
+        if (!edgeUpdateSuccessful.current) {
+            onEdgesChange([{ id: edge.id, type: 'remove' }]);
+        }
+    };
 
     return (
         <main className="w-screen h-screen relative">
@@ -30,9 +62,15 @@ export default function BloopCanvas() {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
+                onEdgeUpdate={onEdgeUpdate}
+                onEdgeUpdateStart={onEdgeUpdateStart}
+                onEdgeUpdateEnd={onEdgeUpdateEnd}
                 nodeTypes={nodeTypes}
+                defaultEdgeOptions={defaultEdgeOptions}
                 fitView
                 className="bg-slate-950"
+                edgesUpdatable={true}
+                snapToGrid={true}
             >
                 <Background
                     variant={BackgroundVariant.Dots}
@@ -45,10 +83,6 @@ export default function BloopCanvas() {
 
             <EngineControl />
 
-            {/* Overlay UI elements */}
-            <div className="absolute top-8 left-8 z-10">
-                <img src="/bloop_logo.jpg" alt="Bloop Logo" className="w-32" />
-            </div>
         </main>
     );
 }

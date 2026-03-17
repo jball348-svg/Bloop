@@ -12,6 +12,8 @@ import {
     OnConnect,
     applyNodeChanges,
     applyEdgeChanges,
+    OnEdgeUpdateFunc,
+    updateEdge,
 } from 'reactflow';
 
 export type AudioNodeType = 'generator' | 'effect' | 'speaker';
@@ -29,6 +31,9 @@ type AppState = {
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
+    onEdgeUpdate: OnEdgeUpdateFunc;
+    onEdgeUpdateStart: (event: React.MouseEvent, edge: Edge) => void;
+    onEdgeUpdateEnd: (event: MouseEvent | TouchEvent, edge: Edge) => void;
     initAudioNode: (id: string, type: AudioNodeType) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
@@ -78,14 +83,47 @@ export const useStore = create<AppState>((set, get) => ({
                     const targetAudio = get().audioNodes.get(edge.target);
                     if (sourceAudio && targetAudio) {
                         sourceAudio.disconnect(targetAudio);
-                        // If it's a generator, ensure it still routes to destination if nothing else is attached
-                        // (Actually, better to connect to destination by default in init and let connections override)
                     }
                 }
             }
         });
 
         set({ edges: nextEdges });
+    },
+
+    onEdgeUpdateStart: () => {
+        // We could store the old edge here if needed for more complex logic
+    },
+
+    onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => {
+        // Disconnect old
+        const sourceAudio = get().audioNodes.get(oldEdge.source);
+        const targetAudio = get().audioNodes.get(oldEdge.target);
+        if (sourceAudio && targetAudio) {
+            sourceAudio.disconnect(targetAudio);
+        }
+
+        // Connect new
+        const newSourceAudio = get().audioNodes.get(newConnection.source || '');
+        const newTargetAudio = get().audioNodes.get(newConnection.target || '');
+        if (newSourceAudio && newTargetAudio) {
+            newSourceAudio.connect(newTargetAudio);
+        }
+
+        set({
+            edges: updateEdge(oldEdge, newConnection, get().edges),
+        });
+    },
+
+    onEdgeUpdateEnd: (_, edge) => {
+        // Find if this edge still exists in the state
+        const exists = get().edges.find((e) => e.id === edge.id);
+        
+        // If it doesn't exist, it means it was dropped in the void or removed.
+        // But React Flow doesn't automatically remove it if onEdgeUpdate isn't called.
+        // Actually, if we want to support "disconnecting" by dragging into the void, 
+        // we can check if onEdgeUpdate was called. 
+        // For now, let's just make sure it's removed if it wasn't re-connected.
     },
 
     onConnect: (connection: Connection) => {
