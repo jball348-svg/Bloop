@@ -6,7 +6,6 @@ import ReactFlow, {
     Controls,
     BackgroundVariant,
     Edge,
-    Node,
     useReactFlow,
     ReactFlowProvider,
 } from 'reactflow';
@@ -18,12 +17,22 @@ import SpeakerNode from '@/components/SpeakerNode';
 import EngineControl from '@/components/EngineControl';
 import Toolbar from '@/components/Toolbar';
 
+// Node dimensions — must match the Tailwind classes on each node component
+// GeneratorNode / EffectNode / SpeakerNode: w-56 = 224px
+// ControllerNode: w-72 = 288px
+// We use the larger value as a safe upper bound so nothing ever clips
+const NODE_W = 288;
+const NODE_H = 220; // conservative: nodes are min-h-[160px] but controls add height
+const SNAP_GRID = 15; // must match snapGrid prop on ReactFlow
+
+const snapToGrid = (val: number) => Math.round(val / SNAP_GRID) * SNAP_GRID;
+
 function BloopCanvasInner() {
-    const { 
-        nodes, 
-        edges, 
-        onNodesChange, 
-        onEdgesChange, 
+    const {
+        nodes,
+        edges,
+        onNodesChange,
+        onEdgesChange,
         onConnect,
         onEdgeUpdate: storeOnEdgeUpdate,
         addNode,
@@ -33,7 +42,6 @@ function BloopCanvasInner() {
     const { screenToFlowPosition } = useReactFlow();
     const edgeUpdateSuccessful = useRef(true);
 
-    // Register our custom node types
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
         controller: ControllerNode,
@@ -69,37 +77,28 @@ function BloopCanvasInner() {
     const onDrop = useCallback(
         (event: React.DragEvent) => {
             event.preventDefault();
-
             const type = event.dataTransfer.getData('application/reactflow') as AudioNodeType;
+            if (!type) return;
 
-            // check if the dropped element is valid
-            if (typeof type === 'undefined' || !type) {
-                return;
-            }
-
-            const position = screenToFlowPosition({
-                x: event.clientX,
-                y: event.clientY,
-            });
+            const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
 
             let subType = 'none';
             if (type === 'controller') subType = 'arp';
             if (type === 'generator') subType = 'wave';
             if (type === 'effect') subType = 'reverb';
 
-            const newNode = {
+            addNode({
                 id: crypto.randomUUID(),
                 type,
                 position,
                 data: { label: '', subType, isPlaying: false },
-            };
-
-            addNode(newNode);
+            });
         },
         [screenToFlowPosition, addNode]
     );
 
     const onNodeDragStop = useCallback((event: any, draggedNode: any) => {
+        // --- Trash bin check ---
         const trashBin = document.getElementById('trash-bin');
         if (trashBin) {
             const rect = trashBin.getBoundingClientRect();
@@ -115,42 +114,44 @@ function BloopCanvasInner() {
         }
 
         const allNodes = useStore.getState().nodes;
-        const W = 224;
-        const H = 200;
-        const PAD = 12;
 
-        const overlaps = (ax: number, ay: number, bx: number, by: number) =>
-            ax < bx + W + PAD &&
-            ax + W + PAD > bx &&
-            ay < by + H + PAD &&
-            ay + H + PAD > by;
+        // Start from the node's current dropped position (already grid-snapped by ReactFlow)
+        let x = draggedNode.position.x;
+        let y = draggedNode.position.y;
 
-        let { x, y } = draggedNode.position;
-        let hasOverlap = true;
-        let iterations = 0;
-        const maxIterations = 10;
+        // Run up to 8 passes — each pass resolves any remaining overlap.
+        // Multiple passes handle chain-reactions (pushing into a third node).
+        for (let pass = 0; pass < 8; pass++) {
+            let movedThisPass = false;
 
-        // Keep adjusting until no overlap or max iterations reached
-        while (hasOverlap && iterations < maxIterations) {
-            hasOverlap = false;
-            iterations++;
+            for (const n of allNodes) {
+                if (n.id === draggedNode.id) continue;
 
-            allNodes.forEach(n => {
-                if (n.id === draggedNode.id) return;
-                if (overlaps(x, y, n.position.x, n.position.y)) {
-                    hasOverlap = true;
-                    // Push horizontally to whichever side is closer
-                    const overlapRight = n.position.x + W + PAD - x;
-                    const overlapLeft = x + W + PAD - n.position.x;
-                    if (overlapRight < overlapLeft) {
-                        x = n.position.x + W + PAD;
+                // Strict bounding-box overlap test — no padding, so flush = touching = OK
+                const overlapX = x < n.position.x + NODE_W && x + NODE_W > n.position.x;
+                const overlapY = y < n.position.y + NODE_H && y + NODE_H > n.position.y;
+
+                if (overlapX && overlapY) {
+                    // How far do we need to push in each horizontal direction to clear?
+                    const distToRight = n.position.x + NODE_W - x; // push dragged node rightward by this
+                    const distToLeft  = x + NODE_W - n.position.x; // push dragged node leftward by this
+
+                    if (distToRight <= distToLeft) {
+                        // Cheaper to go right — place flush against right edge of blocker
+                        x = snapToGrid(n.position.x + NODE_W);
                     } else {
-                        x = n.position.x - W - PAD;
+                        // Cheaper to go left — place flush against left edge of blocker
+                        x = snapToGrid(n.position.x - NODE_W);
                     }
+                    movedThisPass = true;
                 }
-            });
+            }
+
+            // If nothing moved this pass, we're fully resolved
+            if (!movedThisPass) break;
         }
 
+        // Only fire a position update if we actually moved the node
         if (x !== draggedNode.position.x || y !== draggedNode.position.y) {
             useStore.getState().onNodesChange([{
                 id: draggedNode.id,
@@ -183,6 +184,7 @@ function BloopCanvasInner() {
                 className="bg-slate-950"
                 edgesUpdatable={true}
                 snapToGrid={true}
+                snapGrid={[SNAP_GRID, SNAP_GRID]}
             >
                 <Background
                     variant={BackgroundVariant.Dots}
@@ -193,7 +195,7 @@ function BloopCanvasInner() {
                 <Controls position="bottom-right" showInteractive={false} />
             </ReactFlow>
 
-            <div 
+            <div
                 id="trash-bin"
                 className="absolute bottom-4 right-24 w-16 h-16 bg-red-900/50 border border-red-500 rounded-xl flex items-center justify-center transition-all hover:bg-red-800/60 z-50 pointer-events-none"
             >
@@ -216,5 +218,3 @@ export default function BloopCanvas() {
         </ReactFlowProvider>
     );
 }
-
-
