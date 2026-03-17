@@ -48,6 +48,22 @@ const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 const ADJ_TOUCH_THRESHOLD = 48;
 // Y-centres must be within this many px of each other
 const ADJ_Y_THRESHOLD = 100;
+const AUTO_EDGE_PREFIX = 'auto-';
+
+const SIGNAL_ORDER: Record<AudioNodeType, number> = {
+    controller: 0,
+    generator: 1,
+    effect: 2,
+    speaker: 3,
+};
+
+const VALID_AUTO_WIRE_PAIRS = new Set([
+    'controller->generator',
+    'generator->effect',
+    'generator->speaker',
+    'effect->effect',
+    'effect->speaker',
+]);
 
 type AppState = {
     nodes: AppNode[];
@@ -56,6 +72,7 @@ type AppState = {
     patterns: Map<string, Tone.Pattern<any>>;
     activeGenerators: Set<string>;
     adjacentNodeIds: Set<string>;
+    autoEdgeIds: Set<string>;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -77,6 +94,7 @@ type AppState = {
     rebuildAudioGraph: () => void;
     initializeDefaultNodes: () => void;
     recalculateAdjacency: () => void;
+    autoWireAdjacentNodes: () => void;
 };
 
 export const useStore = create<AppState>((set: any, get: any) => ({
@@ -105,6 +123,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     patterns: new Map(),
     activeGenerators: new Set(),
     adjacentNodeIds: new Set(),
+    autoEdgeIds: new Set(),
 
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -374,8 +393,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     },
 
     rebuildAudioGraph: () => {
-        const { audioNodes, edges, nodes } = get();
-        audioNodes.forEach(node => node.disconnect());
+        const { audioNodes, edges, nodes } = get() as AppState;
+        audioNodes.forEach((node: Tone.ToneAudioNode) => node.disconnect());
         edges.forEach((edge: Edge) => {
             const sourceInfo = nodes.find((n: AppNode) => n.id === edge.source);
             if (sourceInfo?.type === 'controller') return;
@@ -400,6 +419,88 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 get().initAudioNode(node.id, 'speaker');
             }
         });
+        get().rebuildAudioGraph();
+    },
+
+    autoWireAdjacentNodes: () => {
+        const { nodes, edges, autoEdgeIds } = get() as AppState;
+        const desiredAutoEdges: Array<{ source: string; target: string; id: string }> = [];
+        const managedAutoEdgeIds = new Set([
+            ...autoEdgeIds,
+            ...edges
+                .filter((edge: Edge) => edge.id.startsWith(AUTO_EDGE_PREFIX))
+                .map((edge: Edge) => edge.id),
+        ]);
+
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i];
+                const b = nodes[j];
+                const aDims = getDims(a.type);
+                const bDims = getDims(b.type);
+
+                const gapRight = b.position.x - (a.position.x + aDims.w);
+                const gapLeft  = a.position.x - (b.position.x + bDims.w);
+                const horizGap = Math.max(gapRight, gapLeft);
+
+                const aCentreY = a.position.y + aDims.h / 2;
+                const bCentreY = b.position.y + bDims.h / 2;
+                const vertDist = Math.abs(aCentreY - bCentreY);
+
+                if (horizGap < 0 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) {
+                    continue;
+                }
+
+                const leftNode = a.position.x < b.position.x ? a : b;
+                const rightNode = a.position.x < b.position.x ? b : a;
+
+                let sourceNode = leftNode;
+                let targetNode = rightNode;
+                if ((SIGNAL_ORDER[leftNode.type] ?? 99) > (SIGNAL_ORDER[rightNode.type] ?? 99)) {
+                    sourceNode = rightNode;
+                    targetNode = leftNode;
+                }
+
+                const pairKey = `${sourceNode.type}->${targetNode.type}`;
+                if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) {
+                    continue;
+                }
+
+                const manualEdgeExists = edges.some(
+                    (edge: Edge) =>
+                        edge.source === sourceNode.id &&
+                        edge.target === targetNode.id &&
+                        !managedAutoEdgeIds.has(edge.id) &&
+                        !edge.id.startsWith(AUTO_EDGE_PREFIX)
+                );
+                if (manualEdgeExists) {
+                    continue;
+                }
+
+                desiredAutoEdges.push({
+                    source: sourceNode.id,
+                    target: targetNode.id,
+                    id: `${AUTO_EDGE_PREFIX}${sourceNode.id}-${targetNode.id}`,
+                });
+            }
+        }
+
+        const desiredAutoEdgeIds = new Set(desiredAutoEdges.map((edge) => edge.id));
+        const preservedEdges = edges.filter(
+            (edge: Edge) => !managedAutoEdgeIds.has(edge.id) && !edge.id.startsWith(AUTO_EDGE_PREFIX)
+        );
+        const nextAutoEdges: Edge[] = desiredAutoEdges.map(({ source, target, id }) => ({
+            id,
+            source,
+            target,
+            style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+        }));
+
+        set({
+            edges: [...preservedEdges, ...nextAutoEdges],
+            autoEdgeIds: desiredAutoEdgeIds,
+        });
+
         get().rebuildAudioGraph();
     },
 
@@ -438,5 +539,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
         // Always set a new Set instance so Zustand detects the state change
         set({ adjacentNodeIds: new Set(adjacent) });
+        get().autoWireAdjacentNodes();
     },
 }));
