@@ -1,62 +1,81 @@
-# Bloop: Modular Nodes Synthesizer
+# Bloop v1
 
-Bloop is a high-performance, visually stunning modular audio synthesizer built with **Next.js**, **React Flow**, and **Tone.js**. It allows users to create complex audio patches by connecting functional nodes—Generators, Effects, Controllers, and Speakers—in a dynamic, interactive canvas.
+Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js, and Zustand. The final v1 build is a single-screen patching experience designed around fast experimentation: drag nodes onto the canvas, snap them into place, unlock the audio engine, and shape playable signal chains in real time.
 
-![Bloop Header](public/screenshot.png) (Coming soon!)
+## v1 Final Highlights
 
-## 🚀 Key Features
+- Drag-and-drop node palette for `Controller`, `Generator`, `Effect`, and `Speaker` nodes.
+- Browser-safe audio startup flow with a full-screen `START AUDIO ENGINE` gate.
+- A default starter chain is present on load: controller -> generator -> speaker.
+- `15px` grid snapping across the whole canvas.
+- Anti-overlap drag behavior that snaps nodes flush left or right and aligns them into a shared row.
+- Proximity-based patching: adjacent nodes can auto-route audio through hidden edges instead of always relying on visible cables.
+- Cyan adjacency glow that signals when nodes are close enough to be treated as a chain.
+- Manual React Flow connections still work and remain editable.
+- `Controller` nodes can run as:
+  - an arpeggiator with selectable root note and scale
+  - a QWERTY keyboard with an on-screen piano and octave switching from `1` to `7`
+- `Generator` nodes use `Tone.PolySynth` and support `sine`, `square`, `triangle`, and `sawtooth` oscillator shapes.
+- `Effect` nodes support `Reverb`, `Delay`, `Distortion`, `Phaser`, and `BitCrusher`, with per-type controls plus mix and bypass.
+- `Speaker` nodes expose smoothed master volume and mute control.
+- Drag-to-trash deletion removes the UI node, connected edges, and the underlying Tone resources together.
+- Node cards now carry stronger visual identity through type-specific background patterns, activity states, and "not connected" indicators.
 
-- **Visual Modular Patching**: Intuitive drag-and-drop interface powered by React Flow.
-- **Dynamic Audio Engine**: Real-time sound synthesis using Tone.js.
-- **Multi-Generator Support**: Choose between classic Waveform oscillators and Polyphonic Synths.
-- **Rich Effect Suite**: Chain Reverb, Delay, Distortion, Phaser, and BitCrusher to sculpt your sound.
-- **Interactive Controllers**:
-  - **Arpeggiator**: Generate complex rhythmic patterns with selectable scales (Major, Minor, Pentatonic, etc.) and root notes.
-  - **QWERTY Keyboard**: Play the synthesizer directly from your computer keyboard with visual feedback.
-- **Real-time Parameter Smoothing**: All sliders use `rampTo` to ensure glitch-free audio adjustments.
-- **Custom Design System**: Premium dark-mode aesthetic with vibrant accent colors for different node types.
-- **Trash Bin**: Drag nodes to the red bin to delete them and instantly clean up the audio graph.
+## What Changed Since The Previous Docs Update
 
-## 🛠️ Tech Stack
+- The canvas is no longer just a manual cable-patching surface. Snapped adjacency now matters and can create hidden audio routes automatically.
+- The default scene now opens as a pre-aligned, pre-routed chain using hidden auto-edges.
+- Drag-stop logic now resolves overlaps with a more tactile "lego" feel by pushing nodes flush beside each other and aligning them by row.
+- Adjacency glow was added so the user can understand implied routing without seeing a wire.
+- Visible manual edges were restyled, while auto-managed edges stay hidden and only affect routing.
+- `Controller` keyboard mode gained octave selection, and arpeggiation moved to `Tone.Sequence` plus `Tone.Transport` instead of a simple interval loop.
+- `Generator` activity lights now reflect real note playback instead of pulsing constantly.
+- `Generator` visuals were updated to a red identity that matches the toolbar and node surface treatment.
+- `Controller`, `Generator`, `Effect`, and `Speaker` cards now expose clearer empty-state feedback through "not connected" status bands.
+- The trash target was visually brought into the same cyan interaction language as adjacency and routing.
 
-- **Framework**: [Next.js](https://nextjs.org/) (App Router)
-- **State Management**: [Zustand](https://zustand-demo.pmnd.rs/) (Store-driven audio lifecycle)
-- **Audio Engine**: [Tone.js](https://tonejs.github.io/)
-- **Visuals/Graph**: [React Flow](https://reactflow.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Music Theory Logic**: [@tonaljs/tonal](https://github.com/tonaljs/tonal)
+## Tech Stack
 
-## 📁 File Structure & Functionality
+- `Next.js 16`
+- `React 19`
+- `React Flow 11`
+- `Tone.js 15`
+- `Zustand 5`
+- `Tailwind CSS 4`
+- `@tonaljs/tonal`
 
-### Core Logic
-- `store/useStore.ts`: The "brain" of the app. Manages the React Flow nodes/edges, Tone.js audio node instances, and the logic for connecting/disconnecting the audio graph. It ensures that the audio state remains perfectly synced with the UI.
+## Project Structure
 
-### Components
-- `components/ControllerNode.tsx`: Handles MIDI-like input. Contains logic for the Arpeggiator and the QWERTY Playable Keyboard.
-- `components/GeneratorNode.tsx`: The source of sound. Currently supports multiple waveforms and polyphonic synthesis.
-- `components/EffectNode.tsx`: Audio processors. Dynamically switches between Reverb, Delay, Distortion, Phaser, and BitCrusher.
-- `components/SpeakerNode.tsx`: The final output stage with volume and mute controls.
-- `components/Toolbar.tsx`: Floating UI for adding new nodes to the canvas.
-- `components/EngineControl.tsx`: Global audio engine start/stop and master controls.
+- `app/page.tsx`: React Flow canvas setup, drag-and-drop, grid snapping, overlap resolution, trash-drop deletion, and adjacency recalculation hooks.
+- `store/useStore.ts`: Central app state, Tone node lifecycle, edge routing, hidden auto-edge generation, adjacency tracking, and note dispatch.
+- `components/ControllerNode.tsx`: Arpeggiator and keyboard controller UI, transport sequencing, keyboard listeners, and octave switching.
+- `components/GeneratorNode.tsx`: PolySynth source node with waveform selection and active-note indicator.
+- `components/EffectNode.tsx`: Switchable effect rack for reverb, delay, distortion, phaser, and bitcrusher.
+- `components/SpeakerNode.tsx`: Output node with default volume initialization, mute, and volume control.
+- `components/Toolbar.tsx`: Node palette for drag-adding modules.
+- `components/EngineControl.tsx`: Audio-unlock overlay and default-node initialization trigger.
+- `app/globals.css`: Global styling plus React Flow theming.
 
-### App Pages
-- `app/page.tsx`: The main canvas setup, handling drag-and-drop registration and the React Flow provider.
-- `app/layout.tsx`: Root layout with font and SEO configuration.
+## Run Locally
 
-## 🚦 Getting Started
+1. Install dependencies:
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. **Run the development server**:
-   ```bash
-   npm run dev
-   ```
+2. Start the dev server:
 
-3. **Open [http://localhost:3000](http://localhost:3000)** in your browser and start patching!
+```bash
+npm run dev
+```
 
----
+3. Open `http://localhost:3000`.
 
-Built with dedication by the Bloop Team.
+4. Click `START AUDIO ENGINE` before testing any sound.
+
+`npm run dev` also clears a stale `:3000` lock before launching Next, which helps during repeated local restarts.
+
+## v1 Status
+
+This repository now reflects the end-of-v1 feature set. The next phase should be scoped as a separate v2 planning pass rather than treated as unfinished v1 implementation.
