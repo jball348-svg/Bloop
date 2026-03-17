@@ -22,9 +22,9 @@ export const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A',
 export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller';
 
 export type AppNode = Node & {
-    data: { 
-        label: string; 
-        subType?: string; 
+    data: {
+        label: string;
+        subType?: string;
         isPlaying?: boolean;
         rootNote?: string;
         scaleType?: string;
@@ -44,10 +44,11 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
 const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
-// Nodes are "adjacent" if the gap between their edges is within this threshold
+// Gap threshold within which two nodes are considered "adjacent" (snapped)
 const ADJ_TOUCH_THRESHOLD = 48;
-// Y-centres must be within this many px of each other
+// Y-centres must be within this many px of each other to count as adjacent
 const ADJ_Y_THRESHOLD = 100;
+
 const AUTO_EDGE_PREFIX = 'auto-';
 
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
@@ -119,18 +120,19 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             position: { x: 572, y: 200 },
         },
     ],
+    // Auto-edges start hidden — audio still routes through them, no visible wire
     edges: [
         {
             id: 'auto-node-1-node-2',
             source: 'node-1',
             target: 'node-2',
-            style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+            hidden: true,
         },
         {
             id: 'auto-node-2-node-3',
             source: 'node-2',
             target: 'node-3',
-            style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+            hidden: true,
         },
     ],
     audioNodes: new Map(),
@@ -212,14 +214,14 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
         const oldNode = audioNodes.get(id);
         const oldPattern = patterns.get(id);
-        
+
         if (oldPattern) {
             oldPattern.stop().dispose();
             const newPatterns = new Map(patterns);
             newPatterns.delete(id);
             set({ patterns: newPatterns });
         }
-        
+
         if (oldNode) {
             oldNode.disconnect().dispose();
             const newAudioNodes = new Map(audioNodes);
@@ -228,13 +230,13 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         }
 
         get().initAudioNode(id, mainType, subType);
-        
+
         set({
-            nodes: nodes.map((n: AppNode) => 
-                n.id === id 
-                ? { ...n, data: { ...n.data, subType, isPlaying: wasPlaying } } 
-                : n
-            )
+            nodes: nodes.map((n: AppNode) =>
+                n.id === id
+                    ? { ...n, data: { ...n.data, subType, isPlaying: wasPlaying } }
+                    : n
+            ),
         });
 
         const handleRebuild = () => {
@@ -279,7 +281,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             } else if (node instanceof Tone.PolySynth) {
                 node.set({ oscillator: { type: value.waveShape } });
             }
-            const nodes = get().nodes.map((n: AppNode) => n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n);
+            const nodes = get().nodes.map((n: AppNode) =>
+                n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n
+            );
             set({ nodes });
         }
 
@@ -318,10 +322,11 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     updateArpScale: (id: string, root: string, scale: string) => {
         const { nodes } = get();
         set({
-            nodes: nodes.map((n: AppNode) => n.id === id ? {
-                ...n,
-                data: { ...n.data, rootNote: root, scaleType: scale }
-            } : n)
+            nodes: nodes.map((n: AppNode) =>
+                n.id === id
+                    ? { ...n, data: { ...n.data, rootNote: root, scaleType: scale } }
+                    : n
+            ),
         });
     },
 
@@ -330,7 +335,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         set({
             nodes: nodes.map((n: AppNode) =>
                 n.id === id ? { ...n, data: { ...n.data, octave } } : n
-            )
+            ),
         });
     },
 
@@ -357,7 +362,11 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const targetIds: string[] = [];
         edges.filter((e: Edge) => e.source === controllerId).forEach((edge: Edge) => {
             const targetNode = audioNodes.get(edge.target);
-            if (targetNode && 'triggerAttack' in targetNode && typeof (targetNode as any).triggerAttack === 'function') {
+            if (
+                targetNode &&
+                'triggerAttack' in targetNode &&
+                typeof (targetNode as any).triggerAttack === 'function'
+            ) {
                 (targetNode as any).triggerAttack(note);
                 targetIds.push(edge.target);
             }
@@ -372,7 +381,11 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         const targetIds: string[] = [];
         edges.filter((e: Edge) => e.source === controllerId).forEach((edge: Edge) => {
             const targetNode = audioNodes.get(edge.target);
-            if (targetNode && 'triggerRelease' in targetNode && typeof (targetNode as any).triggerRelease === 'function') {
+            if (
+                targetNode &&
+                'triggerRelease' in targetNode &&
+                typeof (targetNode as any).triggerRelease === 'function'
+            ) {
                 (targetNode as any).triggerRelease(note);
                 targetIds.push(edge.target);
             }
@@ -391,7 +404,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             isPlaying ? node.start() : node.stop();
         }
         set({
-            nodes: nodes.map((n: AppNode) => n.id === id ? { ...n, data: { ...n.data, isPlaying } } : n)
+            nodes: nodes.map((n: AppNode) =>
+                n.id === id ? { ...n, data: { ...n.data, isPlaying } } : n
+            ),
         });
     },
 
@@ -409,7 +424,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         get().removeAudioNode(id);
         set({
             nodes: nodes.filter((n: AppNode) => n.id !== id),
-            edges: edges.filter((e: Edge) => e.source !== id && e.target !== id)
+            edges: edges.filter((e: Edge) => e.source !== id && e.target !== id),
         });
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
@@ -418,6 +433,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     rebuildAudioGraph: () => {
         const { audioNodes, edges, nodes } = get() as AppState;
         audioNodes.forEach((node: Tone.ToneAudioNode) => node.disconnect());
+        // Route ALL edges — including hidden auto-edges — so audio flows through snapped chains
         edges.forEach((edge: Edge) => {
             const sourceInfo = nodes.find((n: AppNode) => n.id === edge.source);
             if (sourceInfo?.type === 'controller') return;
@@ -447,13 +463,16 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     autoWireAdjacentNodes: () => {
         const { nodes, edges, autoEdgeIds } = get() as AppState;
-        const desiredAutoEdges: Array<{ source: string; target: string; id: string }> = [];
-        const managedAutoEdgeIds = new Set([
+
+        // All edge IDs we are allowed to remove/replace (auto-managed ones)
+        const managedIds = new Set([
             ...autoEdgeIds,
             ...edges
-                .filter((edge: Edge) => edge.id.startsWith(AUTO_EDGE_PREFIX))
-                .map((edge: Edge) => edge.id),
+                .filter((e: Edge) => e.id.startsWith(AUTO_EDGE_PREFIX))
+                .map((e: Edge) => e.id),
         ]);
+
+        const desiredAutoEdges: Array<{ source: string; target: string; id: string }> = [];
 
         for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
@@ -474,8 +493,9 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                     continue;
                 }
 
-                const leftNode = a.position.x < b.position.x ? a : b;
-                const rightNode = a.position.x < b.position.x ? b : a;
+                // Determine source/target by signal flow order
+                const leftNode  = a.position.x <= b.position.x ? a : b;
+                const rightNode = a.position.x <= b.position.x ? b : a;
 
                 let sourceNode = leftNode;
                 let targetNode = rightNode;
@@ -485,20 +505,16 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 }
 
                 const pairKey = `${sourceNode.type}->${targetNode.type}`;
-                if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) {
-                    continue;
-                }
+                if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) continue;
 
-                const manualEdgeExists = edges.some(
-                    (edge: Edge) =>
-                        edge.source === sourceNode.id &&
-                        edge.target === targetNode.id &&
-                        !managedAutoEdgeIds.has(edge.id) &&
-                        !edge.id.startsWith(AUTO_EDGE_PREFIX)
+                // Don't create an auto-edge if a manual edge already exists for this pair
+                const manualExists = edges.some(
+                    (e: Edge) =>
+                        e.source === sourceNode.id &&
+                        e.target === targetNode.id &&
+                        !managedIds.has(e.id)
                 );
-                if (manualEdgeExists) {
-                    continue;
-                }
+                if (manualExists) continue;
 
                 desiredAutoEdges.push({
                     source: sourceNode.id,
@@ -508,20 +524,22 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
-        const desiredAutoEdgeIds = new Set(desiredAutoEdges.map((edge) => edge.id));
-        const preservedEdges = edges.filter(
-            (edge: Edge) => !managedAutoEdgeIds.has(edge.id) && !edge.id.startsWith(AUTO_EDGE_PREFIX)
-        );
+        const desiredIds = new Set(desiredAutoEdges.map(e => e.id));
+
+        // Keep all manually drawn edges; rebuild the auto set from scratch
+        const manualEdges = edges.filter((e: Edge) => !managedIds.has(e.id));
+
+        // Auto-edges are hidden: audio routes through them, no visual wire rendered
         const nextAutoEdges: Edge[] = desiredAutoEdges.map(({ source, target, id }) => ({
             id,
             source,
             target,
-            style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+            hidden: true, // invisible — connection is implied by the snap/glow, not a cable
         }));
 
         set({
-            edges: [...preservedEdges, ...nextAutoEdges],
-            autoEdgeIds: desiredAutoEdgeIds,
+            edges: [...manualEdges, ...nextAutoEdges],
+            autoEdgeIds: desiredIds,
         });
 
         get().rebuildAudioGraph();
@@ -538,21 +556,14 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 const aDims = getDims(a.type);
                 const bDims = getDims(b.type);
 
-                // Compute the gap in whichever horizontal direction is relevant.
-                // gapRight > 0 means b is to the right of a with that much space.
-                // gapLeft  > 0 means a is to the right of b with that much space.
-                // Exactly one of these will be positive when the nodes don't overlap.
-                // We take the MAX so we get the actual gap, not the negative "other side".
                 const gapRight = b.position.x - (a.position.x + aDims.w);
                 const gapLeft  = a.position.x - (b.position.x + bDims.w);
                 const horizGap = Math.max(gapRight, gapLeft);
 
-                // Y-centre distance
                 const aCentreY = a.position.y + aDims.h / 2;
                 const bCentreY = b.position.y + bDims.h / 2;
                 const vertDist = Math.abs(aCentreY - bCentreY);
 
-                // Adjacent = horizontally close (small positive gap) AND vertically aligned
                 if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
                     adjacent.add(a.id);
                     adjacent.add(b.id);
@@ -560,8 +571,8 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
-        // Always set a new Set instance so Zustand detects the state change
         set({ adjacentNodeIds: new Set(adjacent) });
+        // Auto-wire runs after adjacency so it sees the fresh adjacent set
         get().autoWireAdjacentNodes();
     },
 }));

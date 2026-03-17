@@ -47,7 +47,6 @@ function BloopCanvasInner() {
     const { screenToFlowPosition } = useReactFlow();
     const edgeUpdateSuccessful = useRef(true);
 
-    // Run adjacency check once on mount for the default nodes
     const recalculateAdjacency = useStore((state: any) => state.recalculateAdjacency);
     useEffect(() => {
         recalculateAdjacency();
@@ -104,7 +103,6 @@ function BloopCanvasInner() {
             data: { label: '', subType, isPlaying: false },
         });
 
-        // New node may be adjacent to existing ones
         setTimeout(() => useStore.getState().recalculateAdjacency(), 0);
     }, [screenToFlowPosition, addNode]);
 
@@ -134,6 +132,7 @@ function BloopCanvasInner() {
             let x = currentNode.position.x;
             let y = currentNode.position.y;
 
+            // Multi-pass to handle chain reactions (A pushes into B which also overlaps C)
             for (let pass = 0; pass < 10; pass++) {
                 let moved = false;
 
@@ -142,19 +141,29 @@ function BloopCanvasInner() {
 
                     const nDims = getDims(n.type);
 
-                    // Strict overlap — touching edges (flush) is fine
+                    // Strict overlap — touching edges (flush) is NOT overlap
                     const overlapX = x < n.position.x + nDims.w && x + draggedDims.w > n.position.x;
                     const overlapY = y < n.position.y + nDims.h && y + draggedDims.h > n.position.y;
 
                     if (overlapX && overlapY) {
-                        const penRight = n.position.x + nDims.w - x;
-                        const penLeft  = x + draggedDims.w - n.position.x;
+                        // Snap based on where the dragged node's centre is relative to
+                        // the obstacle's centre — this gives the intuitive lego-click feel.
+                        // If dragged centre is to the RIGHT of obstacle centre → go right.
+                        // If dragged centre is to the LEFT  of obstacle centre → go left.
+                        const draggedCentreX = x + draggedDims.w / 2;
+                        const nCentreX = n.position.x + nDims.w / 2;
 
-                        if (penRight <= penLeft) {
+                        if (draggedCentreX >= nCentreX) {
+                            // Snap dragged node's LEFT edge flush with obstacle's RIGHT edge
                             x = snap(n.position.x + nDims.w);
                         } else {
+                            // Snap dragged node's RIGHT edge flush with obstacle's LEFT edge
                             x = snap(n.position.x - draggedDims.w);
                         }
+
+                        // Also align Y so nodes sit on the same row — the lego row feel
+                        y = n.position.y;
+
                         moved = true;
                     }
                 }
@@ -171,7 +180,6 @@ function BloopCanvasInner() {
                 }]);
             }
 
-            // Always recalculate adjacency after a drag settles
             useStore.getState().recalculateAdjacency();
         }, 0);
     }, [removeNodeAndCleanUp]);
