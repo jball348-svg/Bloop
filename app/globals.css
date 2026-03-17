@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+}
+
+/* Custom React Flow Styles */
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border: 4px solid #020617;
+}
+
+.react-flow__connection-path {
+  stroke: #6366f1;
+  stroke-width: 3;
+}
+
+.react-flow__edge-path {
+  stroke: #6366f1;
+  stroke-width: 3;
+}
+
+.react-flow__background {
+  background-color: #020617;
+}
+
+.react-flow__controls {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+}
+
+.react-flow__controls-button {
+  background: transparent !important;
+  border-bottom: none !important;
+  border-right: none !important;
+  fill: #94a3b8 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: #1e293b !important;
+}
+
