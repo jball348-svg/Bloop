@@ -10,7 +10,7 @@ const Toolbar = () => {
 
     const tools = [
         { type: 'controller', label: 'Controller', color: 'bg-yellow-500' },
-        { type: 'generator', label: 'Generator', color: 'bg-blue-500' },
+        { type: 'generator', label: 'Generator', color: 'bg-red-500' },
         { type: 'effect', label: 'Effect', color: 'bg-fuchsia-500' },
         { type: 'speaker', label: 'Speaker', color: 'bg-emerald-500' },
     ];

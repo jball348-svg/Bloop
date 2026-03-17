@@ -41,7 +41,7 @@ function BloopCanvasInner() {
     }), []);
 
     const defaultEdgeOptions = useMemo(() => ({
-        style: { stroke: '#94a3b8', strokeWidth: 2 },
+        style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
         focusable: false,
     }), []);
 
@@ -130,6 +130,7 @@ function BloopCanvasInner() {
                 onNodeDragStop={onNodeDragStop}
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={defaultEdgeOptions}
+                connectionLineStyle={{ stroke: '#475569', strokeWidth: 2, strokeDasharray: '5 5' }}
                 fitView
                 className="bg-slate-950"
                 edgesUpdatable={true}

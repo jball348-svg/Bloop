@@ -38,6 +38,7 @@ type AppState = {
     edges: Edge[];
     audioNodes: Map<string, Tone.ToneAudioNode>;
     patterns: Map<string, Tone.Pattern<any>>;
+    activeGenerators: Set<string>;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -84,6 +85,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
     edges: [],
     audioNodes: new Map(),
     patterns: new Map(),
+    activeGenerators: new Set(),
 
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -126,7 +128,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
         if (type === 'generator') {
             const actualSubType = subType || 'none';
             // Generators are now PolySynths to handle MIDI data
-            const synth = new Tone.PolySynth().toDestination();
+            const synth = new Tone.PolySynth();
             node = synth;
         } else if (type === 'controller') {
             // Controllers don't have audio nodes
@@ -235,9 +237,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             set({ nodes });
         }
 
-        if ('wet' in node && typeof value.wet === 'number') {
-            (node as any).wet.rampTo(value.wet, 0.1);
-        }
 
         if (node instanceof Tone.Volume && typeof value.volume === 'number') {
             if (value.volume === 0 || value.mute) {
@@ -248,28 +247,33 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
-        if (node instanceof Tone.Freeverb && typeof value.roomSize === 'number') {
-            node.roomSize.value = value.roomSize;
+        // Effect parameter mapping - only apply params that the effect supports
+        if (node instanceof Tone.Freeverb) {
+            if (typeof value.roomSize === 'number') node.roomSize.value = value.roomSize;
+            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
+        } else if (node instanceof Tone.FeedbackDelay) {
+            if (typeof value.delayTime === 'number') node.delayTime.rampTo(value.delayTime, 0.1);
+            if (typeof value.feedback === 'number') node.feedback.rampTo(value.feedback, 0.1);
+            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
+        } else if (node instanceof Tone.Distortion) {
+            if (typeof value.distortion === 'number') node.distortion = value.distortion;
+            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
+        } else if (node instanceof Tone.Phaser) {
+            if (typeof value.frequency === 'number') node.frequency.rampTo(value.frequency, 0.1);
+            if (typeof value.octaves === 'number') node.octaves = value.octaves;
+            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
+        } else if (node instanceof Tone.BitCrusher) {
+            if (typeof value.bits === 'number') node.bits.value = value.bits;
         }
 
-        if (node instanceof Tone.FeedbackDelay && typeof value.delayTime === 'number') {
-            node.delayTime.rampTo(value.delayTime, 0.1);
+        // Generic wet parameter handling for bypass toggle
+        if ('wet' in node && typeof value.wet === 'number' && !(node instanceof Tone.Freeverb || node instanceof Tone.FeedbackDelay || node instanceof Tone.Distortion || node instanceof Tone.Phaser)) {
+            (node as any).wet.rampTo(value.wet, 0.1);
         }
 
+        
         if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
             node.frequency.rampTo(value.frequency, 0.1);
-        }
-
-        if (node instanceof Tone.Distortion && typeof value.distortion === 'number') {
-            node.distortion = value.distortion;
-        }
-
-        if (node instanceof Tone.Phaser && typeof value.frequency === 'number') {
-            node.frequency.rampTo(value.frequency, 0.1);
-        }
-
-        if (node instanceof Tone.BitCrusher && typeof value.bits === 'number') {
-            node.bits.value = value.bits;
         }
     },
 
@@ -285,32 +289,52 @@ export const useStore = create<AppState>((set: any, get: any) => ({
 
     triggerNoteOn: (id: string, note: string) => {
         const node = get().audioNodes.get(id);
-        if (node instanceof Tone.PolySynth) node.triggerAttack(note);
+        if (node instanceof Tone.PolySynth) {
+            node.triggerAttack(note);
+            set({ activeGenerators: new Set([...get().activeGenerators, id]) });
+        }
     },
 
     triggerNoteOff: (id: string, note: string) => {
         const node = get().audioNodes.get(id);
-        if (node instanceof Tone.PolySynth) node.triggerRelease(note);
+        if (node instanceof Tone.PolySynth) {
+            node.triggerRelease(note);
+            const newActiveGenerators = new Set(get().activeGenerators);
+            newActiveGenerators.delete(id);
+            set({ activeGenerators: newActiveGenerators });
+        }
     },
 
     fireNoteOn: (controllerId: string, note: string) => {
         const { edges, audioNodes } = get();
+        const targetIds: string[] = [];
         edges.filter(e => e.source === controllerId).forEach(edge => {
             const targetNode = audioNodes.get(edge.target);
             if (targetNode && 'triggerAttack' in targetNode && typeof (targetNode as any).triggerAttack === 'function') {
                 (targetNode as any).triggerAttack(note);
+                targetIds.push(edge.target);
             }
         });
+        if (targetIds.length > 0) {
+            set({ activeGenerators: new Set([...get().activeGenerators, ...targetIds]) });
+        }
     },
 
     fireNoteOff: (controllerId: string, note: string) => {
         const { edges, audioNodes } = get();
+        const targetIds: string[] = [];
         edges.filter(e => e.source === controllerId).forEach(edge => {
             const targetNode = audioNodes.get(edge.target);
             if (targetNode && 'triggerRelease' in targetNode && typeof (targetNode as any).triggerRelease === 'function') {
                 (targetNode as any).triggerRelease(note);
+                targetIds.push(edge.target);
             }
         });
+        if (targetIds.length > 0) {
+            const newActiveGenerators = new Set(get().activeGenerators);
+            targetIds.forEach(id => newActiveGenerators.delete(id));
+            set({ activeGenerators: newActiveGenerators });
+        }
     },
 
     toggleNodePlayback: (id, isPlaying) => {
