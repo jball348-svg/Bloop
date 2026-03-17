@@ -29,6 +29,7 @@ export type AppNode = Node & {
         rootNote?: string;
         scaleType?: string;
         waveShape?: string;
+        octave?: number;
     };
     type: AudioNodeType;
 };
@@ -43,9 +44,9 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
 const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
-// Two nodes are "adjacent" if their boxes are within this many px of touching
+// Nodes are "adjacent" if the gap between their edges is within this threshold
 const ADJ_TOUCH_THRESHOLD = 48;
-// Y centres must be within this many px of each other
+// Y-centres must be within this many px of each other
 const ADJ_Y_THRESHOLD = 100;
 
 type AppState = {
@@ -413,17 +414,21 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 const aDims = getDims(a.type);
                 const bDims = getDims(b.type);
 
-                // Horizontal gap between the two boxes (negative = overlapping)
-                const gapRight = b.position.x - (a.position.x + aDims.w); // b is to the right of a
-                const gapLeft  = a.position.x - (b.position.x + bDims.w); // a is to the right of b
-                const horizGap = Math.min(gapRight, gapLeft);
+                // Compute the gap in whichever horizontal direction is relevant.
+                // gapRight > 0 means b is to the right of a with that much space.
+                // gapLeft  > 0 means a is to the right of b with that much space.
+                // Exactly one of these will be positive when the nodes don't overlap.
+                // We take the MAX so we get the actual gap, not the negative "other side".
+                const gapRight = b.position.x - (a.position.x + aDims.w);
+                const gapLeft  = a.position.x - (b.position.x + bDims.w);
+                const horizGap = Math.max(gapRight, gapLeft);
 
                 // Y-centre distance
                 const aCentreY = a.position.y + aDims.h / 2;
                 const bCentreY = b.position.y + bDims.h / 2;
                 const vertDist = Math.abs(aCentreY - bCentreY);
 
-                // Adjacent = horizontally close (gap within threshold) AND vertically aligned
+                // Adjacent = horizontally close (small positive gap) AND vertically aligned
                 if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
                     adjacent.add(a.id);
                     adjacent.add(b.id);
@@ -431,6 +436,7 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
+        // Always set a new Set instance so Zustand detects the state change
         set({ adjacentNodeIds: new Set(adjacent) });
     },
 }));
