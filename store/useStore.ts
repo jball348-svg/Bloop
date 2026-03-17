@@ -44,7 +44,7 @@ const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
 // Two nodes are "adjacent" if their boxes are within this many px of touching
-const ADJ_TOUCH_THRESHOLD = 32;
+const ADJ_TOUCH_THRESHOLD = 48;
 // Y centres must be within this many px of each other
 const ADJ_Y_THRESHOLD = 100;
 
@@ -431,6 +431,6 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             }
         }
 
-        set({ adjacentNodeIds: adjacent });
+        set({ adjacentNodeIds: new Set(adjacent) });
     },
 }));

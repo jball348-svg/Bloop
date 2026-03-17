@@ -48,9 +48,10 @@ function BloopCanvasInner() {
     const edgeUpdateSuccessful = useRef(true);
 
     // Run adjacency check once on mount for the default nodes
+    const recalculateAdjacency = useStore((state: any) => state.recalculateAdjacency);
     useEffect(() => {
-        useStore.getState().recalculateAdjacency();
-    }, []);
+        recalculateAdjacency();
+    }, [recalculateAdjacency]);
 
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
