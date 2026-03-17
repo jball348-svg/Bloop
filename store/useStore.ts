@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as Tone from 'tone';
+import { Scale } from '@tonaljs/tonal';
 import {
     Connection,
     Edge,
@@ -16,15 +17,9 @@ import {
     updateEdge,
 } from 'reactflow';
 
-export const SCALES = {
-    major: [0, 2, 4, 5, 7, 9, 11],
-    minor: [0, 2, 3, 5, 7, 8, 10],
-    pentatonic: [0, 3, 5, 7, 10]
-};
-
 export const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller';
 
 export type AppNode = Node & {
     data: { 
@@ -32,7 +27,8 @@ export type AppNode = Node & {
         subType?: string; 
         isPlaying?: boolean;
         rootNote?: string;
-        scaleType?: keyof typeof SCALES;
+        scaleType?: string;
+        waveShape?: string;
     };
     type: AudioNodeType;
 };
@@ -49,10 +45,14 @@ type AppState = {
     onEdgeUpdateStart: (event: React.MouseEvent, edge: Edge) => void;
     onEdgeUpdateEnd: (event: MouseEvent | TouchEvent, edge: Edge) => void;
     initAudioNode: (id: string, type: AudioNodeType, subType?: string) => void;
-    changeNodeSubType: (id: string, mainType: 'generator' | 'effect', subType: string) => void;
+    changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
-    updateArpScale: (id: string, root: string, scale: keyof typeof SCALES) => void;
+    updateArpScale: (id: string, root: string, scale: string) => void;
+    triggerNoteOn: (id: string, note: string) => void;
+    triggerNoteOff: (id: string, note: string) => void;
+    fireNoteOn: (controllerId: string, note: string) => void;
+    fireNoteOff: (controllerId: string, note: string) => void;
     toggleNodePlayback: (id: string, isPlaying: boolean) => void;
     addNode: (node: AppNode) => void;
     removeNodeAndCleanUp: (id: string) => void;
@@ -60,18 +60,18 @@ type AppState = {
     initializeDefaultNodes: () => void;
 };
 
-export const useStore = create<AppState>((set, get) => ({
+export const useStore = create<AppState>((set: any, get: any) => ({
     nodes: [
         {
             id: 'node-1',
-            type: 'generator',
-            data: { label: 'Chaos Spark', subType: 'arp' },
+            type: 'controller',
+            data: { label: 'Arp Controller', subType: 'arp' },
             position: { x: 100, y: 200 },
         },
         {
             id: 'node-2',
-            type: 'effect',
-            data: { label: 'Wash Reverb', subType: 'reverb' },
+            type: 'generator',
+            data: { label: 'Oscillator', subType: 'wave', waveShape: 'sine' },
             position: { x: 400, y: 200 },
         },
         {
@@ -99,9 +99,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
     },
 
-    onEdgeUpdateStart: () => {
-        // We could store the old edge here if needed for more complex logic
-    },
+    onEdgeUpdateStart: () => {},
 
     onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => {
         set({
@@ -110,22 +108,12 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
     },
 
-    onEdgeUpdateEnd: (_, edge) => {
-        // Find if this edge still exists in the state
-        const exists = get().edges.find((e) => e.id === edge.id);
-        
-        // If it doesn't exist, it means it was dropped in the void or removed.
-        // But React Flow doesn't automatically remove it if onEdgeUpdate isn't called.
-        // Actually, if we want to support "disconnecting" by dragging into the void, 
-        // we can check if onEdgeUpdate was called. 
-        // For now, let's just make sure it's removed if it wasn't re-connected.
-    },
+    onEdgeUpdateEnd: () => {},
 
     onConnect: (connection: Connection) => {
         set({
             edges: addEdge(connection, get().edges),
         });
-
         get().rebuildAudioGraph();
     },
 
@@ -133,47 +121,23 @@ export const useStore = create<AppState>((set, get) => ({
         const { audioNodes } = get();
         if (audioNodes.has(id)) return;
 
-        let node: Tone.ToneAudioNode;
+        let node: Tone.ToneAudioNode | null = null;
 
         if (type === 'generator') {
             const actualSubType = subType || 'none';
-            if (actualSubType === 'none') {
-                 // Ensure entry exists for 'none' but is essentially silent/unconnected
-                 // or just remove it from the map if it was there
-                 const nextAudioNodes = new Map(audioNodes);
-                 nextAudioNodes.delete(id);
-                 set({ audioNodes: nextAudioNodes });
-                 return;
-            }
-            if (actualSubType === 'arp') {
-                const synth = new Tone.PolySynth();
-                const notes = ['C4', 'Eb4', 'F4', 'G4', 'Bb4'];
-                
-                // Arpeggiator logic
-                const pattern = new Tone.Pattern((time, note) => {
-                    synth.triggerAttackRelease(note, '8n', time);
-                }, notes, 'random');
-                
-                pattern.interval = '8n';
-                
-                const { patterns } = get();
-                const newPatterns = new Map(patterns);
-                newPatterns.set(id, pattern);
-                set({ patterns: newPatterns });
+            // Generators are now PolySynths by default to handle MIDI data
+            const synth = new Tone.PolySynth().toDestination();
+            node = synth;
 
-                node = synth;
-            } else {
-                // 'wave'
-                node = new Tone.Oscillator('C4', 'sine');
+            if (actualSubType === 'wave') {
+                synth.dispose(); // Replace with simple oscillator if purely continuous
+                node = new Tone.Oscillator('C4', 'sine').toDestination();
             }
+        } else if (type === 'controller') {
+            // Controllers don't have audio nodes
+            return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
-            if (actualSubType === 'none') {
-                const nextAudioNodes = new Map(audioNodes);
-                nextAudioNodes.delete(id);
-                set({ audioNodes: nextAudioNodes });
-                return;
-            }
             if (actualSubType === 'reverb') {
                 node = new Tone.Freeverb({ roomSize: 0.5, wet: 0.5 });
             } else if (actualSubType === 'delay') {
@@ -185,80 +149,68 @@ export const useStore = create<AppState>((set, get) => ({
             } else if (actualSubType === 'bitcrusher') {
                 node = new Tone.BitCrusher(4);
             } else {
-                node = new Tone.Volume(0); // Fallback
+                node = new Tone.Volume(0);
             }
-        } else {
-            // Speaker / Master Output
+        } else if (type === 'speaker') {
             node = new Tone.Volume(0).toDestination();
         }
 
-        const newMap = new Map(get().audioNodes);
-        newMap.set(id, node);
-        set({ audioNodes: newMap });
+        if (node) {
+            const newMap = new Map(get().audioNodes);
+            newMap.set(id, node);
+            set({ audioNodes: newMap });
+        }
     },
 
-    changeNodeSubType: (id: string, mainType: 'generator' | 'effect', subType: string) => {
+    changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
         const { audioNodes, patterns, nodes } = get();
-        
-        // 0. Capture state
-        const wasPlaying = nodes.find(n => n.id === id)?.data.isPlaying || false;
+        const wasPlaying = nodes.find((n: AppNode) => n.id === id)?.data.isPlaying || false;
 
-        // 1. Dispose old node
         const oldNode = audioNodes.get(id);
         const oldPattern = patterns.get(id);
         
         if (oldPattern) {
-            oldPattern.stop();
-            oldPattern.dispose();
+            oldPattern.stop().dispose();
             const newPatterns = new Map(patterns);
             newPatterns.delete(id);
             set({ patterns: newPatterns });
         }
         
         if (oldNode) {
-            oldNode.disconnect();
-            oldNode.dispose();
+            oldNode.disconnect().dispose();
             const newAudioNodes = new Map(audioNodes);
             newAudioNodes.delete(id);
             set({ audioNodes: newAudioNodes });
         }
 
-        // 2. Instantiate new node
         get().initAudioNode(id, mainType, subType);
         
-        // 3. Update Node State (subType) immediately so visuals reflect it
         set({
-            nodes: nodes.map((n) => 
+            nodes: nodes.map((n: AppNode) => 
                 n.id === id 
                 ? { ...n, data: { ...n.data, subType, isPlaying: wasPlaying } } 
                 : n
             )
         });
 
-        // 4. Rebuild the graph and re-apply playback
-        const handleRebuildAndPlayback = () => {
+        const handleRebuild = () => {
             get().rebuildAudioGraph();
-            if (wasPlaying) {
-                get().toggleNodePlayback(id, true);
-            }
+            if (wasPlaying) get().toggleNodePlayback(id, true);
         };
 
         const newNode = get().audioNodes.get(id);
         if (newNode instanceof Tone.Reverb) {
-            newNode.ready.then(handleRebuildAndPlayback);
+            newNode.ready.then(handleRebuild);
         } else {
-            handleRebuildAndPlayback();
+            handleRebuild();
         }
     },
 
     removeAudioNode: (id: string) => {
         const { audioNodes, patterns } = get();
-        
-        // Dispose of pattern if it exists
         const pattern = patterns.get(id);
         if (pattern) {
-            pattern.stop();
-            pattern.dispose();
+            pattern.stop().dispose();
             const newPatterns = new Map(patterns);
             newPatterns.delete(id);
             set({ patterns: newPatterns });
@@ -266,8 +218,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         const node = audioNodes.get(id);
         if (node) {
-            node.disconnect();
-            node.dispose();
+            node.disconnect().dispose();
             const newMap = new Map(audioNodes);
             newMap.delete(id);
             set({ audioNodes: newMap });
@@ -278,6 +229,17 @@ export const useStore = create<AppState>((set, get) => ({
         const node = get().audioNodes.get(id);
         if (!node) return;
 
+        // WaveShape logic
+        if (value.waveShape) {
+            if (node instanceof Tone.Oscillator) {
+                node.set({ type: value.waveShape });
+            } else if (node instanceof Tone.PolySynth) {
+                node.set({ oscillator: { type: value.waveShape } });
+            }
+            const nodes = get().nodes.map((n: AppNode) => n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n);
+            set({ nodes });
+        }
+
         if ('wet' in node && typeof value.wet === 'number') {
             (node as any).wet.rampTo(value.wet, 0.1);
         }
@@ -286,20 +248,12 @@ export const useStore = create<AppState>((set, get) => ({
             if (value.volume === 0 || value.mute) {
                 node.volume.rampTo(-Infinity, 0.1);
             } else {
-                // Map 1-100 to -30dB to +6dB
                 const db = ((value.volume - 1) / 99) * 36 - 30;
                 node.volume.rampTo(db, 0.1);
             }
         }
 
-        if ('wet' in node && typeof value.bypass === 'boolean') {
-            const wetValue = value.bypass ? 0 : (value.wet ?? 0.5);
-            (node as any).wet.rampTo(wetValue, 0.1);
-        }
-
-        // New mappings for advanced sliders
         if (node instanceof Tone.Freeverb && typeof value.roomSize === 'number') {
-            // roomSize on Freeverb is not a signal-rate param and cannot be ramped
             node.roomSize.value = value.roomSize;
         }
 
@@ -324,124 +278,97 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
-    updateArpScale: (id, root, scale) => {
-        const { patterns, nodes } = get();
-        const pattern = patterns.get(id);
-        if (!pattern) return;
-
-        // Calculate notes for Octave 4
-        const intervals = SCALES[scale];
-        const rootIndex = ROOT_NOTES.indexOf(root);
-        const newNotes = intervals.map(interval => {
-            const noteIndex = (rootIndex + interval) % 12;
-            const octaveShift = Math.floor((rootIndex + interval) / 12);
-            const noteName = ROOT_NOTES[noteIndex];
-            return `${noteName}${4 + octaveShift}`;
-        });
-
-        pattern.values = newNotes;
-
-        // Update node data
+    updateArpScale: (id: string, root: string, scale: string) => {
+        const { nodes } = get();
         set({
-            nodes: nodes.map(n => n.id === id ? {
+            nodes: nodes.map((n: AppNode) => n.id === id ? {
                 ...n,
                 data: { ...n.data, rootNote: root, scaleType: scale }
             } : n)
         });
     },
 
-    toggleNodePlayback: (id, isPlaying) => {
-        const { patterns, audioNodes, nodes } = get();
-        const pattern = patterns.get(id);
-        const node = audioNodes.get(id);
+    triggerNoteOn: (id: string, note: string) => {
+        const node = get().audioNodes.get(id);
+        if (node instanceof Tone.PolySynth) node.triggerAttack(note);
+    },
 
-        if (pattern) {
-            if (isPlaying) {
-                pattern.start(0);
-            } else {
-                pattern.stop();
-            }
-        } else if (node instanceof Tone.Oscillator) {
-            if (isPlaying) {
-                node.start();
-            } else {
-                node.stop();
-            }
-        }
+    triggerNoteOff: (id: string, note: string) => {
+        const node = get().audioNodes.get(id);
+        if (node instanceof Tone.PolySynth) node.triggerRelease(note);
+    },
 
-        // Update store state
-        set({
-            nodes: nodes.map((n) =>
-                n.id === id
-                    ? { ...n, data: { ...n.data, isPlaying } }
-                    : n
-            )
+    fireNoteOn: (controllerId: string, note: string) => {
+        const { edges, audioNodes } = get();
+        edges.filter(e => e.source === controllerId).forEach(edge => {
+            const targetNode = audioNodes.get(edge.target);
+            if (targetNode instanceof Tone.PolySynth) targetNode.triggerAttack(note);
         });
     },
 
-    addNode: (node) => {
-        set((state) => ({ nodes: [...state.nodes, node] }));
-        // Automatically initialize audio if it has a subtype
+    fireNoteOff: (controllerId: string, note: string) => {
+        const { edges, audioNodes } = get();
+        edges.filter(e => e.source === controllerId).forEach(edge => {
+            const targetNode = audioNodes.get(edge.target);
+            if (targetNode instanceof Tone.PolySynth) targetNode.triggerRelease(note);
+        });
+    },
+
+    toggleNodePlayback: (id, isPlaying) => {
+        const { audioNodes, nodes } = get();
+        const node = audioNodes.get(id);
+        if (node instanceof Tone.Oscillator) {
+            isPlaying ? node.start() : node.stop();
+        }
+        set({
+            nodes: nodes.map((n: AppNode) => n.id === id ? { ...n, data: { ...n.data, isPlaying } } : n)
+        });
+    },
+
+    addNode: (node: AppNode) => {
+        set((state: AppState) => ({ nodes: [...state.nodes, node] }));
         if (node.data.subType && node.data.subType !== 'none') {
-             get().initAudioNode(node.id, node.type as any, node.data.subType);
+            get().initAudioNode(node.id, node.type, node.data.subType);
         } else if (node.type === 'speaker') {
-             get().initAudioNode(node.id, 'speaker');
+            get().initAudioNode(node.id, 'speaker');
         }
     },
 
-    removeNodeAndCleanUp: (id) => {
-        const { removeAudioNode, nodes, edges } = get();
-        
-        // 1. Kill the audio
-        removeAudioNode(id);
-        
-        // 2. Remove the node
-        const nextNodes = nodes.filter((node) => node.id !== id);
-        
-        // 3. Remove connected edges
-        const nextEdges = edges.filter((edge) => edge.source !== id && edge.target !== id);
-        
-        set({ nodes: nextNodes, edges: nextEdges });
+    removeNodeAndCleanUp: (id: string) => {
+        const { nodes, edges } = get();
+        get().removeAudioNode(id);
+        set({
+            nodes: nodes.filter(n => n.id !== id),
+            edges: edges.filter(e => e.source !== id && e.target !== id)
+        });
         get().rebuildAudioGraph();
     },
 
     rebuildAudioGraph: () => {
         const { audioNodes, edges, nodes } = get();
-
-        // 1. Unplug Everything
-        audioNodes.forEach((node) => {
-            node.disconnect();
-        });
-
-        // 2. Re-plug Based on Visuals
-        edges.forEach((edge) => {
+        audioNodes.forEach(node => node.disconnect());
+        edges.forEach(edge => {
+            const sourceInfo = nodes.find(n => n.id === edge.source);
+            if (sourceInfo?.type === 'controller') return;
             const sourceNode = audioNodes.get(edge.source);
             const targetNode = audioNodes.get(edge.target);
-
-            if (sourceNode && targetNode) {
-                sourceNode.connect(targetNode);
-            }
+            if (sourceNode && targetNode) sourceNode.connect(targetNode);
         });
-
-        // 3. Ensure Speaker nodes are connected to Destination
-        // Because node.disconnect() wipes EVERYTHING, including .toDestination()
-        nodes.forEach((node) => {
+        nodes.forEach(node => {
             if (node.type === 'speaker') {
                 const audioNode = audioNodes.get(node.id);
-                if (audioNode) {
-                    audioNode.toDestination();
-                }
+                if (audioNode) audioNode.toDestination();
             }
         });
     },
 
     initializeDefaultNodes: () => {
-        const { nodes, initAudioNode } = get();
-        nodes.forEach((node) => {
+        const { nodes } = get();
+        nodes.forEach(node => {
             if (node.data.subType && node.data.subType !== 'none') {
-                initAudioNode(node.id, node.type as any, node.data.subType);
+                get().initAudioNode(node.id, node.type, node.data.subType);
             } else if (node.type === 'speaker') {
-                initAudioNode(node.id, 'speaker');
+                get().initAudioNode(node.id, 'speaker');
             }
         });
         get().rebuildAudioGraph();

@@ -11,6 +11,7 @@ import ReactFlow, {
 } from 'reactflow';
 import { useStore, AudioNodeType } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
+import ControllerNode from '@/components/ControllerNode';
 import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import EngineControl from '@/components/EngineControl';
@@ -34,6 +35,7 @@ function BloopCanvasInner() {
     // Register our custom node types
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
+        controller: ControllerNode,
         effect: EffectNode,
         speaker: SpeakerNode,
     }), []);

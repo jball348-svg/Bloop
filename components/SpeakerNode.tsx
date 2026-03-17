@@ -77,7 +77,7 @@ export default function SpeakerNode({ id }: { id: string }) {
             <Handle
                 type="target"
                 position={Position.Top}
-                className="w-4 h-4 bg-fuchsia-500 border-4 border-slate-900 !-top-2 hover:scale-125 transition-transform"
+                className="w-4 h-4 bg-emerald-500 border-4 border-slate-900 !-top-2 hover:scale-125 transition-transform"
             />
         </div>
     );
