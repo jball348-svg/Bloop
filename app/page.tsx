@@ -53,7 +53,6 @@ function BloopCanvasInner() {
         addNode,
         removeNodeAndCleanUp,
     } = useStore();
-    const isDraggingTempoConnection = useStore((state) => state.isDraggingTempoConnection);
     const setTempoConnectionDragState = useStore((state) => state.setTempoConnectionDragState);
     const validateConnection = useStore((state) => state.isValidConnection);
 
@@ -229,12 +228,7 @@ function BloopCanvasInner() {
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={defaultEdgeOptions}
                 isValidConnection={(connection: Connection) => validateConnection(connection)}
-                connectionLineStyle={{
-                    stroke: isDraggingTempoConnection ? '#818cf8' : '#475569',
-                    strokeWidth: 2.5,
-                    strokeDasharray: isDraggingTempoConnection ? '0' : '5 5',
-                    filter: isDraggingTempoConnection ? 'drop-shadow(0 0 6px rgba(129,140,248,0.85))' : undefined,
-                }}
+                connectionLineStyle={{ stroke: '#475569', strokeWidth: 2, strokeDasharray: '5 5' }}
                 fitView
                 className="bg-slate-950"
                 edgesUpdatable={true}

@@ -200,24 +200,14 @@ const getConnectionKind = (
     return 'audio';
 };
 
-const getEdgePresentation = (kind: ConnectionKind) =>
-    kind === 'tempo'
-        ? {
-            style: {
-                stroke: '#818cf8',
-                strokeWidth: 2.5,
-                filter: 'drop-shadow(0 0 6px rgba(129,140,248,0.85))',
-            },
-            data: { kind },
-        }
-        : {
-            style: {
-                stroke: '#22d3ee',
-                strokeWidth: 2.5,
-                filter: 'drop-shadow(0 0 6px #22d3ee)',
-            },
-            data: { kind },
-        };
+const getEdgePresentation = (kind: ConnectionKind) => ({
+    style: {
+        stroke: '#22d3ee',
+        strokeWidth: 2.5,
+        filter: 'drop-shadow(0 0 6px #22d3ee)',
+    },
+    data: { kind },
+});
 
 type AppState = {
     nodes: AppNode[];

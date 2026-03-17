@@ -69,12 +69,6 @@ export default function TempoNode({ id }: { id: string }) {
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const nextValue = event.target.value.replace(/[^\d]/g, '');
         setInputValue(nextValue);
-
-        if (nextValue === '') {
-            return;
-        }
-
-        commitTempo(Number(nextValue));
     };
 
     const handleInputBlur = () => {
@@ -86,10 +80,21 @@ export default function TempoNode({ id }: { id: string }) {
         commitTempo(Number(inputValue));
     };
 
+    const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            event.currentTarget.blur();
+        }
+
+        if (event.key === 'Escape') {
+            setInputValue(String(bpm));
+            event.currentTarget.blur();
+        }
+    };
+
     return (
-        <div className="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-5 shadow-2xl text-white w-64 min-h-[180px] flex flex-col transition-all hover:shadow-indigo-500/20 group relative overflow-hidden">
+        <div className="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-5 shadow-2xl text-white w-64 min-h-[180px] flex flex-col transition-all hover:shadow-indigo-500/20 group relative">
             <div
-                className="absolute inset-0 opacity-[0.05] pointer-events-none"
+                className="absolute inset-0 rounded-2xl overflow-hidden opacity-[0.05] pointer-events-none"
                 style={{
                     backgroundImage: 'repeating-linear-gradient(135deg, #818cf8 0, #818cf8 1px, transparent 1px, transparent 16px)',
                 }}
@@ -102,9 +107,6 @@ export default function TempoNode({ id }: { id: string }) {
                             Tempo - BPM
                         </span>
                         <span className="text-4xl font-black text-white tracking-tight">{bpm}</span>
-                        <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                            Transport Master
-                        </span>
                     </div>
 
                     <div className="flex flex-col items-center gap-2">
@@ -144,12 +146,13 @@ export default function TempoNode({ id }: { id: string }) {
                                 BPM
                             </label>
                             <input
-                                type="number"
-                                min={MIN_TEMPO_BPM}
-                                max={MAX_TEMPO_BPM}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={inputValue}
                                 onChange={handleInputChange}
                                 onBlur={handleInputBlur}
+                                onKeyDown={handleInputKeyDown}
                                 className="nodrag w-20 rounded-lg border border-indigo-500/30 bg-slate-800 px-2 py-1 text-right text-sm font-bold text-indigo-300 outline-none transition-colors focus:border-indigo-400"
                             />
                         </div>
@@ -168,26 +171,21 @@ export default function TempoNode({ id }: { id: string }) {
                     </div>
                 </div>
 
-                <div className={`mt-4 flex items-center gap-1.5 text-indigo-400 ${hasTempoTargets ? 'opacity-90' : 'opacity-45'}`}>
-                    <div className="flex-1 h-px bg-current" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest">
-                        {hasTempoTargets ? 'tempo routed' : 'not connected'}
-                    </span>
-                    <div className="flex-1 h-px bg-current" />
-                </div>
+                {!hasTempoTargets && (
+                    <div className="mt-4 flex items-center gap-1.5 text-indigo-400 opacity-45">
+                        <div className="flex-1 h-px bg-current" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">not connected</span>
+                        <div className="flex-1 h-px bg-current" />
+                    </div>
+                )}
             </div>
-
-            <div
-                className="absolute left-0 bottom-[18px] h-4 w-3 bg-slate-900 z-10"
-                aria-hidden="true"
-            />
 
             <Handle
                 type="source"
                 id={TEMPO_OUTPUT_HANDLE_ID}
-                position={Position.Left}
-                style={{ left: -8, bottom: 18, top: 'auto' }}
-                className="w-4 h-4 border-4 border-slate-900 bg-indigo-500 shadow-[0_0_12px_rgba(129,140,248,0.85)] transition-all hover:scale-125"
+                position={Position.Bottom}
+                style={{ left: 20 }}
+                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 bg-indigo-500 shadow-[0_0_12px_rgba(129,140,248,0.85)] transition-all hover:scale-125"
             />
         </div>
     );
