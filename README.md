@@ -59,4 +59,4 @@ Bloop is a high-performance, visually stunning modular audio synthesizer built w
 
 ---
 
-Built with ❤️ by the Bloop Team.
+Built with dedication by the Bloop Team.
