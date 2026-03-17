@@ -19,7 +19,7 @@ import {
 export type AudioNodeType = 'generator' | 'effect' | 'speaker';
 
 export type AppNode = Node & {
-    data: { label: string };
+    data: { label: string; subType?: string; isPlaying?: boolean };
     type: AudioNodeType;
 };
 
@@ -34,12 +34,14 @@ type AppState = {
     onEdgeUpdate: OnEdgeUpdateFunc;
     onEdgeUpdateStart: (event: React.MouseEvent, edge: Edge) => void;
     onEdgeUpdateEnd: (event: MouseEvent | TouchEvent, edge: Edge) => void;
-    initAudioNode: (id: string, type: AudioNodeType) => void;
+    initAudioNode: (id: string, type: AudioNodeType, subType?: string) => void;
+    changeNodeSubType: (id: string, mainType: 'generator' | 'effect', subType: string) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
     toggleNodePlayback: (id: string, isPlaying: boolean) => void;
     addNode: (node: AppNode) => void;
     removeNodeAndCleanUp: (id: string) => void;
+    rebuildAudioGraph: () => void;
 };
 
 export const useStore = create<AppState>((set, get) => ({
@@ -47,13 +49,13 @@ export const useStore = create<AppState>((set, get) => ({
         {
             id: 'node-1',
             type: 'generator',
-            data: { label: 'Chaos Spark' },
+            data: { label: 'Chaos Spark', subType: 'arp' },
             position: { x: 100, y: 200 },
         },
         {
             id: 'node-2',
             type: 'effect',
-            data: { label: 'Wash Reverb' },
+            data: { label: 'Wash Reverb', subType: 'reverb' },
             position: { x: 400, y: 200 },
         },
         {
@@ -91,7 +93,9 @@ export const useStore = create<AppState>((set, get) => ({
             }
         });
 
+
         set({ edges: nextEdges });
+        get().rebuildAudioGraph();
     },
 
     onEdgeUpdateStart: () => {
@@ -134,41 +138,48 @@ export const useStore = create<AppState>((set, get) => ({
             edges: addEdge(connection, get().edges),
         });
 
-        const sourceAudio = get().audioNodes.get(connection.source || '');
-        const targetAudio = get().audioNodes.get(connection.target || '');
-
-        if (sourceAudio && targetAudio) {
-            sourceAudio.connect(targetAudio);
-        }
+        get().rebuildAudioGraph();
     },
 
-    initAudioNode: (id: string, type: AudioNodeType) => {
+    initAudioNode: (id: string, type: AudioNodeType, subType?: string) => {
         const { audioNodes } = get();
         if (audioNodes.has(id)) return;
 
         let node: Tone.ToneAudioNode;
 
         if (type === 'generator') {
-            const synth = new Tone.PolySynth();
-            const notes = ['C4', 'Eb4', 'F4', 'G4', 'Bb4'];
-            
-            // Arpeggiator logic
-            const pattern = new Tone.Pattern((time, note) => {
-                synth.triggerAttackRelease(note, '8n', time);
-            }, notes, 'random');
-            
-            pattern.interval = '8n';
-            // Start screen handles Transport.start()
-            // patterns should start stopped
-            
-            const { patterns } = get();
-            const newPatterns = new Map(patterns);
-            newPatterns.set(id, pattern);
-            set({ patterns: newPatterns });
+            const actualSubType = subType || 'none';
+            if (actualSubType === 'none') return;
+            if (actualSubType === 'arp') {
+                const synth = new Tone.PolySynth();
+                const notes = ['C4', 'Eb4', 'F4', 'G4', 'Bb4'];
+                
+                // Arpeggiator logic
+                const pattern = new Tone.Pattern((time, note) => {
+                    synth.triggerAttackRelease(note, '8n', time);
+                }, notes, 'random');
+                
+                pattern.interval = '8n';
+                
+                const { patterns } = get();
+                const newPatterns = new Map(patterns);
+                newPatterns.set(id, pattern);
+                set({ patterns: newPatterns });
 
-            node = synth;
+                node = synth;
+            } else {
+                // 'wave'
+                node = new Tone.Oscillator('C4', 'sine');
+            }
         } else if (type === 'effect') {
-            node = new Tone.Reverb({ decay: 4, wet: 0.5 });
+            const actualSubType = subType || 'none';
+            if (actualSubType === 'none') return;
+            if (actualSubType === 'reverb') {
+                node = new Tone.Reverb({ decay: 4, wet: 0.5 });
+            } else {
+                // 'delay'
+                node = new Tone.FeedbackDelay('8n', 0.5);
+            }
         } else {
             // Speaker / Master Output
             node = new Tone.Volume(0).toDestination();
@@ -177,6 +188,50 @@ export const useStore = create<AppState>((set, get) => ({
         const newMap = new Map(audioNodes);
         newMap.set(id, node);
         set({ audioNodes: newMap });
+    },
+
+    changeNodeSubType: (id: string, mainType: 'generator' | 'effect', subType: string) => {
+        const { audioNodes, patterns, edges, nodes } = get();
+        
+        // 1. Dispose old node
+        const oldNode = audioNodes.get(id);
+        const oldPattern = patterns.get(id);
+        
+        if (oldPattern) {
+            oldPattern.stop();
+            oldPattern.dispose();
+            const newPatterns = new Map(patterns);
+            newPatterns.delete(id);
+            set({ patterns: newPatterns });
+        }
+        
+        if (oldNode) {
+            oldNode.disconnect();
+            oldNode.dispose();
+            const newAudioNodes = new Map(audioNodes);
+            newAudioNodes.delete(id);
+            set({ audioNodes: newAudioNodes });
+        }
+
+        // 2. Instantiate new node
+        get().initAudioNode(id, mainType, subType);
+        
+        // 3. Rebuild the graph (replaces surgical reconnection)
+        const newNode = get().audioNodes.get(id);
+        if (newNode instanceof Tone.Reverb) {
+            newNode.ready.then(() => get().rebuildAudioGraph());
+        } else {
+            get().rebuildAudioGraph();
+        }
+
+        // 4. Update Node State (subType)
+        set({
+            nodes: nodes.map((n) => 
+                n.id === id 
+                ? { ...n, data: { ...n.data, subType, isPlaying: false } } 
+                : n
+            )
+        });
     },
 
     removeAudioNode: (id: string) => {
@@ -207,7 +262,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (!node) return;
 
         if ('wet' in node && typeof value.wet === 'number') {
-            (node as Tone.Reverb).wet.value = value.wet;
+            (node as any).wet.value = value.wet;
         }
 
         if (node instanceof Tone.Volume && typeof value.volume === 'number') {
@@ -220,23 +275,38 @@ export const useStore = create<AppState>((set, get) => ({
             }
         }
 
-        if (node instanceof Tone.Reverb && typeof value.bypass === 'boolean') {
-            // Bypass sets wet to 0. When unbypassed, it should use the last set mix value.
-            // Since we don't store the mix in the audio node itself easily, 
-            // we'll rely on the component sending the correct mix value when unbypassing.
-            node.wet.value = value.bypass ? 0 : (value.wet ?? 0.5);
+        if ('wet' in node && typeof value.bypass === 'boolean') {
+            (node as any).wet.value = value.bypass ? 0 : (value.wet ?? 0.5);
         }
     },
 
     toggleNodePlayback: (id, isPlaying) => {
-        const pattern = get().patterns.get(id);
+        const { patterns, audioNodes, nodes } = get();
+        const pattern = patterns.get(id);
+        const node = audioNodes.get(id);
+
         if (pattern) {
             if (isPlaying) {
                 pattern.start(0);
             } else {
                 pattern.stop();
             }
+        } else if (node instanceof Tone.Oscillator) {
+            if (isPlaying) {
+                node.start();
+            } else {
+                node.stop();
+            }
         }
+
+        // Update store state
+        set({
+            nodes: nodes.map((n) =>
+                n.id === id
+                    ? { ...n, data: { ...n.data, isPlaying } }
+                    : n
+            )
+        });
     },
 
     addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
@@ -254,5 +324,25 @@ export const useStore = create<AppState>((set, get) => ({
         const nextEdges = edges.filter((edge) => edge.source !== id && edge.target !== id);
         
         set({ nodes: nextNodes, edges: nextEdges });
+        get().rebuildAudioGraph();
+    },
+
+    rebuildAudioGraph: () => {
+        const { audioNodes, edges } = get();
+
+        // 1. Unplug Everything
+        audioNodes.forEach((node) => {
+            node.disconnect();
+        });
+
+        // 2. Re-plug Based on Visuals
+        edges.forEach((edge) => {
+            const sourceNode = audioNodes.get(edge.source);
+            const targetNode = audioNodes.get(edge.target);
+
+            if (sourceNode && targetNode) {
+                sourceNode.connect(targetNode);
+            }
+        });
     },
 }));

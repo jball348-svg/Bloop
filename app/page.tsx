@@ -83,7 +83,7 @@ function BloopCanvasInner() {
                 id: crypto.randomUUID(),
                 type,
                 position,
-                data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)}` },
+                data: { label: '', subType: 'none', isPlaying: false },
             };
 
             addNode(newNode);
