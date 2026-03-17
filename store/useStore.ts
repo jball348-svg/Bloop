@@ -14,7 +14,7 @@ import {
     applyEdgeChanges,
 } from 'reactflow';
 
-export type AudioNodeType = 'generator' | 'effect';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker';
 
 export type AppNode = Node & {
     data: { label: string };
@@ -40,13 +40,19 @@ export const useStore = create<AppState>((set, get) => ({
             id: 'node-1',
             type: 'generator',
             data: { label: 'Chaos Spark' },
-            position: { x: 250, y: 150 },
+            position: { x: 100, y: 200 },
         },
         {
             id: 'node-2',
             type: 'effect',
             data: { label: 'Wash Reverb' },
-            position: { x: 500, y: 300 },
+            position: { x: 400, y: 200 },
+        },
+        {
+            id: 'node-3',
+            type: 'speaker',
+            data: { label: 'Master Out' },
+            position: { x: 700, y: 200 },
         },
     ],
     edges: [],
@@ -92,7 +98,6 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (sourceAudio && targetAudio) {
             sourceAudio.connect(targetAudio);
-            targetAudio.toDestination();
         }
     },
 
@@ -103,7 +108,7 @@ export const useStore = create<AppState>((set, get) => ({
         let node: Tone.ToneAudioNode;
 
         if (type === 'generator') {
-            const synth = new Tone.PolySynth().toDestination();
+            const synth = new Tone.PolySynth();
             const notes = ['C4', 'Eb4', 'F4', 'G4', 'Bb4'];
             
             // Arpeggiator logic
@@ -120,8 +125,11 @@ export const useStore = create<AppState>((set, get) => ({
             set({ patterns: newPatterns });
 
             node = synth;
+        } else if (type === 'effect') {
+            node = new Tone.Reverb({ decay: 4, wet: 0.5 });
         } else {
-            node = new Tone.Reverb({ decay: 4, wet: 0.5 }).toDestination();
+            // Speaker / Master Output
+            node = new Tone.Volume(0).toDestination();
         }
 
         const newMap = new Map(audioNodes);
@@ -154,8 +162,17 @@ export const useStore = create<AppState>((set, get) => ({
 
     updateNodeValue: (id, value) => {
         const node = get().audioNodes.get(id);
-        if (node && 'wet' in node && typeof value.wet === 'number') {
+        if (!node) return;
+
+        if ('wet' in node && typeof value.wet === 'number') {
             (node as Tone.Reverb).wet.value = value.wet;
+        }
+
+        if (node instanceof Tone.Volume && typeof value.volume === 'number') {
+            // Map 0-100 to -60dB to +6dB
+            // 0 -> -60dB, 100 -> +6dB
+            const db = (value.volume / 100) * 66 - 60;
+            node.volume.value = db;
         }
     },
 }));

@@ -46,7 +46,7 @@ export default function EffectNode({ id }: { id: string }) {
                     max="100"
                     value={mix}
                     onChange={handleMixChange}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                    className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
                 />
             </div>
 
