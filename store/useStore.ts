@@ -84,6 +84,7 @@ type AppState = {
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
     updateArpScale: (id: string, root: string, scale: string) => void;
+    updateOctave: (id: string, octave: number) => void;
     triggerNoteOn: (id: string, note: string) => void;
     triggerNoteOff: (id: string, note: string) => void;
     fireNoteOn: (controllerId: string, note: string) => void;
@@ -103,27 +104,40 @@ export const useStore = create<AppState>((set: any, get: any) => ({
             id: 'node-1',
             type: 'controller',
             data: { label: 'Arp Controller', subType: 'arp' },
-            position: { x: 100, y: 200 },
+            position: { x: 60, y: 200 },
         },
         {
             id: 'node-2',
             type: 'generator',
             data: { label: 'Oscillator', subType: 'wave', waveShape: 'sine' },
-            position: { x: 400, y: 200 },
+            position: { x: 348, y: 200 },
         },
         {
             id: 'node-3',
             type: 'speaker',
             data: { label: 'Master Out' },
-            position: { x: 700, y: 200 },
+            position: { x: 572, y: 200 },
         },
     ],
-    edges: [],
+    edges: [
+        {
+            id: 'auto-node-1-node-2',
+            source: 'node-1',
+            target: 'node-2',
+            style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+        },
+        {
+            id: 'auto-node-2-node-3',
+            source: 'node-2',
+            target: 'node-3',
+            style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+        },
+    ],
     audioNodes: new Map(),
     patterns: new Map(),
     activeGenerators: new Set(),
     adjacentNodeIds: new Set(),
-    autoEdgeIds: new Set(),
+    autoEdgeIds: new Set(['auto-node-1-node-2', 'auto-node-2-node-3']),
 
     onNodesChange: (changes: NodeChange[]) => {
         set({
@@ -308,6 +322,15 @@ export const useStore = create<AppState>((set: any, get: any) => ({
                 ...n,
                 data: { ...n.data, rootNote: root, scaleType: scale }
             } : n)
+        });
+    },
+
+    updateOctave: (id: string, octave: number) => {
+        const { nodes } = get();
+        set({
+            nodes: nodes.map((n: AppNode) =>
+                n.id === id ? { ...n, data: { ...n.data, octave } } : n
+            )
         });
     },
 

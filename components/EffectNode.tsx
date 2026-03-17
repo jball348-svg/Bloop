@@ -7,6 +7,10 @@ export default function EffectNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const subType = useStore((state) => state.nodes.find(n => n.id === id)?.data.subType || 'none');
     const isAdjacent = useStore((state: any) => state.adjacentNodeIds.has(id));
+    const isUnconnected = useStore((state: any) => {
+        const edges = state.edges;
+        return !edges.some((e: any) => e.source === id || e.target === id);
+    });
 
     const [mix, setMix] = useState(50);
     const [depth, setDepth] = useState(50);
@@ -51,131 +55,143 @@ export default function EffectNode({ id }: { id: string }) {
                 </div>
             )}
 
-            <div className="relative z-10 flex-1 flex flex-col justify-between">
-                <div className={`flex justify-between items-center ${subType === 'none' ? 'h-full' : 'mb-6'}`}>
-                    <select
-                        value={subType}
-                        onChange={handleSubTypeChange}
-                        className="nodrag w-full bg-fuchsia-500/10 text-[10px] font-black uppercase text-fuchsia-400 tracking-[0.2em] border-none outline-none cursor-pointer hover:bg-fuchsia-500/20 rounded px-1 py-1 truncate"
-                    >
-                        {subType === 'none' && (
-                            <option value="none" className="bg-slate-900 text-slate-500 italic">Select Effect...</option>
-                        )}
-                        <option value="reverb" className="bg-slate-900 text-fuchsia-400">Wash Reverb</option>
-                        <option value="delay" className="bg-slate-900 text-fuchsia-400">Ping-Pong Delay</option>
-                        <option value="distortion" className="bg-slate-900 text-fuchsia-400">Heat Distortion</option>
-                        <option value="phaser" className="bg-slate-900 text-fuchsia-400">Cosmic Phaser</option>
-                        <option value="bitcrusher" className="bg-slate-900 text-fuchsia-400">Digital Crusher</option>
-                    </select>
+            <div className="relative z-10 flex flex-1 flex-col">
+                <div className="flex flex-1 flex-col justify-between">
+                    <div className={`flex justify-between items-center ${subType === 'none' ? 'h-full' : 'mb-6'}`}>
+                        <select
+                            value={subType}
+                            onChange={handleSubTypeChange}
+                            className="nodrag w-full bg-fuchsia-500/10 text-[10px] font-black uppercase text-fuchsia-400 tracking-[0.2em] border-none outline-none cursor-pointer hover:bg-fuchsia-500/20 rounded px-1 py-1 truncate"
+                        >
+                            {subType === 'none' && (
+                                <option value="none" className="bg-slate-900 text-slate-500 italic">Select Effect...</option>
+                            )}
+                            <option value="reverb" className="bg-slate-900 text-fuchsia-400">Wash Reverb</option>
+                            <option value="delay" className="bg-slate-900 text-fuchsia-400">Ping-Pong Delay</option>
+                            <option value="distortion" className="bg-slate-900 text-fuchsia-400">Heat Distortion</option>
+                            <option value="phaser" className="bg-slate-900 text-fuchsia-400">Cosmic Phaser</option>
+                            <option value="bitcrusher" className="bg-slate-900 text-fuchsia-400">Digital Crusher</option>
+                        </select>
+                    </div>
+
+                    {subType !== 'none' && (
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-end">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mix</label>
+                                        <button
+                                            onClick={() => {
+                                                const next = !isBypassed;
+                                                setIsBypassed(next);
+                                                updateNodeValue(id, { wet: next ? 0 : mix / 100 });
+                                            }}
+                                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded transition-colors ${
+                                                isBypassed
+                                                    ? 'bg-fuchsia-500 text-white'
+                                                    : 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30'
+                                            }`}
+                                        >
+                                            {isBypassed ? 'BYPASSED' : 'BYPASS'}
+                                        </button>
+                                    </div>
+                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{isBypassed ? 0 : mix}%</span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="100" value={mix}
+                                    onChange={handleMixChange}
+                                    disabled={isBypassed}
+                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                            </div>
+
+                            {subType === 'reverb' && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-end">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Depth</label>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={depth}
+                                        onChange={handleDepthChange}
+                                        className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                    />
+                                </div>
+                            )}
+
+                            {subType === 'delay' && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-end">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</label>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 0.9).toFixed(2)}s</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={time}
+                                        onChange={handleTimeChange}
+                                        className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                    />
+                                </div>
+                            )}
+
+                            {subType === 'distortion' && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-end">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Drive</label>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={depth}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            setDepth(val);
+                                            updateNodeValue(id, { distortion: val / 100 });
+                                        }}
+                                        className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                    />
+                                </div>
+                            )}
+
+                            {subType === 'phaser' && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-end">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speed</label>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 19.9).toFixed(1)}Hz</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={time}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            setTime(val);
+                                            updateNodeValue(id, { frequency: 0.1 + (val / 100) * 19.9 });
+                                        }}
+                                        className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                    />
+                                </div>
+                            )}
+
+                            {subType === 'bitcrusher' && (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-end">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bits</label>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{Math.round(1 + (depth / 100) * 7)}</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" value={depth}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            setDepth(val);
+                                            updateNodeValue(id, { bits: Math.round(1 + (val / 100) * 7) });
+                                        }}
+                                        className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {subType !== 'none' && (
-                    <div className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-end">
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mix</label>
-                                    <button
-                                        onClick={() => {
-                                            const next = !isBypassed;
-                                            setIsBypassed(next);
-                                            updateNodeValue(id, { wet: next ? 0 : mix / 100 });
-                                        }}
-                                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded transition-colors ${
-                                            isBypassed
-                                                ? 'bg-fuchsia-500 text-white'
-                                                : 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30'
-                                        }`}
-                                    >
-                                        {isBypassed ? 'BYPASSED' : 'BYPASS'}
-                                    </button>
-                                </div>
-                                <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{isBypassed ? 0 : mix}%</span>
-                            </div>
-                            <input
-                                type="range" min="0" max="100" value={mix}
-                                onChange={handleMixChange}
-                                disabled={isBypassed}
-                                className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
-                        </div>
-
-                        {subType === 'reverb' && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-end">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Depth</label>
-                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
-                                </div>
-                                <input type="range" min="0" max="100" value={depth}
-                                    onChange={handleDepthChange}
-                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
-                                />
-                            </div>
-                        )}
-
-                        {subType === 'delay' && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-end">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</label>
-                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 0.9).toFixed(2)}s</span>
-                                </div>
-                                <input type="range" min="0" max="100" value={time}
-                                    onChange={handleTimeChange}
-                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
-                                />
-                            </div>
-                        )}
-
-                        {subType === 'distortion' && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-end">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Drive</label>
-                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
-                                </div>
-                                <input type="range" min="0" max="100" value={depth}
-                                    onChange={(e) => {
-                                        const val = parseFloat(e.target.value);
-                                        setDepth(val);
-                                        updateNodeValue(id, { distortion: val / 100 });
-                                    }}
-                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
-                                />
-                            </div>
-                        )}
-
-                        {subType === 'phaser' && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-end">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speed</label>
-                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 19.9).toFixed(1)}Hz</span>
-                                </div>
-                                <input type="range" min="0" max="100" value={time}
-                                    onChange={(e) => {
-                                        const val = parseFloat(e.target.value);
-                                        setTime(val);
-                                        updateNodeValue(id, { frequency: 0.1 + (val / 100) * 19.9 });
-                                    }}
-                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
-                                />
-                            </div>
-                        )}
-
-                        {subType === 'bitcrusher' && (
-                            <div className="flex flex-col gap-2">
-                                <div className="flex justify-between items-end">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bits</label>
-                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{Math.round(1 + (depth / 100) * 7)}</span>
-                                </div>
-                                <input type="range" min="0" max="100" value={depth}
-                                    onChange={(e) => {
-                                        const val = parseFloat(e.target.value);
-                                        setDepth(val);
-                                        updateNodeValue(id, { bits: Math.round(1 + (val / 100) * 7) });
-                                    }}
-                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
-                                />
-                            </div>
-                        )}
+                {isUnconnected && (
+                    <div className="mt-3 flex items-center gap-1.5 opacity-40 text-fuchsia-500">
+                        <div className="flex-1 h-px bg-current" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">
+                            not connected
+                        </span>
+                        <div className="flex-1 h-px bg-current" />
                     </div>
                 )}
             </div>

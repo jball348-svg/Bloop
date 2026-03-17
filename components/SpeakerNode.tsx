@@ -5,6 +5,10 @@ import { useStore } from '@/store/useStore';
 export default function SpeakerNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const isAdjacent = useStore((state: any) => state.adjacentNodeIds.has(id));
+    const isUnconnected = useStore((state: any) => {
+        const edges = state.edges;
+        return !edges.some((e: any) => e.source === id || e.target === id);
+    });
 
     const [volume, setVolume] = useState(80);
     const [isMuted, setIsMuted] = useState(false);
@@ -26,7 +30,7 @@ export default function SpeakerNode({ id }: { id: string }) {
             <div className="absolute inset-0 opacity-10 pointer-events-none rounded-2xl"
                  style={{ backgroundImage: 'radial-gradient(circle, #34d399 1px, transparent 1px)', backgroundSize: '4px 4px' }} />
 
-            <div className="relative z-10">
+            <div className="relative z-10 flex flex-col">
                 <div className="flex justify-between items-center mb-6">
                     <div className="text-[10px] font-black uppercase text-emerald-400 tracking-[0.2em]">Output</div>
                     <div className="text-[10px] font-mono text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded">SPEAKER</div>
@@ -66,6 +70,16 @@ export default function SpeakerNode({ id }: { id: string }) {
                         className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
+
+                {isUnconnected && (
+                    <div className="mt-3 flex items-center gap-1.5 opacity-40 text-emerald-400">
+                        <div className="flex-1 h-px bg-current" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">
+                            not connected
+                        </span>
+                        <div className="flex-1 h-px bg-current" />
+                    </div>
+                )}
             </div>
 
             <Handle
