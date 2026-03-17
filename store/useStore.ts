@@ -37,7 +37,9 @@ type AppState = {
     initAudioNode: (id: string, type: AudioNodeType) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
+    toggleNodePlayback: (id: string, isPlaying: boolean) => void;
     addNode: (node: AppNode) => void;
+    removeNodeAndCleanUp: (id: string) => void;
 };
 
 export const useStore = create<AppState>((set, get) => ({
@@ -140,7 +142,7 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
-    initAudioNode: (id, type) => {
+    initAudioNode: (id: string, type: AudioNodeType) => {
         const { audioNodes } = get();
         if (audioNodes.has(id)) return;
 
@@ -156,7 +158,8 @@ export const useStore = create<AppState>((set, get) => ({
             }, notes, 'random');
             
             pattern.interval = '8n';
-            pattern.start(0);
+            // Start screen handles Transport.start()
+            // patterns should start stopped
             
             const { patterns } = get();
             const newPatterns = new Map(patterns);
@@ -176,7 +179,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({ audioNodes: newMap });
     },
 
-    removeAudioNode: (id) => {
+    removeAudioNode: (id: string) => {
         const { audioNodes, patterns } = get();
         
         // Dispose of pattern if it exists
@@ -199,7 +202,7 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
-    updateNodeValue: (id, value) => {
+    updateNodeValue: (id: string, value: any) => {
         const node = get().audioNodes.get(id);
         if (!node) return;
 
@@ -208,12 +211,48 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         if (node instanceof Tone.Volume && typeof value.volume === 'number') {
-            // Map 0-100 to -60dB to +6dB
-            // 0 -> -60dB, 100 -> +6dB
-            const db = (value.volume / 100) * 66 - 60;
-            node.volume.value = db;
+            if (value.volume === 0 || value.mute) {
+                node.volume.value = -Infinity;
+            } else {
+                // Map 1-100 to -30dB to +6dB
+                const db = ((value.volume - 1) / 99) * 36 - 30;
+                node.volume.value = db;
+            }
+        }
+
+        if (node instanceof Tone.Reverb && typeof value.bypass === 'boolean') {
+            // Bypass sets wet to 0. When unbypassed, it should use the last set mix value.
+            // Since we don't store the mix in the audio node itself easily, 
+            // we'll rely on the component sending the correct mix value when unbypassing.
+            node.wet.value = value.bypass ? 0 : (value.wet ?? 0.5);
+        }
+    },
+
+    toggleNodePlayback: (id, isPlaying) => {
+        const pattern = get().patterns.get(id);
+        if (pattern) {
+            if (isPlaying) {
+                pattern.start(0);
+            } else {
+                pattern.stop();
+            }
         }
     },
 
     addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
+
+    removeNodeAndCleanUp: (id) => {
+        const { removeAudioNode, nodes, edges } = get();
+        
+        // 1. Kill the audio
+        removeAudioNode(id);
+        
+        // 2. Remove the node
+        const nextNodes = nodes.filter((node) => node.id !== id);
+        
+        // 3. Remove connected edges
+        const nextEdges = edges.filter((edge) => edge.source !== id && edge.target !== id);
+        
+        set({ nodes: nextNodes, edges: nextEdges });
+    },
 }));

@@ -7,6 +7,7 @@ export default function EffectNode({ id }: { id: string }) {
     const removeAudioNode = useStore((state) => state.removeAudioNode);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const [mix, setMix] = useState(50);
+    const [isBypassed, setIsBypassed] = useState(false);
 
     // Initialize audio node on mount
     useEffect(() => {
@@ -47,8 +48,22 @@ export default function EffectNode({ id }: { id: string }) {
 
                 <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-end">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Mix</label>
-                        <span className="text-sm font-mono text-fuchsia-400 font-bold">{mix}%</span>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Mix</label>
+                            <button 
+                                onClick={() => {
+                                    const nextBypassed = !isBypassed;
+                                    setIsBypassed(nextBypassed);
+                                    updateNodeValue(id, { bypass: nextBypassed, wet: mix / 100 });
+                                }}
+                                className={`text-[10px] font-bold px-2 py-1 rounded transition-colors ${
+                                    isBypassed ? 'bg-fuchsia-500 text-white' : 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/50'
+                                }`}
+                            >
+                                {isBypassed ? 'BYPASSED' : 'BYPASS'}
+                            </button>
+                        </div>
+                        <span className="text-sm font-mono text-fuchsia-400 font-bold">{isBypassed ? 0 : mix}%</span>
                     </div>
                     <input
                         type="range"
@@ -56,7 +71,8 @@ export default function EffectNode({ id }: { id: string }) {
                         max="100"
                         value={mix}
                         onChange={handleMixChange}
-                        className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                        disabled={isBypassed}
+                        className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
             </div>

@@ -25,6 +25,7 @@ function BloopCanvasInner() {
         onConnect,
         onEdgeUpdate: storeOnEdgeUpdate,
         addNode,
+        removeNodeAndCleanUp,
     } = useStore();
 
     const { screenToFlowPosition } = useReactFlow();
@@ -90,6 +91,21 @@ function BloopCanvasInner() {
         [screenToFlowPosition, addNode]
     );
 
+    const onNodeDragStop = useCallback((event: React.MouseEvent, node: any) => {
+        const trashBin = document.getElementById('trash-bin');
+        if (trashBin) {
+            const rect = trashBin.getBoundingClientRect();
+            if (
+                event.clientX >= rect.left &&
+                event.clientX <= rect.right &&
+                event.clientY >= rect.top &&
+                event.clientY <= rect.bottom
+            ) {
+                removeNodeAndCleanUp(node.id);
+            }
+        }
+    }, [removeNodeAndCleanUp]);
+
     return (
         <main className="w-screen h-screen relative">
             <Toolbar />
@@ -104,6 +120,7 @@ function BloopCanvasInner() {
                 onEdgeUpdateEnd={onEdgeUpdateEnd}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
+                onNodeDragStop={onNodeDragStop}
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={defaultEdgeOptions}
                 fitView
@@ -117,8 +134,19 @@ function BloopCanvasInner() {
                     size={1}
                     color="#1e293b"
                 />
-                <Controls position="bottom-right" />
+                <Controls position="bottom-right" showInteractive={false} />
             </ReactFlow>
+
+            <div 
+                id="trash-bin"
+                className="absolute bottom-4 right-24 w-16 h-16 bg-red-900/50 border border-red-500 rounded-xl flex items-center justify-center transition-all hover:bg-red-800/60 z-50 pointer-events-none"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                    <path d="M3 6h18"></path>
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+            </div>
 
             <EngineControl />
         </main>

@@ -7,6 +7,7 @@ export default function SpeakerNode({ id }: { id: string }) {
     const removeAudioNode = useStore((state) => state.removeAudioNode);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const [volume, setVolume] = useState(80);
+    const [isMuted, setIsMuted] = useState(false);
 
     // Initialize audio node on mount
     useEffect(() => {
@@ -46,8 +47,22 @@ export default function SpeakerNode({ id }: { id: string }) {
 
                 <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-end">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Main Volume</label>
-                        <span className="text-sm font-mono text-emerald-400 font-bold">{volume}%</span>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Main Volume</label>
+                            <button 
+                                onClick={() => {
+                                    const nextMuted = !isMuted;
+                                    setIsMuted(nextMuted);
+                                    updateNodeValue(id, { volume: nextMuted ? 0 : volume, mute: nextMuted });
+                                }}
+                                className={`text-[10px] font-bold px-2 py-1 rounded transition-colors ${
+                                    isMuted ? 'bg-red-500/20 text-red-400 border border-red-500/50' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                                }`}
+                            >
+                                {isMuted ? 'MUTED' : 'MUTE'}
+                            </button>
+                        </div>
+                        <span className="text-sm font-mono text-emerald-400 font-bold">{isMuted ? 0 : volume}%</span>
                     </div>
                     <input
                         type="range"
@@ -55,7 +70,8 @@ export default function SpeakerNode({ id }: { id: string }) {
                         max="100"
                         value={volume}
                         onChange={handleVolumeChange}
-                        className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                        disabled={isMuted}
+                        className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                 </div>
             </div>

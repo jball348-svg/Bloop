@@ -8,6 +8,7 @@ export default function EngineControl() {
 
     const startEngine = async () => {
         await Tone.start();
+        Tone.Transport.start();
         setIsStarted(true);
         console.log('Audio engine started');
     };
@@ -16,7 +17,6 @@ export default function EngineControl() {
         return (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md">
                 <div className="text-center p-12 bg-slate-900 border-2 border-indigo-500 rounded-3xl shadow-[0_0_50px_rgba(99,102,241,0.3)] max-w-md flex flex-col items-center">
-                    <img src="/bloop_logo.jpg" alt="Bloop Logo" className="w-48 mb-6" />
                     <h2 className="text-3xl font-black text-white mb-4 tracking-tighter">Ready to Bloop?</h2>
                     <p className="text-slate-400 mb-8 font-medium">
                         Browsers need a little nudge to start the audio engine. 

@@ -6,6 +6,7 @@ import * as Tone from 'tone';
 export default function GeneratorNode({ id }: { id: string }) {
     const initAudioNode = useStore((state) => state.initAudioNode);
     const removeAudioNode = useStore((state) => state.removeAudioNode);
+    const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const [isPlaying, setIsPlaying] = useState(false);
 
     // Initialize audio node on mount
@@ -15,12 +16,9 @@ export default function GeneratorNode({ id }: { id: string }) {
     }, [id, initAudioNode, removeAudioNode]);
 
     const togglePlay = () => {
-        if (!isPlaying) {
-            Tone.Transport.start();
-        } else {
-            Tone.Transport.stop();
-        }
-        setIsPlaying(!isPlaying);
+        const nextPlaying = !isPlaying;
+        toggleNodePlayback(id, nextPlaying);
+        setIsPlaying(nextPlaying);
     };
 
     return (
