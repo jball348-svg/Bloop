@@ -1,0 +1,2 @@
+# Bloop
+Bloop: A playful visual audio sandbox built for intuition, not complexity.  Bloop is a web-based, drag-and-drop playground for sound. Think modular synthesis meets gamified creativity. We’ve removed the intimidating learning curve of tools like Max/MSP, giving non-musicians a friendly canvas of glowing nodes and virtual cables to build unique, always-in-key sound engines. Drag a generator, connect an effect, and just bloop.
