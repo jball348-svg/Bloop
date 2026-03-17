@@ -9,13 +9,10 @@ export default function SpeakerNode({ id }: { id: string }) {
     const [volume, setVolume] = useState(80);
     const [isMuted, setIsMuted] = useState(false);
 
-    // Initialize audio node on mount
+    // Component-level initialization for default values
     useEffect(() => {
-        initAudioNode(id, 'speaker');
-        // Set initial volume
         updateNodeValue(id, { volume: 80 });
-        return () => removeAudioNode(id);
-    }, [id, initAudioNode, removeAudioNode]);
+    }, [id, updateNodeValue]);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = parseFloat(e.target.value);

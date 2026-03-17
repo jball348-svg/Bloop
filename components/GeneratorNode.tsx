@@ -8,17 +8,12 @@ export default function GeneratorNode({ id }: { id: string }) {
     const initAudioNode = useStore((state) => state.initAudioNode);
     const removeAudioNode = useStore((state) => state.removeAudioNode);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
+    const updateNodeValue = useStore((state) => state.updateNodeValue);
     const nodeData = useStore((state) => state.nodes.find(n => n.id === id)?.data);
     const subType = nodeData?.subType || 'none';
     const isPlaying = nodeData?.isPlaying || false;
 
-    // Initialize audio node on mount
-    useEffect(() => {
-        if (subType !== 'none') {
-            initAudioNode(id, 'generator', subType);
-        }
-        return () => removeAudioNode(id);
-    }, [id, initAudioNode, removeAudioNode, subType]);
+    const [freq, setFreq] = useState(440);
 
     const togglePlay = () => {
         toggleNodePlayback(id, !isPlaying);
@@ -27,6 +22,12 @@ export default function GeneratorNode({ id }: { id: string }) {
     const handleSubTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newSubType = e.target.value;
         changeNodeSubType(id, 'generator', newSubType);
+    };
+
+    const handleFreqChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseInt(e.target.value);
+        setFreq(val);
+        updateNodeValue(id, { frequency: val });
     };
 
     return (
@@ -61,17 +62,35 @@ export default function GeneratorNode({ id }: { id: string }) {
                 </div>
 
                 {subType !== 'none' && (
-                    <>
+                    <div className="flex flex-col gap-4">
+                        {subType === 'wave' && (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-end">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Frequency</label>
+                                    <span className="text-[10px] font-mono text-indigo-400 font-bold">{freq}Hz</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="20"
+                                    max="2000"
+                                    value={freq}
+                                    onChange={handleFreqChange}
+                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                />
+                            </div>
+                        )}
+                        
                         <button
                             onClick={togglePlay}
-                            className={`w-full py-3 mt-4 rounded-xl font-bold transition-all transform active:scale-95 ${isPlaying
+                            className={`w-full py-2.5 rounded-xl font-bold transition-all transform active:scale-95 flex items-center justify-center gap-2 ${isPlaying
                                     ? 'bg-red-500/20 text-red-400 border-2 border-red-500/50 hover:bg-red-500/30'
                                     : 'bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 hover:bg-emerald-500/30'
                                 }`}
                         >
+                            <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-red-400' : 'bg-emerald-400'}`} />
                             {isPlaying ? 'STOP' : 'PLAY'}
                         </button>
-                    </>
+                    </div>
                 )}
             </div>
 

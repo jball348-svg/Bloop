@@ -2,13 +2,17 @@
 
 import React, { useState } from 'react';
 import * as Tone from 'tone';
+import { useStore } from '@/store/useStore';
 
 export default function EngineControl() {
     const [isStarted, setIsStarted] = useState(false);
 
+    const initializeDefaultNodes = useStore((state) => state.initializeDefaultNodes);
+    
     const startEngine = async () => {
         await Tone.start();
         Tone.Transport.start();
+        initializeDefaultNodes();
         setIsStarted(true);
         console.log('Audio engine started');
     };

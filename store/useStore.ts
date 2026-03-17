@@ -42,6 +42,7 @@ type AppState = {
     addNode: (node: AppNode) => void;
     removeNodeAndCleanUp: (id: string) => void;
     rebuildAudioGraph: () => void;
+    initializeDefaultNodes: () => void;
 };
 
 export const useStore = create<AppState>((set, get) => ({
@@ -79,21 +80,6 @@ export const useStore = create<AppState>((set, get) => ({
         const currentEdges = get().edges;
         const nextEdges = applyEdgeChanges(changes, currentEdges);
 
-        // Handle audio disconnection when edges are removed
-        changes.forEach((change) => {
-            if (change.type === 'remove') {
-                const edge = currentEdges.find((e) => e.id === change.id);
-                if (edge) {
-                    const sourceAudio = get().audioNodes.get(edge.source);
-                    const targetAudio = get().audioNodes.get(edge.target);
-                    if (sourceAudio && targetAudio) {
-                        sourceAudio.disconnect(targetAudio);
-                    }
-                }
-            }
-        });
-
-
         set({ edges: nextEdges });
         get().rebuildAudioGraph();
     },
@@ -103,23 +89,10 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => {
-        // Disconnect old
-        const sourceAudio = get().audioNodes.get(oldEdge.source);
-        const targetAudio = get().audioNodes.get(oldEdge.target);
-        if (sourceAudio && targetAudio) {
-            sourceAudio.disconnect(targetAudio);
-        }
-
-        // Connect new
-        const newSourceAudio = get().audioNodes.get(newConnection.source || '');
-        const newTargetAudio = get().audioNodes.get(newConnection.target || '');
-        if (newSourceAudio && newTargetAudio) {
-            newSourceAudio.connect(newTargetAudio);
-        }
-
         set({
             edges: updateEdge(oldEdge, newConnection, get().edges),
         });
+        get().rebuildAudioGraph();
     },
 
     onEdgeUpdateEnd: (_, edge) => {
@@ -149,7 +122,14 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (type === 'generator') {
             const actualSubType = subType || 'none';
-            if (actualSubType === 'none') return;
+            if (actualSubType === 'none') {
+                 // Ensure entry exists for 'none' but is essentially silent/unconnected
+                 // or just remove it from the map if it was there
+                 const nextAudioNodes = new Map(audioNodes);
+                 nextAudioNodes.delete(id);
+                 set({ audioNodes: nextAudioNodes });
+                 return;
+            }
             if (actualSubType === 'arp') {
                 const synth = new Tone.PolySynth();
                 const notes = ['C4', 'Eb4', 'F4', 'G4', 'Bb4'];
@@ -173,9 +153,14 @@ export const useStore = create<AppState>((set, get) => ({
             }
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
-            if (actualSubType === 'none') return;
+            if (actualSubType === 'none') {
+                const nextAudioNodes = new Map(audioNodes);
+                nextAudioNodes.delete(id);
+                set({ audioNodes: nextAudioNodes });
+                return;
+            }
             if (actualSubType === 'reverb') {
-                node = new Tone.Reverb({ decay: 4, wet: 0.5 });
+                node = new Tone.Freeverb({ roomSize: 0.5, wet: 0.5 });
             } else {
                 // 'delay'
                 node = new Tone.FeedbackDelay('8n', 0.5);
@@ -185,14 +170,17 @@ export const useStore = create<AppState>((set, get) => ({
             node = new Tone.Volume(0).toDestination();
         }
 
-        const newMap = new Map(audioNodes);
+        const newMap = new Map(get().audioNodes);
         newMap.set(id, node);
         set({ audioNodes: newMap });
     },
 
     changeNodeSubType: (id: string, mainType: 'generator' | 'effect', subType: string) => {
-        const { audioNodes, patterns, edges, nodes } = get();
+        const { audioNodes, patterns, nodes } = get();
         
+        // 0. Capture state
+        const wasPlaying = nodes.find(n => n.id === id)?.data.isPlaying || false;
+
         // 1. Dispose old node
         const oldNode = audioNodes.get(id);
         const oldPattern = patterns.get(id);
@@ -216,22 +204,29 @@ export const useStore = create<AppState>((set, get) => ({
         // 2. Instantiate new node
         get().initAudioNode(id, mainType, subType);
         
-        // 3. Rebuild the graph (replaces surgical reconnection)
-        const newNode = get().audioNodes.get(id);
-        if (newNode instanceof Tone.Reverb) {
-            newNode.ready.then(() => get().rebuildAudioGraph());
-        } else {
-            get().rebuildAudioGraph();
-        }
-
-        // 4. Update Node State (subType)
+        // 3. Update Node State (subType) immediately so visuals reflect it
         set({
             nodes: nodes.map((n) => 
                 n.id === id 
-                ? { ...n, data: { ...n.data, subType, isPlaying: false } } 
+                ? { ...n, data: { ...n.data, subType, isPlaying: wasPlaying } } 
                 : n
             )
         });
+
+        // 4. Rebuild the graph and re-apply playback
+        const handleRebuildAndPlayback = () => {
+            get().rebuildAudioGraph();
+            if (wasPlaying) {
+                get().toggleNodePlayback(id, true);
+            }
+        };
+
+        const newNode = get().audioNodes.get(id);
+        if (newNode instanceof Tone.Reverb) {
+            newNode.ready.then(handleRebuildAndPlayback);
+        } else {
+            handleRebuildAndPlayback();
+        }
     },
 
     removeAudioNode: (id: string) => {
@@ -262,21 +257,36 @@ export const useStore = create<AppState>((set, get) => ({
         if (!node) return;
 
         if ('wet' in node && typeof value.wet === 'number') {
-            (node as any).wet.value = value.wet;
+            (node as any).wet.rampTo(value.wet, 0.1);
         }
 
         if (node instanceof Tone.Volume && typeof value.volume === 'number') {
             if (value.volume === 0 || value.mute) {
-                node.volume.value = -Infinity;
+                node.volume.rampTo(-Infinity, 0.1);
             } else {
                 // Map 1-100 to -30dB to +6dB
                 const db = ((value.volume - 1) / 99) * 36 - 30;
-                node.volume.value = db;
+                node.volume.rampTo(db, 0.1);
             }
         }
 
         if ('wet' in node && typeof value.bypass === 'boolean') {
-            (node as any).wet.value = value.bypass ? 0 : (value.wet ?? 0.5);
+            const wetValue = value.bypass ? 0 : (value.wet ?? 0.5);
+            (node as any).wet.rampTo(wetValue, 0.1);
+        }
+
+        // New mappings for advanced sliders
+        if (node instanceof Tone.Freeverb && typeof value.roomSize === 'number') {
+            // roomSize on Freeverb is not a signal-rate param and cannot be ramped
+            node.roomSize.value = value.roomSize;
+        }
+
+        if (node instanceof Tone.FeedbackDelay && typeof value.delayTime === 'number') {
+            node.delayTime.rampTo(value.delayTime, 0.1);
+        }
+
+        if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
+            node.frequency.rampTo(value.frequency, 0.1);
         }
     },
 
@@ -309,7 +319,15 @@ export const useStore = create<AppState>((set, get) => ({
         });
     },
 
-    addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
+    addNode: (node) => {
+        set((state) => ({ nodes: [...state.nodes, node] }));
+        // Automatically initialize audio if it has a subtype
+        if (node.data.subType && node.data.subType !== 'none') {
+             get().initAudioNode(node.id, node.type as any, node.data.subType);
+        } else if (node.type === 'speaker') {
+             get().initAudioNode(node.id, 'speaker');
+        }
+    },
 
     removeNodeAndCleanUp: (id) => {
         const { removeAudioNode, nodes, edges } = get();
@@ -328,7 +346,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     rebuildAudioGraph: () => {
-        const { audioNodes, edges } = get();
+        const { audioNodes, edges, nodes } = get();
 
         // 1. Unplug Everything
         audioNodes.forEach((node) => {
@@ -344,5 +362,28 @@ export const useStore = create<AppState>((set, get) => ({
                 sourceNode.connect(targetNode);
             }
         });
+
+        // 3. Ensure Speaker nodes are connected to Destination
+        // Because node.disconnect() wipes EVERYTHING, including .toDestination()
+        nodes.forEach((node) => {
+            if (node.type === 'speaker') {
+                const audioNode = audioNodes.get(node.id);
+                if (audioNode) {
+                    audioNode.toDestination();
+                }
+            }
+        });
+    },
+
+    initializeDefaultNodes: () => {
+        const { nodes, initAudioNode } = get();
+        nodes.forEach((node) => {
+            if (node.data.subType && node.data.subType !== 'none') {
+                initAudioNode(node.id, node.type as any, node.data.subType);
+            } else if (node.type === 'speaker') {
+                initAudioNode(node.id, 'speaker');
+            }
+        });
+        get().rebuildAudioGraph();
     },
 }));
