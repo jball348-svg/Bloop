@@ -1,19 +1,22 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useCallback } from 'react';
 import ReactFlow, {
     Background,
     Controls,
     BackgroundVariant,
     Edge,
+    useReactFlow,
+    ReactFlowProvider,
 } from 'reactflow';
-import { useStore } from '@/store/useStore';
+import { useStore, AudioNodeType } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import EngineControl from '@/components/EngineControl';
+import Toolbar from '@/components/Toolbar';
 
-export default function BloopCanvas() {
+function BloopCanvasInner() {
     const { 
         nodes, 
         edges, 
@@ -21,10 +24,10 @@ export default function BloopCanvas() {
         onEdgesChange, 
         onConnect,
         onEdgeUpdate: storeOnEdgeUpdate,
-        onEdgeUpdateStart: storeOnEdgeUpdateStart,
-        onEdgeUpdateEnd: storeOnEdgeUpdateEnd
+        addNode,
     } = useStore();
 
+    const { screenToFlowPosition } = useReactFlow();
     const edgeUpdateSuccessful = useRef(true);
 
     // Register our custom node types
@@ -39,23 +42,57 @@ export default function BloopCanvas() {
         focusable: false,
     }), []);
 
-    const onEdgeUpdateStart = () => {
+    const onEdgeUpdateStart = useCallback(() => {
         edgeUpdateSuccessful.current = false;
-    };
+    }, []);
 
-    const onEdgeUpdate = (oldEdge: any, newConnection: any) => {
+    const onEdgeUpdate = useCallback((oldEdge: Edge, newConnection: any) => {
         edgeUpdateSuccessful.current = true;
         storeOnEdgeUpdate(oldEdge, newConnection);
-    };
+    }, [storeOnEdgeUpdate]);
 
-    const onEdgeUpdateEnd = (_: any, edge: Edge) => {
+    const onEdgeUpdateEnd = useCallback((_: any, edge: Edge) => {
         if (!edgeUpdateSuccessful.current) {
             onEdgesChange([{ id: edge.id, type: 'remove' }]);
         }
-    };
+    }, [onEdgesChange]);
+
+    const onDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
+
+    const onDrop = useCallback(
+        (event: React.DragEvent) => {
+            event.preventDefault();
+
+            const type = event.dataTransfer.getData('application/reactflow') as AudioNodeType;
+
+            // check if the dropped element is valid
+            if (typeof type === 'undefined' || !type) {
+                return;
+            }
+
+            const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
+
+            const newNode = {
+                id: crypto.randomUUID(),
+                type,
+                position,
+                data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)}` },
+            };
+
+            addNode(newNode);
+        },
+        [screenToFlowPosition, addNode]
+    );
 
     return (
         <main className="w-screen h-screen relative">
+            <Toolbar />
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -65,6 +102,8 @@ export default function BloopCanvas() {
                 onEdgeUpdate={onEdgeUpdate}
                 onEdgeUpdateStart={onEdgeUpdateStart}
                 onEdgeUpdateEnd={onEdgeUpdateEnd}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
                 nodeTypes={nodeTypes}
                 defaultEdgeOptions={defaultEdgeOptions}
                 fitView
@@ -78,12 +117,19 @@ export default function BloopCanvas() {
                     size={1}
                     color="#1e293b"
                 />
-                <Controls />
+                <Controls position="bottom-right" />
             </ReactFlow>
 
             <EngineControl />
-
         </main>
+    );
+}
+
+export default function BloopCanvas() {
+    return (
+        <ReactFlowProvider>
+            <BloopCanvasInner />
+        </ReactFlowProvider>
     );
 }
 

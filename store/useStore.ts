@@ -37,6 +37,7 @@ type AppState = {
     initAudioNode: (id: string, type: AudioNodeType) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
+    addNode: (node: AppNode) => void;
 };
 
 export const useStore = create<AppState>((set, get) => ({
@@ -213,4 +214,6 @@ export const useStore = create<AppState>((set, get) => ({
             node.volume.value = db;
         }
     },
+
+    addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
 }));
