@@ -65,6 +65,9 @@ export default function EffectNode({ id }: { id: string }) {
                         )}
                         <option value="reverb" className="bg-slate-900 text-fuchsia-400">Wash Reverb</option>
                         <option value="delay" className="bg-slate-900 text-fuchsia-400">Ping-Pong Delay</option>
+                        <option value="distortion" className="bg-slate-900 text-fuchsia-400">Heat Distortion</option>
+                        <option value="phaser" className="bg-slate-900 text-fuchsia-400">Cosmic Phaser</option>
+                        <option value="bitcrusher" className="bg-slate-900 text-fuchsia-400">Digital Crusher</option>
                     </select>
                 </div>
 
@@ -131,6 +134,71 @@ export default function EffectNode({ id }: { id: string }) {
                                     max="100"
                                     value={time}
                                     onChange={handleTimeChange}
+                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                />
+                            </div>
+                        )}
+
+                        {subType === 'distortion' && (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-end">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Drive</label>
+                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={depth}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        setDepth(val);
+                                        updateNodeValue(id, { distortion: val / 100 });
+                                    }}
+                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                />
+                            </div>
+                        )}
+
+                        {subType === 'phaser' && (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-end">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speed</label>
+                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 19.9).toFixed(1)}Hz</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={time}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        setTime(val);
+                                        const speed = 0.1 + (val / 100) * 19.9;
+                                        updateNodeValue(id, { frequency: speed });
+                                    }}
+                                    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                />
+                            </div>
+                        )}
+
+                        {subType === 'bitcrusher' && (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex justify-between items-end">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bits</label>
+                                    <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{Math.round(1 + (depth / 100) * 7)}</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={depth}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        setDepth(val);
+                                        const bits = Math.round(1 + (val / 100) * 7);
+                                        updateNodeValue(id, { bits: bits });
+                                    }}
                                     className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
                                 />
                             </div>

@@ -16,10 +16,24 @@ import {
     updateEdge,
 } from 'reactflow';
 
+export const SCALES = {
+    major: [0, 2, 4, 5, 7, 9, 11],
+    minor: [0, 2, 3, 5, 7, 8, 10],
+    pentatonic: [0, 3, 5, 7, 10]
+};
+
+export const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
 export type AudioNodeType = 'generator' | 'effect' | 'speaker';
 
 export type AppNode = Node & {
-    data: { label: string; subType?: string; isPlaying?: boolean };
+    data: { 
+        label: string; 
+        subType?: string; 
+        isPlaying?: boolean;
+        rootNote?: string;
+        scaleType?: keyof typeof SCALES;
+    };
     type: AudioNodeType;
 };
 
@@ -38,6 +52,7 @@ type AppState = {
     changeNodeSubType: (id: string, mainType: 'generator' | 'effect', subType: string) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: any) => void;
+    updateArpScale: (id: string, root: string, scale: keyof typeof SCALES) => void;
     toggleNodePlayback: (id: string, isPlaying: boolean) => void;
     addNode: (node: AppNode) => void;
     removeNodeAndCleanUp: (id: string) => void;
@@ -161,9 +176,16 @@ export const useStore = create<AppState>((set, get) => ({
             }
             if (actualSubType === 'reverb') {
                 node = new Tone.Freeverb({ roomSize: 0.5, wet: 0.5 });
-            } else {
-                // 'delay'
+            } else if (actualSubType === 'delay') {
                 node = new Tone.FeedbackDelay('8n', 0.5);
+            } else if (actualSubType === 'distortion') {
+                node = new Tone.Distortion(0.5);
+            } else if (actualSubType === 'phaser') {
+                node = new Tone.Phaser({ frequency: 15, octaves: 5, baseFrequency: 1000 });
+            } else if (actualSubType === 'bitcrusher') {
+                node = new Tone.BitCrusher(4);
+            } else {
+                node = new Tone.Volume(0); // Fallback
             }
         } else {
             // Speaker / Master Output
@@ -288,6 +310,44 @@ export const useStore = create<AppState>((set, get) => ({
         if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
             node.frequency.rampTo(value.frequency, 0.1);
         }
+
+        if (node instanceof Tone.Distortion && typeof value.distortion === 'number') {
+            node.distortion = value.distortion;
+        }
+
+        if (node instanceof Tone.Phaser && typeof value.frequency === 'number') {
+            node.frequency.rampTo(value.frequency, 0.1);
+        }
+
+        if (node instanceof Tone.BitCrusher && typeof value.bits === 'number') {
+            node.bits.value = value.bits;
+        }
+    },
+
+    updateArpScale: (id, root, scale) => {
+        const { patterns, nodes } = get();
+        const pattern = patterns.get(id);
+        if (!pattern) return;
+
+        // Calculate notes for Octave 4
+        const intervals = SCALES[scale];
+        const rootIndex = ROOT_NOTES.indexOf(root);
+        const newNotes = intervals.map(interval => {
+            const noteIndex = (rootIndex + interval) % 12;
+            const octaveShift = Math.floor((rootIndex + interval) / 12);
+            const noteName = ROOT_NOTES[noteIndex];
+            return `${noteName}${4 + octaveShift}`;
+        });
+
+        pattern.values = newNotes;
+
+        // Update node data
+        set({
+            nodes: nodes.map(n => n.id === id ? {
+                ...n,
+                data: { ...n.data, rootNote: root, scaleType: scale }
+            } : n)
+        });
     },
 
     toggleNodePlayback: (id, isPlaying) => {

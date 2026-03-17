@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
-import { useStore } from '@/store/useStore';
+import { useStore, ROOT_NOTES, SCALES } from '@/store/useStore';
 import * as Tone from 'tone';
 
 export default function GeneratorNode({ id }: { id: string }) {
@@ -9,9 +9,13 @@ export default function GeneratorNode({ id }: { id: string }) {
     const removeAudioNode = useStore((state) => state.removeAudioNode);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
+    const updateArpScale = useStore((state) => state.updateArpScale);
     const nodeData = useStore((state) => state.nodes.find(n => n.id === id)?.data);
+    
     const subType = nodeData?.subType || 'none';
     const isPlaying = nodeData?.isPlaying || false;
+    const rootNote = nodeData?.rootNote || 'C';
+    const scaleType = nodeData?.scaleType || 'pentatonic';
 
     const [freq, setFreq] = useState(440);
 
@@ -63,6 +67,31 @@ export default function GeneratorNode({ id }: { id: string }) {
 
                 {subType !== 'none' && (
                     <div className="flex flex-col gap-4">
+                        {subType === 'arp' && (
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Root</label>
+                                    <select 
+                                        value={rootNote}
+                                        onChange={(e) => updateArpScale(id, e.target.value, scaleType)}
+                                        className="nodrag bg-slate-800 text-[10px] text-indigo-300 border-none outline-none rounded p-1"
+                                    >
+                                        {ROOT_NOTES.map(n => <option key={n} value={n}>{n}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Scale</label>
+                                    <select 
+                                        value={scaleType}
+                                        onChange={(e) => updateArpScale(id, rootNote, e.target.value as any)}
+                                        className="nodrag bg-slate-800 text-[10px] text-indigo-300 border-none outline-none rounded p-1"
+                                    >
+                                        {Object.keys(SCALES).map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
                         {subType === 'wave' && (
                             <div className="flex flex-col gap-2">
                                 <div className="flex justify-between items-end">
