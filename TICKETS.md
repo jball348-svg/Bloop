@@ -15,38 +15,37 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#3](https://github.com/jball348-svg/Bloop/issues/3) | Chord Node — Harmonic Voicing Transformer | ✅ Closed | v2, node-type, audio-engine |
 | [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog — Synth Overhaul, UX, Drum Samples | 🟡 Open (do not action) | v3, backlog |
 | [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
-| [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes | 🔴 Open | v2, ux, polish |
+| [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | 🔴 Open | v2, ux, polish |
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | 🔴 Open | v2, ux, polish |
 
 ---
 
 ## Recommended Work Order
 
-The order below accounts for dependencies. Do not skip ahead — earlier tickets change files and patterns that later tickets build on.
-
 ### ✅ Phase 1 — Core Infrastructure (Complete)
-These establish the new broadcast model and transport system that all other V2 work depends on.
 
-- ~~**#5** Speaker Node Redesign~~ — removes wiring requirement, all generators now route to `Tone.Destination` directly
+- ~~**#5** Speaker Node Redesign~~ — removes wiring requirement, all generators route to `Tone.Destination` directly
 - ~~**#1** Tempo Node~~ — global BPM broadcaster via `Tone.Transport`, singleton logic
-- ~~**#2** Drum Node~~ — Hits & Grid modes, uses `Tone.MembraneSynth` / `NoiseSynth` / `MetalSynth`
+- ~~**#2** Drum Node~~ — Hits & Grid modes, `Tone.MembraneSynth` / `NoiseSynth` / `MetalSynth`
 
-### 🚧 Phase 2 — New Nodes (In Progress)
+### ✅ Phase 2 — New Nodes (Complete)
 
-- ~~**#3** Chord Node~~
-  - Depends on: #1 (Transport), #5 (audio routing)
-  - Includes React Flow handles and store-side note event routing through Chord nodes
+- ~~**#3** Chord Node~~ — React Flow handles, store-side note event routing, handle clipping fix
 
-### 🔴 Phase 3 — Polish (After Phase 2)
-These touch UI across all existing nodes — do them after new nodes are in place so you only polish once.
+### 🔴 Phase 3 — Polish (Up Next)
 
-- **#6** UI Polish — Node Sizing, Mix Knob, Drum Grid, Amplifier rename
-  - Depends on: #1, #2, #5 all closed (needs all nodes to exist to size them)
-  - No audio changes — purely visual/layout
+- **#6** UI Polish ← _Start here_ — see issue comments for full item list, including:
+  - Node sizing (remove dead space)
+  - Generator Mix knob
+  - Drum node fixes (no "not connected", no BPM label, zig-zag step numbers)
+  - Amplifier rename + remove decorative circle
+  - **Chord node cleanup** — remove "Harmonic Voicing" block, "ROOT POS" badge, "CHORD QUALITY" label
+  - **Unique background patterns** per node type (no two nodes should share the same pattern)
+  - Depends on: all Phase 1 + Phase 2 tickets closed ✅
 
 - **#7** Toolbar Layout — Singleton section separation
-  - Depends on: #6 (Amplifier rename must be done first so toolbar uses correct label)
-  - Touches `Toolbar.tsx` only (plus minor store selector)
+  - Depends on: #6 (Amplifier rename must be done first)
+  - Touches `Toolbar.tsx` only
 
 ### 🟡 Phase 4 — Backlog (Do Not Action Yet)
 - **#4** V3 Backlog — reference document only, do not implement
