@@ -10,6 +10,7 @@ import {
 export default function EffectNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
+    const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const subType = useStore((state) => state.nodes.find((node) => node.id === id)?.data.subType || 'none');
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
@@ -63,6 +64,16 @@ export default function EffectNode({ id }: { id: string }) {
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
                     <div className={`flex justify-between items-center ${subType === 'none' ? 'h-full' : 'mb-3'}`}>
+                        <button
+                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-fuchsia-500 hover:text-white hover:border-fuchsia-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                            style={{ boxShadow: `0 0 6px rgba(217, 70, 239, 0.3)` }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeNodeAndCleanUp(id);
+                            }}
+                        >
+                            ×
+                        </button>
                         <select
                             value={subType}
                             onChange={handleSubTypeChange}

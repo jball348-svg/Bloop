@@ -17,7 +17,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
 | [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | ✅ Closed | v2, ux, polish |
-| [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | 🔴 Open | v2, ux, polish |
+| [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | ✅ Closed | v2, ux, polish |
 
 ---
 
@@ -41,9 +41,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 - ~~**#7** Toolbar Layout — Singleton section separation~~ — Modules vs Global sections, singleton slots grey out when present on canvas
 
-### 🔴 Phase 5 — UX (Up Next)
+### ✅ Phase 5 — UX (Complete)
 
-- **#8** Node Delete Button — In-Canvas X button on all nodes
+- ~~**#8** Node Delete Button — In-Canvas X button on all nodes~~
   - No dependencies — ready to action
   - Touches all `components/*Node.tsx` files only
 

@@ -37,6 +37,7 @@ export default function ControllerNode({ id }: { id: string }) {
     const fireNoteOff = useStore((state) => state.fireNoteOff);
     const updateArpScale = useStore((state) => state.updateArpScale);
     const updateOctave = useStore((state) => state.updateOctave);
+    const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -177,6 +178,16 @@ export default function ControllerNode({ id }: { id: string }) {
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between items-center mb-3">
+                        <button
+                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-yellow-500 hover:text-white hover:border-yellow-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                            style={{ boxShadow: `0 0 6px rgba(234, 179, 8, 0.3)` }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeNodeAndCleanUp(id);
+                            }}
+                        >
+                            ×
+                        </button>
                         <select
                             value={subType}
                             onChange={handleSubTypeChange}

@@ -12,6 +12,7 @@ const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth'];
 
 export default function GeneratorNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
+    const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const isActive = useStore((state) => state.activeGenerators.has(id));
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
@@ -38,7 +39,7 @@ export default function GeneratorNode({ id }: { id: string }) {
     }, [id]);
 
     return (
-        <div className={`bg-slate-900 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-red-500/20 group relative${
+        <div className={`bg-slate-900 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-60 flex flex-col transition-all hover:shadow-red-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             {/* Generator pattern — vertical frequency bars, like an oscilloscope display */}
@@ -61,6 +62,16 @@ export default function GeneratorNode({ id }: { id: string }) {
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between items-center mb-3">
+                        <button
+                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-red-500 hover:text-white hover:border-red-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                            style={{ boxShadow: `0 0 6px rgba(59, 130, 246, 0.3)` }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                removeNodeAndCleanUp(id);
+                            }}
+                        >
+                            ×
+                        </button>
                         <span className="text-[10px] font-black uppercase text-red-400 tracking-[0.2em]">Generator</span>
                         <div className="flex items-center gap-1">
                             <span className="text-[9px] font-bold text-slate-400 uppercase">Mix</span>

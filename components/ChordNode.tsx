@@ -10,6 +10,7 @@ import {
 
 export default function ChordNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
+    const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
@@ -42,6 +43,16 @@ export default function ChordNode({ id }: { id: string }) {
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="mb-3">
+                    <button
+                        className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-sky-500 hover:text-white hover:border-sky-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                        style={{ boxShadow: `0 0 6px rgba(168, 85, 247, 0.3)` }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            removeNodeAndCleanUp(id);
+                        }}
+                    >
+                        ×
+                    </button>
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-300">
                         Chord
                     </span>

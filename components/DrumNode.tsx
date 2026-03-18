@@ -33,6 +33,7 @@ export default function DrumNode({ id }: { id: string }) {
     const triggerDrumHit = useStore((state) => state.triggerDrumHit);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
+    const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const activeDrumPads = useStore((state) => state.activeDrumPads);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
@@ -104,6 +105,16 @@ export default function DrumNode({ id }: { id: string }) {
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3 mb-3">
+                    <button
+                        className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-orange-500 hover:text-white hover:border-orange-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                        style={{ boxShadow: `0 0 6px rgba(249, 115, 22, 0.3)` }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            removeNodeAndCleanUp(id);
+                        }}
+                    >
+                        ×
+                    </button>
                     <div className="flex flex-col gap-2">
                         <span className="text-[10px] font-black uppercase text-orange-400 tracking-[0.2em]">
                             Drums

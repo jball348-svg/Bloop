@@ -12,6 +12,7 @@ const clampTempoBpm = (bpm: number) =>
 
 export default function TempoNode({ id }: { id: string }) {
     const updateTempoBpm = useStore((state) => state.updateTempoBpm);
+    const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const bpm = useStore((state) =>
         state.nodes.find((node) => node.id === id)?.data.bpm ?? DEFAULT_TRANSPORT_BPM
     );
@@ -96,6 +97,16 @@ export default function TempoNode({ id }: { id: string }) {
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-4 mb-3">
+                    <button
+                        className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-indigo-500 hover:text-white hover:border-indigo-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                        style={{ boxShadow: `0 0 6px rgba(20, 184, 166, 0.3)` }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            removeNodeAndCleanUp(id);
+                        }}
+                    >
+                        ×
+                    </button>
                     <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
                             Tempo - BPM
