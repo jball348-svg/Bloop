@@ -1,17 +1,18 @@
 import { useStore } from '@/store/useStore';
 
-export default function SpeakerNode({ id: _id }: { id: string }) {
-    void _id;
-
+export default function SpeakerNode({ id }: { id: string }) {
     const masterVolume = useStore((state) => state.masterVolume);
     const setMasterVolume = useStore((state) => state.setMasterVolume);
+    const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setMasterVolume(parseFloat(e.target.value));
     };
 
     return (
-        <div className="bg-slate-900 border-2 border-emerald-500 rounded-2xl p-5 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative">
+        <div className={`bg-slate-900 border-2 border-emerald-500 rounded-2xl p-5 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative${
+            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        }`}>
             <div className="absolute inset-0 opacity-10 pointer-events-none rounded-2xl"
                  style={{ backgroundImage: 'radial-gradient(circle, #34d399 1px, transparent 1px)', backgroundSize: '4px 4px' }} />
 
@@ -37,9 +38,6 @@ export default function SpeakerNode({ id: _id }: { id: string }) {
                         onChange={handleVolumeChange}
                         className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                     />
-                    <div className="rounded-xl border border-emerald-500/20 bg-slate-800/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
-                        Global output control
-                    </div>
                 </div>
             </div>
         </div>

@@ -125,6 +125,12 @@ const clampTempoBpm = (bpm: number) =>
 const clampVolumePercent = (volume: number) =>
     Math.min(100, Math.max(0, Math.round(volume)));
 
+const hasSpeakerNode = (nodes: AppNode[]) =>
+    nodes.some((node) => node.type === 'speaker');
+
+const getGeneratorWaveShape = (nodes: AppNode[], id: string) =>
+    nodes.find((node) => node.id === id && node.type === 'generator')?.data.waveShape ?? 'sine';
+
 const volumePercentToDb = (volume: number) => {
     const nextVolume = clampVolumePercent(volume);
 
@@ -368,13 +374,15 @@ export const useStore = create<AppState>((set, get) => ({
     autoEdgeIds: new Set(['auto-node-1-node-2']),
 
     ensureMasterOutput: () => {
-        const { masterOutput, masterVolume } = get();
+        const { masterOutput, masterVolume, nodes } = get();
 
         if (masterOutput) {
             return masterOutput;
         }
 
-        const nextMasterOutput = new Tone.Volume(volumePercentToDb(masterVolume)).toDestination();
+        const nextMasterOutput = new Tone.Volume(
+            hasSpeakerNode(nodes) ? volumePercentToDb(masterVolume) : -Infinity
+        ).toDestination();
         set({ masterOutput: nextMasterOutput });
         return nextMasterOutput;
     },
@@ -382,7 +390,8 @@ export const useStore = create<AppState>((set, get) => ({
     setMasterVolume: (volume: number) => {
         const nextVolume = clampVolumePercent(volume);
         const masterOutput = get().ensureMasterOutput();
-        masterOutput.volume.rampTo(volumePercentToDb(nextVolume), 0.1);
+        const isSpeakerActive = hasSpeakerNode(get().nodes);
+        masterOutput.volume.rampTo(isSpeakerActive ? volumePercentToDb(nextVolume) : -Infinity, 0.1);
         set({ masterVolume: nextVolume });
     },
 
@@ -452,7 +461,9 @@ export const useStore = create<AppState>((set, get) => ({
         let node: Tone.ToneAudioNode | null = null;
 
         if (type === 'generator') {
-            node = new Tone.PolySynth();
+            const generator = new Tone.PolySynth();
+            generator.set({ oscillator: { type: getGeneratorWaveShape(get().nodes, id) } as never });
+            node = generator;
         } else if (type === 'drum') {
             const rack = createDrumRack();
             const nextDrumRacks = new Map(get().drumRacks);
@@ -932,6 +943,15 @@ export const useStore = create<AppState>((set, get) => ({
                             label: node.data.label || 'Master Out',
                         },
                     }
+                : node.type === 'generator'
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            label: node.data.label || 'Oscillator',
+                            waveShape: node.data.waveShape ?? 'sine',
+                        },
+                    }
                 : node.type === 'drum'
                     ? {
                         ...node,
@@ -1086,12 +1106,7 @@ export const useStore = create<AppState>((set, get) => ({
             for (let j = i + 1; j < nodes.length; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
-                if (
-                    a.type === 'tempo' ||
-                    b.type === 'tempo' ||
-                    a.type === 'speaker' ||
-                    b.type === 'speaker'
-                ) {
+                if (a.type === 'tempo' || b.type === 'tempo') {
                     continue;
                 }
                 const aDims = getDims(a.type);
@@ -1170,12 +1185,7 @@ export const useStore = create<AppState>((set, get) => ({
             for (let j = i + 1; j < nodes.length; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
-                if (
-                    a.type === 'tempo' ||
-                    b.type === 'tempo' ||
-                    a.type === 'speaker' ||
-                    b.type === 'speaker'
-                ) {
+                if (a.type === 'tempo' || b.type === 'tempo') {
                     continue;
                 }
                 const aDims = getDims(a.type);

@@ -103,34 +103,11 @@ export default function TempoNode({ id }: { id: string }) {
                         <span className="text-4xl font-black text-white tracking-tight">{bpm}</span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-2">
-                        <div
-                            className={`relative flex h-11 w-11 items-center justify-center rounded-2xl border transition-all ${
-                                isBeatActive
-                                    ? 'border-indigo-300 bg-indigo-400/20 shadow-[0_0_20px_rgba(129,140,248,0.55)]'
-                                    : 'border-indigo-500/30 bg-slate-800'
-                            }`}
-                        >
-                            <div
-                                className={`absolute inset-1 rounded-xl border ${
-                                    isBeatActive ? 'border-indigo-200/40 animate-ping' : 'border-transparent'
-                                }`}
-                            />
-                            <svg viewBox="0 0 24 24" className={`h-5 w-5 transition-colors ${isBeatActive ? 'text-indigo-200' : 'text-indigo-400'}`}>
-                                <path
-                                    d="M7 19V5m0 0h8l-2.5 3L15 11H7"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                        </div>
-                        <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-indigo-400">
-                            Beat
-                        </span>
-                    </div>
+                    <div
+                        className={`w-2 h-2 rounded-full ml-2 mt-1 flex-shrink-0 transition-colors ${
+                            isBeatActive ? 'bg-red-400 animate-pulse' : 'bg-slate-600'
+                        }`}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-4">
@@ -162,9 +139,6 @@ export default function TempoNode({ id }: { id: string }) {
                             <span>{MIN_TEMPO_BPM}</span>
                             <span>{MAX_TEMPO_BPM}</span>
                         </div>
-                    </div>
-                    <div className="rounded-xl border border-indigo-500/20 bg-slate-800/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-300">
-                        Global transport broadcast
                     </div>
                 </div>
             </div>

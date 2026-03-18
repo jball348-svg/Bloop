@@ -14,7 +14,7 @@ const Toolbar = () => {
 
     const tools = [
         { type: 'controller', label: 'Controller', color: 'bg-yellow-500' },
-        { type: 'generator', label: 'Oscillator', color: 'bg-red-500' },
+        { type: 'generator', label: 'Generator', color: 'bg-red-500' },
         { type: 'drum', label: 'Drums', color: 'bg-orange-500' },
         { type: 'effect', label: 'Effect', color: 'bg-fuchsia-500' },
         ...(!hasSpeakerNode ? [{ type: 'speaker', label: 'Speaker', color: 'bg-emerald-500' }] : []),
