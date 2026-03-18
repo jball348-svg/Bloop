@@ -11,7 +11,7 @@ export default function EngineControl() {
     
     const startEngine = async () => {
         await Tone.start();
-        Tone.Transport.start();
+        Tone.getTransport().start();
         initializeDefaultNodes();
         setIsStarted(true);
         console.log('Audio engine started');
