@@ -20,7 +20,7 @@ export default function ChordNode({ id }: { id: string }) {
     const quality = nodeData?.subType || DEFAULT_CHORD_QUALITY;
 
     return (
-        <div className={`bg-slate-900/95 border-2 border-sky-500 rounded-2xl p-5 shadow-2xl text-white w-56 min-h-[180px] flex flex-col transition-all hover:shadow-sky-500/20 group relative overflow-hidden${
+        <div className={`bg-slate-900 border-2 border-sky-500 rounded-2xl p-5 shadow-2xl text-white w-56 min-h-[180px] flex flex-col transition-all hover:shadow-sky-500/20 group relative overflow-hidden${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             <div className="absolute inset-0 pointer-events-none rounded-2xl opacity-[0.06]">
