@@ -15,7 +15,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#3](https://github.com/jball348-svg/Bloop/issues/3) | Chord Node — Harmonic Voicing Transformer | ✅ Closed | v2, node-type, audio-engine |
 | [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog — Synth Overhaul, UX, Drum Samples | 🟡 Open (do not action) | v3, backlog |
 | [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
-| [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | 🔴 Open | v2, ux, polish |
+| [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | 🔴 Open | v2, ux, polish |
 
 ---
@@ -32,9 +32,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 - ~~**#3** Chord Node~~ — React Flow handles, store-side note event routing, handle clipping fix
 
-### 🔴 Phase 3 — Polish (Up Next)
+### ✅ Phase 3 — Polish (Complete)
 
-- **#6** UI Polish ← _Start here_ — see issue comments for full item list, including:
+- ~~**#6** UI Polish~~ — see issue comments for full item list, including:
   - Node sizing (remove dead space)
   - Generator Mix knob
   - Drum node fixes (no "not connected", no BPM label, zig-zag step numbers)
@@ -42,6 +42,8 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
   - **Chord node cleanup** — remove "Harmonic Voicing" block, "ROOT POS" badge, "CHORD QUALITY" label
   - **Unique background patterns** per node type (no two nodes should share the same pattern)
   - Depends on: all Phase 1 + Phase 2 tickets closed ✅
+
+### 🔴 Phase 4 — Toolbar Layout (Up Next)
 
 - **#7** Toolbar Layout — Singleton section separation
   - Depends on: #6 (Amplifier rename must be done first)

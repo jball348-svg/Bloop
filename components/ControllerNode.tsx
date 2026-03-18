@@ -162,7 +162,7 @@ export default function ControllerNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-slate-900 border-2 border-yellow-500 rounded-2xl p-5 shadow-2xl text-white w-72 min-h-[160px] flex flex-col transition-all hover:shadow-yellow-500/20 group relative${
+        <div className={`bg-slate-900 border-2 border-yellow-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-yellow-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             {/* Controller pattern — horizontal staff lines, like music notation */}
@@ -176,7 +176,7 @@ export default function ControllerNode({ id }: { id: string }) {
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-3">
                         <select
                             value={subType}
                             onChange={handleSubTypeChange}
@@ -188,7 +188,7 @@ export default function ControllerNode({ id }: { id: string }) {
                     </div>
 
                     {subType === 'arp' && (
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3">
                             <div className="grid grid-cols-2 gap-2">
                                 <div className="flex flex-col gap-1">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Root</label>

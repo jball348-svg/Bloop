@@ -46,7 +46,7 @@ export default function EffectNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-slate-900 border-2 border-fuchsia-500 rounded-2xl p-5 shadow-2xl text-white w-56 min-h-[160px] flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative${
+        <div className={`bg-slate-900 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             {/* Effect Pattern Aesthetic */}
@@ -62,7 +62,7 @@ export default function EffectNode({ id }: { id: string }) {
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
-                    <div className={`flex justify-between items-center ${subType === 'none' ? 'h-full' : 'mb-6'}`}>
+                    <div className={`flex justify-between items-center ${subType === 'none' ? 'h-full' : 'mb-3'}`}>
                         <select
                             value={subType}
                             onChange={handleSubTypeChange}
@@ -80,7 +80,7 @@ export default function EffectNode({ id }: { id: string }) {
                     </div>
 
                     {subType !== 'none' && (
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-3">
                             <div className="flex flex-col gap-2">
                                 <div className="flex justify-between items-end">
                                     <div className="flex flex-col gap-1">

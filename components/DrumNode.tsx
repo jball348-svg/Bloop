@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import * as Tone from 'tone';
 import {
@@ -32,22 +32,16 @@ export default function DrumNode({ id }: { id: string }) {
     const toggleDrumStep = useStore((state) => state.toggleDrumStep);
     const triggerDrumHit = useStore((state) => state.triggerDrumHit);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
+    const updateNodeValue = useStore((state) => state.updateNodeValue);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const activeDrumPads = useStore((state) => state.activeDrumPads);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
-    const hasTempoNode = useStore((state) => state.nodes.some((node) => node.type === 'tempo'));
-    const tempoBpm = useStore((state) =>
-        state.nodes.find((node) => node.type === 'tempo')?.data.bpm ?? DEFAULT_TRANSPORT_BPM
-    );
-    const isUnconnected = useStore((state) => {
-        const edges = state.edges;
-        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
-    });
 
     const drumMode = nodeData?.drumMode ?? 'hits';
     const drumPattern = nodeData?.drumPattern;
     const isPlaying = nodeData?.isPlaying ?? false;
     const currentStep = nodeData?.currentStep ?? -1;
+    const [mix, setMix] = useState(80);
 
     useEffect(() => {
         if (drumMode !== 'hits') {
@@ -87,8 +81,18 @@ export default function DrumNode({ id }: { id: string }) {
         setDrumMode(id, event.target.value as DrumMode);
     };
 
+    const handleMixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseFloat(e.target.value);
+        setMix(val);
+        updateNodeValue(id, { mix: val });
+    };
+
+    useEffect(() => {
+        updateNodeValue(id, { mix: 80 });
+    }, [id, updateNodeValue]);
+
     return (
-        <div className={`bg-slate-900 border-2 border-orange-500 rounded-2xl p-5 shadow-2xl text-white w-80 min-h-[320px] flex flex-col transition-all hover:shadow-orange-500/20 group relative${
+        <div className={`bg-slate-900 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             <div
@@ -99,7 +103,7 @@ export default function DrumNode({ id }: { id: string }) {
             />
 
             <div className="relative z-10 flex flex-1 flex-col">
-                <div className="flex items-start justify-between gap-4 mb-5">
+                <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex flex-col gap-2">
                         <span className="text-[10px] font-black uppercase text-orange-400 tracking-[0.2em]">
                             Drums
@@ -115,18 +119,18 @@ export default function DrumNode({ id }: { id: string }) {
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                        <div className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-[0.2em] ${
-                            drumMode === 'grid'
-                                ? hasTempoNode
-                                    ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
-                                    : 'bg-slate-800 text-slate-300 border border-slate-700'
-                                : 'bg-orange-500/15 text-orange-300 border border-orange-500/30'
-                        }`}>
-                            {drumMode === 'grid'
-                                ? (hasTempoNode ? `Global ${tempoBpm} BPM` : `Default ${tempoBpm} BPM`)
-                                : 'Live Pads'}
+                        <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Mix</span>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={mix}
+                                onChange={handleMixChange}
+                                className="nodrag w-14 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                            />
+                            <span className="text-[9px] font-mono text-orange-400 w-6 text-right">{mix}</span>
                         </div>
-
                         {drumMode === 'grid' && (
                             <button
                                 onClick={async () => {
@@ -189,11 +193,11 @@ export default function DrumNode({ id }: { id: string }) {
                 )}
 
                 {drumMode === 'grid' && (
-                    <div className="flex flex-1 flex-col gap-3">
+                    <div className="flex flex-1 flex-col gap-2">
                         <div className="grid grid-cols-[56px_repeat(16,minmax(0,1fr))] gap-1 text-[9px] font-bold uppercase tracking-[0.18em] text-slate-500">
                             <div />
                             {STEPS.map((step) => (
-                                <div key={step} className={`text-center ${currentStep === step ? 'text-orange-300' : ''}`}>
+                                <div key={step} className={`text-center ${currentStep === step ? 'text-orange-300' : ''} ${step % 2 !== 0 ? 'mt-2' : ''}`}>
                                     {step + 1}
                                 </div>
                             ))}
@@ -234,14 +238,6 @@ export default function DrumNode({ id }: { id: string }) {
                             ))}
                         </div>
 
-                    </div>
-                )}
-
-                {isUnconnected && (
-                    <div className="mt-4 flex items-center gap-1.5 opacity-45 text-orange-400">
-                        <div className="flex-1 h-px bg-current" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest">not connected</span>
-                        <div className="flex-1 h-px bg-current" />
                     </div>
                 )}
             </div>

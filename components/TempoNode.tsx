@@ -86,7 +86,7 @@ export default function TempoNode({ id }: { id: string }) {
     };
 
     return (
-        <div className="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-5 shadow-2xl text-white w-64 min-h-[180px] flex flex-col transition-all hover:shadow-indigo-500/20 group relative">
+        <div className="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative">
             <div
                 className="absolute inset-0 rounded-2xl overflow-hidden opacity-[0.05] pointer-events-none"
                 style={{
@@ -95,7 +95,7 @@ export default function TempoNode({ id }: { id: string }) {
             />
 
             <div className="relative z-10 flex flex-1 flex-col">
-                <div className="flex items-start justify-between gap-4 mb-6">
+                <div className="flex items-start justify-between gap-4 mb-3">
                     <div className="flex flex-col gap-1">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
                             Tempo - BPM
@@ -110,7 +110,7 @@ export default function TempoNode({ id }: { id: string }) {
                     />
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
                             <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">

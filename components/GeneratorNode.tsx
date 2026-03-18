@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
@@ -20,13 +21,24 @@ export default function GeneratorNode({ id }: { id: string }) {
     });
 
     const waveShape = nodeData?.waveShape || 'sine';
+    const [mix, setMix] = useState(80);
 
     const handleWaveShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         updateNodeValue(id, { waveShape: e.target.value as WaveShape });
     };
 
+    const handleMixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = parseFloat(e.target.value);
+        setMix(val);
+        updateNodeValue(id, { mix: val });
+    };
+
+    useEffect(() => {
+        updateNodeValue(id, { mix: 80 });
+    }, [id]);
+
     return (
-        <div className={`bg-slate-900 border-2 border-red-500 rounded-2xl p-5 shadow-2xl text-white w-56 min-h-[160px] flex flex-col transition-all hover:shadow-red-500/20 group relative${
+        <div className={`bg-slate-900 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-red-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             {/* Generator pattern — vertical frequency bars, like an oscilloscope display */}
@@ -48,14 +60,23 @@ export default function GeneratorNode({ id }: { id: string }) {
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
-                    <div className="flex justify-between items-center mb-6">
+                    <div className="flex justify-between items-center mb-3">
                         <span className="text-[10px] font-black uppercase text-red-400 tracking-[0.2em]">Generator</span>
-                        <div className={`w-2 h-2 rounded-full ml-2 flex-shrink-0 transition-colors ${
-                            isActive ? 'bg-red-400 animate-pulse' : 'bg-slate-600'
-                        }`} />
+                        <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase">Mix</span>
+                            <input
+                                type="range"
+                                min="0"
+                                max="100"
+                                value={mix}
+                                onChange={handleMixChange}
+                                className="nodrag w-14 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                            />
+                            <span className="text-[9px] font-mono text-red-400 w-6 text-right">{mix}</span>
+                        </div>
                     </div>
 
-                    <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-3">
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wave Shape</label>
                             <select

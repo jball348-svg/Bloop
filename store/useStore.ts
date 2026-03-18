@@ -72,6 +72,7 @@ type ActiveChordVoicing = {
 type NodeValueUpdate = {
     waveShape?: WaveShape;
     volume?: number;
+    mix?: number;
     mute?: boolean;
     roomSize?: number;
     wet?: number;
@@ -846,6 +847,29 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (node instanceof Tone.Volume && typeof value.volume === 'number') {
             node.volume.rampTo(volumePercentToDb(value.volume), 0.1);
+        }
+
+        if (node instanceof Tone.PolySynth && typeof value.mix === 'number') {
+            if (value.mix === 0) {
+                node.volume.rampTo(-Infinity, 0.1);
+            } else {
+                const db = ((value.mix - 1) / 99) * 36 - 30;
+                node.volume.rampTo(db, 0.1);
+            }
+        }
+
+        // Handle drum mix - drum rack output is a Gain node
+        if (node instanceof Tone.Gain && typeof value.mix === 'number') {
+            const { drumRacks } = get();
+            const isDrumOutput = Array.from(drumRacks.values()).some(rack => rack.output === node);
+            
+            if (isDrumOutput) {
+                if (value.mix === 0) {
+                    node.gain.rampTo(0, 0.1);
+                } else {
+                    node.gain.rampTo(value.mix / 100, 0.1);
+                }
+            }
         }
 
         if (node instanceof Tone.Freeverb) {
