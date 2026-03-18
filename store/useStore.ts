@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as Tone from 'tone';
+import { Note } from '@tonaljs/tonal';
 import {
     Connection,
     Edge,
@@ -27,8 +28,21 @@ export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
+export const CHORD_QUALITY_OPTIONS = [
+    { value: 'major', label: 'Major' },
+    { value: 'minor', label: 'Minor' },
+    { value: 'dominant7', label: 'Dominant 7' },
+    { value: 'major7', label: 'Major 7' },
+    { value: 'minor7', label: 'Minor 7' },
+    { value: 'sus2', label: 'Sus2' },
+    { value: 'sus4', label: 'Sus4' },
+    { value: 'diminished', label: 'Diminished' },
+    { value: 'augmented', label: 'Augmented' },
+] as const;
+export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
+export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord';
 export type ConnectionKind = 'audio' | 'tempo';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth';
 export type DrumMode = 'hits' | 'grid';
@@ -50,6 +64,10 @@ type DrumRack = {
     hatOpen: Tone.MetalSynth;
     loop: Tone.Loop | null;
     step: number;
+};
+type ActiveChordVoicing = {
+    notes: string[];
+    count: number;
 };
 type NodeValueUpdate = {
     waveShape?: WaveShape;
@@ -82,9 +100,185 @@ export type AppNode = Node & {
     type: AudioNodeType;
 };
 
+type NoteDispatch = {
+    generatorId: string;
+    note: string;
+};
+
+const CHORD_INTERVALS: Record<ChordQuality, string[]> = {
+    major: ['1P', '3M', '5P'],
+    minor: ['1P', '3m', '5P'],
+    dominant7: ['1P', '3M', '5P', '7m'],
+    major7: ['1P', '3M', '5P', '7M'],
+    minor7: ['1P', '3m', '5P', '7m'],
+    sus2: ['1P', '2M', '5P'],
+    sus4: ['1P', '4P', '5P'],
+    diminished: ['1P', '3m', '5d'],
+    augmented: ['1P', '3M', '5A'],
+};
+
+const getChordVoicingKey = (chordId: string, rootNote: string) =>
+    `${chordId}::${rootNote}`;
+
+const buildChordVoicing = (rootNote: string, quality?: string) => {
+    const intervals =
+        CHORD_INTERVALS[(quality ?? DEFAULT_CHORD_QUALITY) as ChordQuality] ??
+        CHORD_INTERVALS[DEFAULT_CHORD_QUALITY];
+
+    const notes = intervals
+        .map((interval) => Note.transpose(rootNote, interval))
+        .map((note) => (note ? Note.simplify(note) : ''))
+        .filter((note): note is string => Boolean(note));
+
+    return notes.length > 0 ? notes : [rootNote];
+};
+
+const rememberChordVoicing = (
+    chordVoicings: Map<string, ActiveChordVoicing>,
+    chordId: string,
+    rootNote: string,
+    quality?: string
+) => {
+    const voicingKey = getChordVoicingKey(chordId, rootNote);
+    const existingVoicing = chordVoicings.get(voicingKey);
+
+    if (existingVoicing) {
+        chordVoicings.set(voicingKey, {
+            ...existingVoicing,
+            count: existingVoicing.count + 1,
+        });
+        return existingVoicing.notes;
+    }
+
+    const notes = buildChordVoicing(rootNote, quality);
+    chordVoicings.set(voicingKey, { notes, count: 1 });
+    return notes;
+};
+
+const consumeChordVoicing = (
+    chordVoicings: Map<string, ActiveChordVoicing>,
+    chordId: string,
+    rootNote: string,
+    quality?: string
+) => {
+    const voicingKey = getChordVoicingKey(chordId, rootNote);
+    const existingVoicing = chordVoicings.get(voicingKey);
+
+    if (!existingVoicing) {
+        return buildChordVoicing(rootNote, quality);
+    }
+
+    if (existingVoicing.count <= 1) {
+        chordVoicings.delete(voicingKey);
+    } else {
+        chordVoicings.set(voicingKey, {
+            ...existingVoicing,
+            count: existingVoicing.count - 1,
+        });
+    }
+
+    return existingVoicing.notes;
+};
+
+const incrementGeneratorNoteCount = (
+    noteCounts: Map<string, Map<string, number>>,
+    generatorId: string,
+    note: string
+) => {
+    const nextNoteCounts = new Map(noteCounts);
+    const generatorNotes = new Map(nextNoteCounts.get(generatorId) ?? []);
+    generatorNotes.set(note, (generatorNotes.get(note) ?? 0) + 1);
+    nextNoteCounts.set(generatorId, generatorNotes);
+    return nextNoteCounts;
+};
+
+const decrementGeneratorNoteCount = (
+    noteCounts: Map<string, Map<string, number>>,
+    generatorId: string,
+    note: string
+) => {
+    const nextNoteCounts = new Map(noteCounts);
+    const generatorNotes = new Map(nextNoteCounts.get(generatorId) ?? []);
+    const nextCount = (generatorNotes.get(note) ?? 0) - 1;
+
+    if (nextCount > 0) {
+        generatorNotes.set(note, nextCount);
+    } else {
+        generatorNotes.delete(note);
+    }
+
+    if (generatorNotes.size > 0) {
+        nextNoteCounts.set(generatorId, generatorNotes);
+    } else {
+        nextNoteCounts.delete(generatorId);
+    }
+
+    return nextNoteCounts;
+};
+
+const collectNoteDispatches = (
+    sourceId: string,
+    note: string,
+    nodesById: Map<string, AppNode>,
+    edges: AppEdge[],
+    chordVoicings: Map<string, ActiveChordVoicing>,
+    rememberVoicings: boolean,
+    visited = new Set<string>()
+): NoteDispatch[] => {
+    const dispatches: NoteDispatch[] = [];
+
+    edges
+        .filter((edge) => isAudioEdge(edge) && edge.source === sourceId)
+        .forEach((edge) => {
+            const targetNode = nodesById.get(edge.target);
+
+            if (!targetNode) {
+                return;
+            }
+
+            if (targetNode.type === 'generator') {
+                dispatches.push({ generatorId: targetNode.id, note });
+                return;
+            }
+
+            if (targetNode.type !== 'chord') {
+                return;
+            }
+
+            const visitKey = `${sourceId}->${targetNode.id}:${note}`;
+            if (visited.has(visitKey)) {
+                return;
+            }
+
+            const nextVisited = new Set(visited);
+            nextVisited.add(visitKey);
+
+            const voicing = rememberVoicings
+                ? rememberChordVoicing(chordVoicings, targetNode.id, note, targetNode.data.subType)
+                : consumeChordVoicing(chordVoicings, targetNode.id, note, targetNode.data.subType);
+
+            voicing.forEach((voicedNote) => {
+                dispatches.push(
+                    ...collectNoteDispatches(
+                        targetNode.id,
+                        voicedNote,
+                        nodesById,
+                        edges,
+                        chordVoicings,
+                        rememberVoicings,
+                        nextVisited
+                    )
+                );
+            });
+        });
+
+    return dispatches;
+};
+
 // Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
+    chord:      { w: 224, h: 240 },
     generator:  { w: 224, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
@@ -106,6 +300,7 @@ const drumPadTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
+    chord: 0.5,
     generator: 1,
     drum: 1,
     effect: 2,
@@ -113,7 +308,9 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
 };
 
 const VALID_AUTO_WIRE_PAIRS = new Set([
+    'controller->chord',
     'controller->generator',
+    'chord->generator',
     'generator->effect',
     'drum->effect',
     'effect->effect',
@@ -295,6 +492,8 @@ type AppState = {
     masterVolume: number;
     drumRacks: Map<string, DrumRack>;
     patterns: Map<string, DisposablePattern>;
+    activeChordVoicings: Map<string, ActiveChordVoicing>;
+    generatorNoteCounts: Map<string, Map<string, number>>;
     activeGenerators: Set<string>;
     activeDrumPads: Set<string>;
     adjacentNodeIds: Set<string>;
@@ -368,6 +567,8 @@ export const useStore = create<AppState>((set, get) => ({
     masterVolume: DEFAULT_MASTER_VOLUME,
     drumRacks: new Map(),
     patterns: new Map(),
+    activeChordVoicings: new Map(),
+    generatorNoteCounts: new Map(),
     activeGenerators: new Set(),
     activeDrumPads: new Set(),
     adjacentNodeIds: new Set(),
@@ -470,7 +671,7 @@ export const useStore = create<AppState>((set, get) => ({
             nextDrumRacks.set(id, rack);
             set({ drumRacks: nextDrumRacks });
             node = rack.output;
-        } else if (type === 'controller' || type === 'tempo' || type === 'speaker') {
+        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord') {
             return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
@@ -547,7 +748,15 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     removeAudioNode: (id: string) => {
-        const { audioNodes, drumRacks, patterns, activeDrumPads } = get();
+        const {
+            audioNodes,
+            drumRacks,
+            patterns,
+            activeChordVoicings,
+            generatorNoteCounts,
+            activeGenerators,
+            activeDrumPads,
+        } = get();
         const pattern = patterns.get(id);
         if (pattern) {
             pattern.stop().dispose();
@@ -586,6 +795,23 @@ export const useStore = create<AppState>((set, get) => ({
                 activeDrumPads: nextActiveDrumPads,
             });
         }
+
+        const nextChordVoicings = new Map(activeChordVoicings);
+        [...nextChordVoicings.keys()]
+            .filter((voicingKey) => voicingKey.startsWith(`${id}::`))
+            .forEach((voicingKey) => nextChordVoicings.delete(voicingKey));
+
+        const nextGeneratorNoteCounts = new Map(generatorNoteCounts);
+        nextGeneratorNoteCounts.delete(id);
+
+        const nextActiveGenerators = new Set(activeGenerators);
+        nextActiveGenerators.delete(id);
+
+        set({
+            activeChordVoicings: nextChordVoicings,
+            generatorNoteCounts: nextGeneratorNoteCounts,
+            activeGenerators: nextActiveGenerators,
+        });
 
         const node = audioNodes.get(id);
         if (node) {
@@ -788,7 +1014,15 @@ export const useStore = create<AppState>((set, get) => ({
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
             node.triggerAttack(note);
-            set({ activeGenerators: new Set([...get().activeGenerators, id]) });
+            const nextGeneratorNoteCounts = incrementGeneratorNoteCount(
+                get().generatorNoteCounts,
+                id,
+                note
+            );
+            set({
+                generatorNoteCounts: nextGeneratorNoteCounts,
+                activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+            });
         }
     },
 
@@ -796,42 +1030,82 @@ export const useStore = create<AppState>((set, get) => ({
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
             node.triggerRelease(note);
-            const next = new Set(get().activeGenerators);
-            next.delete(id);
-            set({ activeGenerators: next });
+            const nextGeneratorNoteCounts = decrementGeneratorNoteCount(
+                get().generatorNoteCounts,
+                id,
+                note
+            );
+            set({
+                generatorNoteCounts: nextGeneratorNoteCounts,
+                activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+            });
         }
     },
 
     fireNoteOn: (controllerId: string, note: string) => {
-        const { edges, audioNodes } = get();
-        const targetIds: string[] = [];
-        edges.filter((e: AppEdge) => isAudioEdge(e) && e.source === controllerId).forEach((edge: Edge) => {
-            const targetNode = audioNodes.get(edge.target);
+        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts } = get();
+        const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
+        const nextChordVoicings = new Map(activeChordVoicings);
+        const dispatches = collectNoteDispatches(
+            controllerId,
+            note,
+            nodesById,
+            edges,
+            nextChordVoicings,
+            true
+        );
+
+        let nextGeneratorNoteCounts = generatorNoteCounts;
+        dispatches.forEach(({ generatorId, note: voicedNote }) => {
+            const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
-                targetNode.triggerAttack(note);
-                targetIds.push(edge.target);
+                targetNode.triggerAttack(voicedNote);
+                nextGeneratorNoteCounts = incrementGeneratorNoteCount(
+                    nextGeneratorNoteCounts,
+                    generatorId,
+                    voicedNote
+                );
             }
         });
-        if (targetIds.length > 0) {
-            set({ activeGenerators: new Set([...get().activeGenerators, ...targetIds]) });
-        }
+
+        set({
+            activeChordVoicings: nextChordVoicings,
+            generatorNoteCounts: nextGeneratorNoteCounts,
+            activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+        });
     },
 
     fireNoteOff: (controllerId: string, note: string) => {
-        const { edges, audioNodes } = get();
-        const targetIds: string[] = [];
-        edges.filter((e: AppEdge) => isAudioEdge(e) && e.source === controllerId).forEach((edge: Edge) => {
-            const targetNode = audioNodes.get(edge.target);
+        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts } = get();
+        const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
+        const nextChordVoicings = new Map(activeChordVoicings);
+        const dispatches = collectNoteDispatches(
+            controllerId,
+            note,
+            nodesById,
+            edges,
+            nextChordVoicings,
+            false
+        );
+
+        let nextGeneratorNoteCounts = generatorNoteCounts;
+        dispatches.forEach(({ generatorId, note: voicedNote }) => {
+            const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
-                targetNode.triggerRelease(note);
-                targetIds.push(edge.target);
+                targetNode.triggerRelease(voicedNote);
+                nextGeneratorNoteCounts = decrementGeneratorNoteCount(
+                    nextGeneratorNoteCounts,
+                    generatorId,
+                    voicedNote
+                );
             }
         });
-        if (targetIds.length > 0) {
-            const next = new Set(get().activeGenerators);
-            targetIds.forEach(id => next.delete(id));
-            set({ activeGenerators: next });
-        }
+
+        set({
+            activeChordVoicings: nextChordVoicings,
+            generatorNoteCounts: nextGeneratorNoteCounts,
+            activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+        });
     },
 
     toggleNodePlayback: (id: string, isPlaying: boolean) => {
@@ -943,6 +1217,15 @@ export const useStore = create<AppState>((set, get) => ({
                             label: node.data.label || 'Master Out',
                         },
                     }
+                : node.type === 'chord'
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            label: node.data.label || 'Chord',
+                            subType: node.data.subType ?? DEFAULT_CHORD_QUALITY,
+                        },
+                    }
                 : node.type === 'generator'
                     ? {
                         ...node,
@@ -990,6 +1273,51 @@ export const useStore = create<AppState>((set, get) => ({
     removeNodeAndCleanUp: (id: string) => {
         const { nodes, edges } = get();
         const removedNode = nodes.find((node: AppNode) => node.id === id);
+
+        if (removedNode?.type === 'chord') {
+            const { audioNodes, activeChordVoicings, generatorNoteCounts } = get();
+            const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
+            const nextChordVoicings = new Map(activeChordVoicings);
+            let nextGeneratorNoteCounts = generatorNoteCounts;
+
+            [...activeChordVoicings.entries()]
+                .filter(([voicingKey]) => voicingKey.startsWith(`${id}::`))
+                .forEach(([voicingKey, voicing]) => {
+                    for (let iteration = 0; iteration < voicing.count; iteration++) {
+                        voicing.notes.forEach((voicedNote) => {
+                            const dispatches = collectNoteDispatches(
+                                id,
+                                voicedNote,
+                                nodesById,
+                                edges,
+                                nextChordVoicings,
+                                false
+                            );
+
+                            dispatches.forEach(({ generatorId, note }) => {
+                                const targetNode = audioNodes.get(generatorId);
+                                if (targetNode instanceof Tone.PolySynth) {
+                                    targetNode.triggerRelease(note);
+                                    nextGeneratorNoteCounts = decrementGeneratorNoteCount(
+                                        nextGeneratorNoteCounts,
+                                        generatorId,
+                                        note
+                                    );
+                                }
+                            });
+                        });
+                    }
+
+                    nextChordVoicings.delete(voicingKey);
+                });
+
+            set({
+                activeChordVoicings: nextChordVoicings,
+                generatorNoteCounts: nextGeneratorNoteCounts,
+                activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+            });
+        }
+
         get().removeAudioNode(id);
         set({
             nodes: nodes.filter((n: AppNode) => n.id !== id),
@@ -1038,9 +1366,11 @@ export const useStore = create<AppState>((set, get) => ({
                     !sourceInfo ||
                     !targetInfo ||
                     sourceInfo.type === 'controller' ||
+                    sourceInfo.type === 'chord' ||
                     sourceInfo.type === 'tempo' ||
                     sourceInfo.type === 'speaker' ||
                     targetInfo.type === 'controller' ||
+                    targetInfo.type === 'chord' ||
                     targetInfo.type === 'tempo' ||
                     targetInfo.type === 'speaker'
                 ) {
@@ -1062,6 +1392,7 @@ export const useStore = create<AppState>((set, get) => ({
             if (
                 !nodeInfo ||
                 nodeInfo.type === 'controller' ||
+                nodeInfo.type === 'chord' ||
                 nodeInfo.type === 'tempo' ||
                 nodeInfo.type === 'speaker' ||
                 routedSourceIds.has(id)

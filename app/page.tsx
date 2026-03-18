@@ -18,6 +18,7 @@ import {
 } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
+import ChordNode from '@/components/ChordNode';
 import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
@@ -30,6 +31,7 @@ import Toolbar from '@/components/Toolbar';
 //   GeneratorNode / EffectNode / SpeakerNode → w-56 = 224px
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
+    chord:      { w: 224, h: 240 },
     generator:  { w: 224, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
@@ -68,6 +70,7 @@ function BloopCanvasInner() {
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
         controller: ControllerNode,
+        chord: ChordNode,
         drum: DrumNode,
         effect: EffectNode,
         speaker: SpeakerNode,
@@ -110,6 +113,10 @@ function BloopCanvasInner() {
         let label = '';
         const bpm = DEFAULT_TRANSPORT_BPM;
         if (type === 'controller') subType = 'arp';
+        if (type === 'chord') {
+            subType = 'major';
+            label = 'Chord';
+        }
         if (type === 'generator') {
             subType = 'wave';
             label = 'Oscillator';
