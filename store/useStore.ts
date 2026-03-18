@@ -24,10 +24,15 @@ export const AUDIO_INPUT_HANDLE_ID = 'audio-in';
 export const AUDIO_OUTPUT_HANDLE_ID = 'audio-out';
 export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
+export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
+export const DRUM_STEP_COUNT = 16;
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum';
 export type ConnectionKind = 'audio' | 'tempo';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth';
+export type DrumMode = 'hits' | 'grid';
+export type DrumPart = (typeof DRUM_PARTS)[number];
+export type DrumPattern = Record<DrumPart, boolean[]>;
 type AppEdgeData = {
     kind?: ConnectionKind;
 };
@@ -35,6 +40,15 @@ type AppEdge = Edge<AppEdgeData>;
 type DisposablePattern = {
     stop: () => DisposablePattern;
     dispose: () => void;
+};
+type DrumRack = {
+    output: Tone.Gain;
+    kick: Tone.MembraneSynth;
+    snare: Tone.NoiseSynth;
+    hatClosed: Tone.MetalSynth;
+    hatOpen: Tone.MetalSynth;
+    loop: Tone.Loop | null;
+    step: number;
 };
 type NodeValueUpdate = {
     waveShape?: WaveShape;
@@ -55,6 +69,9 @@ export type AppNode = Node & {
         label: string;
         subType?: string;
         isPlaying?: boolean;
+        drumMode?: DrumMode;
+        drumPattern?: DrumPattern;
+        currentStep?: number;
         rootNote?: string;
         scaleType?: string;
         waveShape?: WaveShape;
@@ -68,6 +85,7 @@ export type AppNode = Node & {
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     generator:  { w: 224, h: 220 },
+    drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
@@ -81,11 +99,14 @@ const ADJ_TOUCH_THRESHOLD = 48;
 const ADJ_Y_THRESHOLD = 100;
 
 const AUTO_EDGE_PREFIX = 'auto-';
+const DRUM_PAD_HIGHLIGHT_MS = 120;
+const drumPadTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
     generator: 1,
+    drum: 1,
     effect: 2,
     speaker: 3,
 };
@@ -94,12 +115,79 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->generator',
     'generator->effect',
     'generator->speaker',
+    'drum->effect',
+    'drum->speaker',
     'effect->effect',
     'effect->speaker',
 ]);
 
 const clampTempoBpm = (bpm: number) =>
     Math.min(MAX_TEMPO_BPM, Math.max(MIN_TEMPO_BPM, Math.round(bpm)));
+
+const createDefaultDrumPattern = (): DrumPattern => ({
+    kick:      [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+    snare:     [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+    hatClosed: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+    hatOpen:   [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+});
+
+const createDrumRack = (): DrumRack => {
+    const output = new Tone.Gain(0.9);
+    const kick = new Tone.MembraneSynth({
+        pitchDecay: 0.03,
+        octaves: 6,
+        oscillator: { type: 'sine' },
+        envelope: {
+            attack: 0.001,
+            decay: 0.35,
+            sustain: 0,
+            release: 0.08,
+        },
+    }).connect(output);
+    const snare = new Tone.NoiseSynth({
+        noise: { type: 'white', playbackRate: 1.75 },
+        envelope: {
+            attack: 0.001,
+            decay: 0.14,
+            sustain: 0,
+            release: 0.03,
+        },
+    }).connect(output);
+    const hatClosed = new Tone.MetalSynth({
+        harmonicity: 5.1,
+        modulationIndex: 24,
+        resonance: 4200,
+        octaves: 1.5,
+        envelope: {
+            attack: 0.001,
+            decay: 0.06,
+            release: 0.02,
+        },
+    }).connect(output);
+    hatClosed.frequency.value = 260;
+    const hatOpen = new Tone.MetalSynth({
+        harmonicity: 5.1,
+        modulationIndex: 26,
+        resonance: 3600,
+        octaves: 1.5,
+        envelope: {
+            attack: 0.001,
+            decay: 0.22,
+            release: 0.08,
+        },
+    }).connect(output);
+    hatOpen.frequency.value = 220;
+
+    return {
+        output,
+        kick,
+        snare,
+        hatClosed,
+        hatOpen,
+        loop: null,
+        step: 0,
+    };
+};
 
 export const isTempoEdge = (edge: Edge<AppEdgeData>) =>
     edge.data?.kind === 'tempo' ||
@@ -109,7 +197,13 @@ export const isTempoEdge = (edge: Edge<AppEdgeData>) =>
 export const isAudioEdge = (edge: Edge<AppEdgeData>) => !isTempoEdge(edge);
 
 const isTempoCapableNode = (node?: AppNode) =>
-    Boolean(node && node.type === 'controller' && node.data.subType === 'arp');
+    Boolean(
+        node &&
+        (
+            (node.type === 'controller' && node.data.subType === 'arp') ||
+            node.type === 'drum'
+        )
+    );
 
 const isValidGraphConnection = (
     connection: Connection,
@@ -213,8 +307,10 @@ type AppState = {
     nodes: AppNode[];
     edges: AppEdge[];
     audioNodes: Map<string, Tone.ToneAudioNode>;
+    drumRacks: Map<string, DrumRack>;
     patterns: Map<string, DisposablePattern>;
     activeGenerators: Set<string>;
+    activeDrumPads: Set<string>;
     adjacentNodeIds: Set<string>;
     autoEdgeIds: Set<string>;
     isDraggingTempoConnection: boolean;
@@ -231,6 +327,9 @@ type AppState = {
     updateTempoBpm: (id: string, bpm: number) => void;
     updateArpScale: (id: string, root: string, scale: string) => void;
     updateOctave: (id: string, octave: number) => void;
+    setDrumMode: (id: string, mode: DrumMode) => void;
+    toggleDrumStep: (id: string, part: DrumPart, step: number) => void;
+    triggerDrumHit: (id: string, part: DrumPart, time?: number | string) => void;
     triggerNoteOn: (id: string, note: string) => void;
     triggerNoteOff: (id: string, note: string) => void;
     fireNoteOn: (controllerId: string, note: string) => void;
@@ -283,8 +382,10 @@ export const useStore = create<AppState>((set, get) => ({
         },
     ],
     audioNodes: new Map(),
+    drumRacks: new Map(),
     patterns: new Map(),
     activeGenerators: new Set(),
+    activeDrumPads: new Set(),
     adjacentNodeIds: new Set(),
     autoEdgeIds: new Set(['auto-node-1-node-2', 'auto-node-2-node-3']),
     isDraggingTempoConnection: false,
@@ -352,6 +453,12 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (type === 'generator') {
             node = new Tone.PolySynth();
+        } else if (type === 'drum') {
+            const rack = createDrumRack();
+            const nextDrumRacks = new Map(get().drumRacks);
+            nextDrumRacks.set(id, rack);
+            set({ drumRacks: nextDrumRacks });
+            node = rack.output;
         } else if (type === 'controller' || type === 'tempo') {
             return;
         } else if (type === 'effect') {
@@ -431,13 +538,44 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     removeAudioNode: (id: string) => {
-        const { audioNodes, patterns } = get();
+        const { audioNodes, drumRacks, patterns, activeDrumPads } = get();
         const pattern = patterns.get(id);
         if (pattern) {
             pattern.stop().dispose();
             const newPatterns = new Map(patterns);
             newPatterns.delete(id);
             set({ patterns: newPatterns });
+        }
+
+        const rack = drumRacks.get(id);
+        if (rack) {
+            rack.loop?.dispose();
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hatClosed.disconnect().dispose();
+            rack.hatOpen.disconnect().dispose();
+
+            const nextDrumRacks = new Map(drumRacks);
+            nextDrumRacks.delete(id);
+
+            const nextActiveDrumPads = new Set(
+                [...activeDrumPads].filter((padKey) => !padKey.startsWith(`${id}:`))
+            );
+
+            [...drumPadTimeouts.keys()]
+                .filter((padKey) => padKey.startsWith(`${id}:`))
+                .forEach((padKey) => {
+                    const timeoutId = drumPadTimeouts.get(padKey);
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                    drumPadTimeouts.delete(padKey);
+                });
+
+            set({
+                drumRacks: nextDrumRacks,
+                activeDrumPads: nextActiveDrumPads,
+            });
         }
 
         const node = audioNodes.get(id);
@@ -536,6 +674,106 @@ export const useStore = create<AppState>((set, get) => ({
         });
     },
 
+    setDrumMode: (id: string, mode: DrumMode) => {
+        const { nodes, drumRacks } = get();
+        const currentNode = nodes.find((node: AppNode) => node.id === id && node.type === 'drum');
+        if (!currentNode) {
+            return;
+        }
+
+        const rack = drumRacks.get(id);
+        if (rack && currentNode.data.drumMode === 'grid' && mode !== 'grid') {
+            rack.loop?.stop(0);
+            rack.loop?.cancel(0);
+            rack.step = 0;
+        }
+
+        set({
+            nodes: nodes.map((node: AppNode) =>
+                node.id === id
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            drumMode: mode,
+                            currentStep: -1,
+                            isPlaying: mode === 'grid' ? node.data.isPlaying : false,
+                        },
+                    }
+                    : node
+            ),
+        });
+    },
+
+    toggleDrumStep: (id: string, part: DrumPart, step: number) => {
+        const { nodes } = get();
+        if (step < 0 || step >= DRUM_STEP_COUNT) {
+            return;
+        }
+
+        set({
+            nodes: nodes.map((node: AppNode) => {
+                if (node.id !== id || node.type !== 'drum') {
+                    return node;
+                }
+
+                const pattern = node.data.drumPattern ?? createDefaultDrumPattern();
+                const nextPattern: DrumPattern = {
+                    kick: [...pattern.kick],
+                    snare: [...pattern.snare],
+                    hatClosed: [...pattern.hatClosed],
+                    hatOpen: [...pattern.hatOpen],
+                };
+                nextPattern[part][step] = !nextPattern[part][step];
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        drumPattern: nextPattern,
+                    },
+                };
+            }),
+        });
+    },
+
+    triggerDrumHit: (id: string, part: DrumPart, time?: number | string) => {
+        const rack = get().drumRacks.get(id);
+        if (!rack) {
+            return;
+        }
+
+        if (part === 'kick') {
+            rack.kick.triggerAttackRelease('C1', '8n', time, 0.95);
+        } else if (part === 'snare') {
+            rack.snare.triggerAttackRelease('16n', time, 0.8);
+        } else if (part === 'hatClosed') {
+            rack.hatClosed.triggerAttackRelease('C6', '32n', time, 0.45);
+        } else if (part === 'hatOpen') {
+            rack.hatOpen.triggerAttackRelease('A5', '8n', time, 0.35);
+        }
+
+        const padKey = `${id}:${part}`;
+        const existingTimeout = drumPadTimeouts.get(padKey);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+
+        set({
+            activeDrumPads: new Set([...get().activeDrumPads, padKey]),
+        });
+
+        drumPadTimeouts.set(
+            padKey,
+            setTimeout(() => {
+                const nextActiveDrumPads = new Set(get().activeDrumPads);
+                nextActiveDrumPads.delete(padKey);
+                set({ activeDrumPads: nextActiveDrumPads });
+                drumPadTimeouts.delete(padKey);
+            }, DRUM_PAD_HIGHLIGHT_MS)
+        );
+    },
+
     triggerNoteOn: (id: string, note: string) => {
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
@@ -587,7 +825,78 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     toggleNodePlayback: (id: string, isPlaying: boolean) => {
-        const { audioNodes, nodes } = get();
+        const { audioNodes, drumRacks, edges, nodes } = get();
+        const nodeData = nodes.find((node: AppNode) => node.id === id);
+        if (!nodeData) {
+            return;
+        }
+
+        if (nodeData.type === 'drum') {
+            const rack = drumRacks.get(id);
+            if (!rack) {
+                return;
+            }
+
+            const isTempoConnected = edges.some((edge: AppEdge) => isTempoEdge(edge) && edge.target === id);
+            const drumPattern = nodeData.data.drumPattern ?? createDefaultDrumPattern();
+
+            if (nodeData.data.drumMode === 'grid' && isPlaying) {
+                if (!isTempoConnected) {
+                    return;
+                }
+
+                if (!rack.loop) {
+                    rack.loop = new Tone.Loop((time) => {
+                        const step = rack.step % DRUM_STEP_COUNT;
+                        const currentNode = get().nodes.find((node: AppNode) => node.id === id);
+                        const currentPattern = currentNode?.data.drumPattern ?? drumPattern;
+
+                        DRUM_PARTS.forEach((part) => {
+                            if (currentPattern[part][step]) {
+                                get().triggerDrumHit(id, part, time);
+                            }
+                        });
+
+                        Tone.getDraw().schedule(() => {
+                            set({
+                                nodes: get().nodes.map((node: AppNode) =>
+                                    node.id === id
+                                        ? { ...node, data: { ...node.data, currentStep: step } }
+                                        : node
+                                ),
+                            });
+                        }, time);
+
+                        rack.step = (step + 1) % DRUM_STEP_COUNT;
+                    }, '16n');
+                }
+
+                rack.loop.cancel(0);
+                rack.step = 0;
+                rack.loop.start(0);
+            } else {
+                rack.loop?.stop(0);
+                rack.loop?.cancel(0);
+                rack.step = 0;
+            }
+
+            set({
+                nodes: nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                currentStep: isPlaying ? node.data.currentStep ?? -1 : -1,
+                                isPlaying,
+                            },
+                        }
+                        : node
+                ),
+            });
+            return;
+        }
+
         const node = audioNodes.get(id);
         if (node instanceof Tone.Oscillator) {
             if (isPlaying) {
@@ -618,6 +927,18 @@ export const useStore = create<AppState>((set, get) => ({
                         bpm: clampTempoBpm(node.data.bpm ?? DEFAULT_TRANSPORT_BPM),
                     },
                 }
+                : node.type === 'drum'
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            label: node.data.label || 'Drums',
+                            drumMode: node.data.drumMode ?? 'hits',
+                            drumPattern: node.data.drumPattern ?? createDefaultDrumPattern(),
+                            currentStep: node.data.currentStep ?? -1,
+                            isPlaying: node.data.isPlaying ?? false,
+                        },
+                    }
                 : node;
 
         set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
@@ -629,8 +950,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (nextNode.data.subType && nextNode.data.subType !== 'none') {
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
-        } else if (nextNode.type === 'speaker') {
-            get().initAudioNode(nextNode.id, 'speaker');
+        } else if (nextNode.type === 'speaker' || nextNode.type === 'drum') {
+            get().initAudioNode(nextNode.id, nextNode.type);
         }
     },
 

@@ -20,6 +20,7 @@ import {
 } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
+import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
@@ -32,6 +33,7 @@ import Toolbar from '@/components/Toolbar';
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     generator:  { w: 224, h: 220 },
+    drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
@@ -67,6 +69,7 @@ function BloopCanvasInner() {
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
         controller: ControllerNode,
+        drum: DrumNode,
         effect: EffectNode,
         speaker: SpeakerNode,
         tempo: TempoNode,
@@ -116,7 +119,11 @@ function BloopCanvasInner() {
         let label = '';
         const bpm = DEFAULT_TRANSPORT_BPM;
         if (type === 'controller') subType = 'arp';
-        if (type === 'generator') subType = 'wave';
+        if (type === 'generator') {
+            subType = 'wave';
+            label = 'Oscillator';
+        }
+        if (type === 'drum') label = 'Drums';
         if (type === 'effect') subType = 'reverb';
         if (type === 'tempo') label = 'Tempo';
 
@@ -124,7 +131,13 @@ function BloopCanvasInner() {
             id: crypto.randomUUID(),
             type,
             position,
-            data: { label, subType, isPlaying: false, bpm },
+            data: {
+                label,
+                subType,
+                isPlaying: false,
+                bpm,
+                ...(type === 'drum' ? { drumMode: 'hits' as const } : {}),
+            },
         });
 
         setTimeout(() => useStore.getState().recalculateAdjacency(), 0);
