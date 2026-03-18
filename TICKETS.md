@@ -16,8 +16,12 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog — Synth Overhaul, UX, Drum Samples | 🟡 Open (do not action) | v3, backlog |
 | [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
 | [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
+<<<<<<< Updated upstream
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | 🔴 Open | v2, ux, polish |
 | [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | 🔴 Open | v2, ux, polish |
+=======
+| [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | ✅ Closed | v2, ux, polish |
+>>>>>>> Stashed changes
 
 ---
 
@@ -44,10 +48,17 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
   - **Unique background patterns** per node type (no two nodes should share the same pattern)
   - Depends on: all Phase 1 + Phase 2 tickets closed ✅
 
+<<<<<<< Updated upstream
 ### 🔴 Phase 4 — Toolbar & UX (Up Next)
 
 - **#7** Toolbar Layout — Singleton section separation
   - Depends on: #6 (Amplifier rename must be done first) ✅
+=======
+### ✅ Phase 4 — Toolbar Layout (Complete)
+
+- ~~**#7** Toolbar Layout — Singleton section separation~~
+  - Depends on: #6 (Amplifier rename must be done first)
+>>>>>>> Stashed changes
   - Touches `Toolbar.tsx` only
 
 - **#8** Node Delete Button — In-Canvas X button on all nodes
