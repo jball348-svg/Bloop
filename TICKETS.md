@@ -17,6 +17,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
 | [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | 🔴 Open | v2, ux, polish |
+| [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | 🔴 Open | v2, ux, polish |
 
 ---
 
@@ -43,13 +44,17 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
   - **Unique background patterns** per node type (no two nodes should share the same pattern)
   - Depends on: all Phase 1 + Phase 2 tickets closed ✅
 
-### 🔴 Phase 4 — Toolbar Layout (Up Next)
+### 🔴 Phase 4 — Toolbar & UX (Up Next)
 
 - **#7** Toolbar Layout — Singleton section separation
-  - Depends on: #6 (Amplifier rename must be done first)
+  - Depends on: #6 (Amplifier rename must be done first) ✅
   - Touches `Toolbar.tsx` only
 
-### 🟡 Phase 4 — Backlog (Do Not Action Yet)
+- **#8** Node Delete Button — In-Canvas X button on all nodes
+  - No dependencies — can run in parallel with #7
+  - Touches all `components/*Node.tsx` files only
+
+### 🟡 Phase 5 — Backlog (Do Not Action Yet)
 - **#4** V3 Backlog — reference document only, do not implement
 
 ---
@@ -61,6 +66,8 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
               ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar)
 #1 (Tempo)  ──┘
 #2 (Drums)  ──────────────────► #6 (Polish)
+
+#8 (Delete Button) — no dependencies, parallel with #7
 ```
 
 ---
