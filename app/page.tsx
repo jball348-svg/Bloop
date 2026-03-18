@@ -168,6 +168,10 @@ function BloopCanvasInner() {
             let x = currentNode.position.x;
             let y = currentNode.position.y;
 
+            // Store original position to check if there was actual overlap
+            const originalX = x;
+            const originalY = y;
+
             // Multi-pass to handle chain reactions (A pushes into B which also overlaps C)
             for (let pass = 0; pass < 10; pass++) {
                 let moved = false;
@@ -177,11 +181,20 @@ function BloopCanvasInner() {
 
                     const nDims = getDims(n.type);
 
-                    // Strict overlap — touching edges (flush) is NOT overlap
+                    // Check for actual overlap - nodes must be overlapping, not just close
                     const overlapX = x < n.position.x + nDims.w && x + draggedDims.w > n.position.x;
                     const overlapY = y < n.position.y + nDims.h && y + draggedDims.h > n.position.y;
 
                     if (overlapX && overlapY) {
+                        // Calculate overlap area to ensure there's meaningful overlap
+                        const overlapWidth = Math.min(x + draggedDims.w, n.position.x + nDims.w) - Math.max(x, n.position.x);
+                        const overlapHeight = Math.min(y + draggedDims.h, n.position.y + nDims.h) - Math.max(y, n.position.y);
+                        const overlapArea = overlapWidth * overlapHeight;
+                        
+                        // Only snap if there's significant overlap (more than just edge touching)
+                        const minOverlapArea = 100; // Minimum 10x10 pixels of overlap
+                        if (overlapArea < minOverlapArea) continue;
+
                         // Snap based on where the dragged node's centre is relative to
                         // the obstacle's centre — this gives the intuitive lego-click feel.
                         // If dragged centre is to the RIGHT of obstacle centre → go right.
@@ -207,7 +220,8 @@ function BloopCanvasInner() {
                 if (!moved) break;
             }
 
-            if (x !== currentNode.position.x || y !== currentNode.position.y) {
+            // Only update if position actually changed from original
+            if (x !== originalX || y !== originalY) {
                 useStore.getState().onNodesChange([{
                     id: draggedNode.id,
                     type: 'position',
