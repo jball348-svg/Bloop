@@ -12,7 +12,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 |---|---|---|---|
 | [#1](https://github.com/jball348-svg/Bloop/issues/1) | Tempo Node — Global Transport Controller | ✅ Closed | v2, node-type, audio-engine |
 | [#2](https://github.com/jball348-svg/Bloop/issues/2) | Drum Node — Hits & Grid Sequencer | ✅ Closed | v2, node-type, audio-engine |
-| [#3](https://github.com/jball348-svg/Bloop/issues/3) | Chord Node — Harmonic Voicing Transformer | 🔴 Open | v2, node-type, audio-engine |
+| [#3](https://github.com/jball348-svg/Bloop/issues/3) | Chord Node — Harmonic Voicing Transformer | 🚧 In Progress — see latest comment for outstanding issue | v2, node-type, audio-engine |
 | [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog — Synth Overhaul, UX, Drum Samples | 🟡 Open (do not action) | v3, backlog |
 | [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
 | [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes | 🔴 Open | v2, ux, polish |
@@ -31,13 +31,14 @@ These establish the new broadcast model and transport system that all other V2 w
 - ~~**#1** Tempo Node~~ — global BPM broadcaster via `Tone.Transport`, singleton logic
 - ~~**#2** Drum Node~~ — Hits & Grid modes, uses `Tone.MembraneSynth` / `NoiseSynth` / `MetalSynth`
 
-### 🔴 Phase 2 — New Nodes (Up Next)
-Can be worked in parallel once Phase 1 is confirmed stable.
+### 🚧 Phase 2 — New Nodes (In Progress)
 
-- **#3** Chord Node ← _Start here_
+- **#3** Chord Node ← _Currently being worked on_
   - Depends on: #1 (Transport), #5 (audio routing)
-  - Pure note-event transformer — no Tone.js audio node
-  - Sits between Controller and Generator in the signal chain
+  - Node is substantially built — **outstanding issue: missing React Flow input/output handles**
+  - Needs `<Handle type="target" position={Position.Top} />` (input from Controller) and `<Handle type="source" position={Position.Bottom} />` (output to Generator) added to `ChordNode.tsx`
+  - Store must also walk edges to route `fireNoteOn`/`fireNoteOff` through Chord node before hitting Generator
+  - See issue #3 comments for full implementation detail
 
 ### 🔴 Phase 3 — Polish (After Phase 2)
 These touch UI across all existing nodes — do them after new nodes are in place so you only polish once.
