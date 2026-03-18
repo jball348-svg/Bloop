@@ -8,7 +8,6 @@ import ReactFlow, {
     Connection,
     Edge,
     Node as FlowNode,
-    OnConnectStartParams,
     useReactFlow,
     ReactFlowProvider,
 } from 'reactflow';
@@ -16,7 +15,6 @@ import {
     useStore,
     AudioNodeType,
     DEFAULT_TRANSPORT_BPM,
-    TEMPO_OUTPUT_HANDLE_ID,
 } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
@@ -55,16 +53,17 @@ function BloopCanvasInner() {
         addNode,
         removeNodeAndCleanUp,
     } = useStore();
-    const setTempoConnectionDragState = useStore((state) => state.setTempoConnectionDragState);
     const validateConnection = useStore((state) => state.isValidConnection);
 
     const { screenToFlowPosition } = useReactFlow();
     const edgeUpdateSuccessful = useRef(true);
 
     const recalculateAdjacency = useStore((state) => state.recalculateAdjacency);
+    const sanitizeLegacyTempoEdges = useStore((state) => state.sanitizeLegacyTempoEdges);
     useEffect(() => {
+        sanitizeLegacyTempoEdges();
         recalculateAdjacency();
-    }, [recalculateAdjacency]);
+    }, [recalculateAdjacency, sanitizeLegacyTempoEdges]);
 
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
@@ -95,14 +94,6 @@ function BloopCanvasInner() {
         }
     }, [onEdgesChange]);
 
-    const onConnectStart = useCallback((_: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
-        setTempoConnectionDragState(params.handleType === 'source' && params.handleId === TEMPO_OUTPUT_HANDLE_ID);
-    }, [setTempoConnectionDragState]);
-
-    const onConnectEnd = useCallback(() => {
-        setTempoConnectionDragState(false);
-    }, [setTempoConnectionDragState]);
-
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
@@ -125,6 +116,7 @@ function BloopCanvasInner() {
         }
         if (type === 'drum') label = 'Drums';
         if (type === 'effect') subType = 'reverb';
+        if (type === 'speaker') label = 'Master Out';
         if (type === 'tempo') label = 'Tempo';
 
         addNode({
@@ -233,8 +225,6 @@ function BloopCanvasInner() {
                 onEdgeUpdate={onEdgeUpdate}
                 onEdgeUpdateStart={onEdgeUpdateStart}
                 onEdgeUpdateEnd={onEdgeUpdateEnd}
-                onConnectStart={onConnectStart}
-                onConnectEnd={onConnectEnd}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 onNodeDragStop={onNodeDragStop}

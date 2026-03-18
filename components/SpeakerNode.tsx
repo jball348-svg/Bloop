@@ -1,32 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Handle, Position } from 'reactflow';
-import { AUDIO_INPUT_HANDLE_ID, isAudioEdge, useStore } from '@/store/useStore';
+import { useStore } from '@/store/useStore';
 
-export default function SpeakerNode({ id }: { id: string }) {
-    const updateNodeValue = useStore((state) => state.updateNodeValue);
-    const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
-    const isUnconnected = useStore((state) => {
-        const edges = state.edges;
-        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
-    });
+export default function SpeakerNode({ id: _id }: { id: string }) {
+    void _id;
 
-    const [volume, setVolume] = useState(80);
-    const [isMuted, setIsMuted] = useState(false);
-
-    useEffect(() => {
-        updateNodeValue(id, { volume: 80 });
-    }, [id, updateNodeValue]);
+    const masterVolume = useStore((state) => state.masterVolume);
+    const setMasterVolume = useStore((state) => state.setMasterVolume);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setVolume(val);
-        updateNodeValue(id, { volume: val });
+        setMasterVolume(parseFloat(e.target.value));
     };
 
     return (
-        <div className={`bg-slate-900 border-2 border-emerald-500 rounded-2xl p-5 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
-        }`}>
+        <div className="bg-slate-900 border-2 border-emerald-500 rounded-2xl p-5 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative">
             <div className="absolute inset-0 opacity-10 pointer-events-none rounded-2xl"
                  style={{ backgroundImage: 'radial-gradient(circle, #34d399 1px, transparent 1px)', backgroundSize: '4px 4px' }} />
 
@@ -44,50 +29,19 @@ export default function SpeakerNode({ id }: { id: string }) {
 
                 <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-end">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Main Volume</label>
-                            <button
-                                onClick={() => {
-                                    const next = !isMuted;
-                                    setIsMuted(next);
-                                    updateNodeValue(id, { volume: next ? 0 : volume, mute: next });
-                                }}
-                                className={`text-[10px] font-bold px-2 py-1 rounded transition-colors ${
-                                    isMuted
-                                        ? 'bg-red-500/20 text-red-400 border border-red-500/50'
-                                        : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                                }`}
-                            >
-                                {isMuted ? 'MUTED' : 'MUTE'}
-                            </button>
-                        </div>
-                        <span className="text-sm font-mono text-emerald-400 font-bold">{isMuted ? 0 : volume}%</span>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Master Volume</label>
+                        <span className="text-sm font-mono text-emerald-400 font-bold">{masterVolume}%</span>
                     </div>
                     <input
-                        type="range" min="0" max="100" value={volume}
+                        type="range" min="0" max="100" value={masterVolume}
                         onChange={handleVolumeChange}
-                        disabled={isMuted}
-                        className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="nodrag w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                     />
-                </div>
-
-                {isUnconnected && (
-                    <div className="mt-3 flex items-center gap-1.5 opacity-40 text-emerald-400">
-                        <div className="flex-1 h-px bg-current" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest">
-                            not connected
-                        </span>
-                        <div className="flex-1 h-px bg-current" />
+                    <div className="rounded-xl border border-emerald-500/20 bg-slate-800/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+                        Global output control
                     </div>
-                )}
+                </div>
             </div>
-
-            <Handle
-                type="target"
-                id={AUDIO_INPUT_HANDLE_ID}
-                position={Position.Top}
-                className="w-4 h-4 bg-emerald-500 border-4 border-slate-900 !-top-2 hover:scale-125 transition-transform"
-            />
         </div>
     );
 }

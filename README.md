@@ -6,7 +6,7 @@ Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js,
 
 - Drag-and-drop node palette for `Controller`, `Generator`, `Effect`, and `Speaker` nodes.
 - Browser-safe audio startup flow with a full-screen `START AUDIO ENGINE` gate.
-- A default starter chain is present on load: controller -> generator -> speaker.
+- The default scene opens with a controller, generator, and singleton speaker master control.
 - `15px` grid snapping across the whole canvas.
 - Anti-overlap drag behavior that snaps nodes flush left or right and aligns them into a shared row.
 - Proximity-based patching: adjacent nodes can auto-route audio through hidden edges instead of always relying on visible cables.
@@ -17,7 +17,8 @@ Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js,
   - a QWERTY keyboard with an on-screen piano and octave switching from `1` to `7`
 - `Generator` nodes use `Tone.PolySynth` and support `sine`, `square`, `triangle`, and `sawtooth` oscillator shapes.
 - `Effect` nodes support `Reverb`, `Delay`, `Distortion`, `Phaser`, and `BitCrusher`, with per-type controls plus mix and bypass.
-- `Speaker` nodes expose smoothed master volume and mute control.
+- `Tempo` is a singleton global transport controller; rhythmic nodes follow it automatically, or fall back to `120 BPM` when it is absent.
+- `Speaker` is a singleton global output controller with a smoothed master volume slider.
 - Drag-to-trash deletion removes the UI node, connected edges, and the underlying Tone resources together.
 - Node cards now carry stronger visual identity through type-specific background patterns, activity states, and "not connected" indicators.
 
@@ -31,7 +32,7 @@ Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js,
 - `Controller` keyboard mode gained octave selection, and arpeggiation moved to `Tone.Sequence` plus `Tone.Transport` instead of a simple interval loop.
 - `Generator` activity lights now reflect real note playback instead of pulsing constantly.
 - `Generator` visuals were updated to a red identity that matches the toolbar and node surface treatment.
-- `Controller`, `Generator`, `Effect`, and `Speaker` cards now expose clearer empty-state feedback through "not connected" status bands.
+- `Controller`, `Generator`, and `Effect` cards now expose clearer empty-state feedback through "not connected" status bands.
 - The trash target was visually brought into the same cyan interaction language as adjacency and routing.
 
 ## Tech Stack
@@ -51,7 +52,8 @@ Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js,
 - `components/ControllerNode.tsx`: Arpeggiator and keyboard controller UI, transport sequencing, keyboard listeners, and octave switching.
 - `components/GeneratorNode.tsx`: PolySynth source node with waveform selection and active-note indicator.
 - `components/EffectNode.tsx`: Switchable effect rack for reverb, delay, distortion, phaser, and bitcrusher.
-- `components/SpeakerNode.tsx`: Output node with default volume initialization, mute, and volume control.
+- `components/TempoNode.tsx`: Singleton global transport control with BPM input, slider, and beat pulse.
+- `components/SpeakerNode.tsx`: Singleton global output control with shared master volume.
 - `components/Toolbar.tsx`: Node palette for drag-adding modules.
 - `components/EngineControl.tsx`: Audio-unlock overlay and default-node initialization trigger.
 - `app/globals.css`: Global styling plus React Flow theming.

@@ -3,12 +3,11 @@ import { Handle, Position } from 'reactflow';
 import * as Tone from 'tone';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
+    DEFAULT_TRANSPORT_BPM,
     DRUM_STEP_COUNT,
-    TEMPO_INPUT_HANDLE_ID,
     type DrumMode,
     type DrumPart,
     isAudioEdge,
-    isTempoEdge,
     useStore,
 } from '@/store/useStore';
 
@@ -36,9 +35,9 @@ export default function DrumNode({ id }: { id: string }) {
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const activeDrumPads = useStore((state) => state.activeDrumPads);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
-    const isDraggingTempoConnection = useStore((state) => state.isDraggingTempoConnection);
-    const isTempoConnected = useStore((state) =>
-        state.edges.some((edge) => isTempoEdge(edge) && edge.target === id)
+    const hasTempoNode = useStore((state) => state.nodes.some((node) => node.type === 'tempo'));
+    const tempoBpm = useStore((state) =>
+        state.nodes.find((node) => node.type === 'tempo')?.data.bpm ?? DEFAULT_TRANSPORT_BPM
     );
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -49,7 +48,6 @@ export default function DrumNode({ id }: { id: string }) {
     const drumPattern = nodeData?.drumPattern;
     const isPlaying = nodeData?.isPlaying ?? false;
     const currentStep = nodeData?.currentStep ?? -1;
-    const shouldHighlightTempoTarget = isDraggingTempoConnection;
 
     useEffect(() => {
         if (drumMode !== 'hits') {
@@ -119,12 +117,14 @@ export default function DrumNode({ id }: { id: string }) {
                     <div className="flex flex-col items-end gap-2">
                         <div className={`rounded-full px-2 py-1 text-[9px] font-bold uppercase tracking-[0.2em] ${
                             drumMode === 'grid'
-                                ? isTempoConnected
+                                ? hasTempoNode
                                     ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
-                                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                                    : 'bg-slate-800 text-slate-300 border border-slate-700'
                                 : 'bg-orange-500/15 text-orange-300 border border-orange-500/30'
                         }`}>
-                            {drumMode === 'grid' ? (isTempoConnected ? 'Tempo Linked' : 'Tempo Needed') : 'Live Pads'}
+                            {drumMode === 'grid'
+                                ? (hasTempoNode ? `Global ${tempoBpm} BPM` : `Default ${tempoBpm} BPM`)
+                                : 'Live Pads'}
                         </div>
 
                         {drumMode === 'grid' && (
@@ -133,13 +133,10 @@ export default function DrumNode({ id }: { id: string }) {
                                     await Tone.start();
                                     toggleNodePlayback(id, !isPlaying);
                                 }}
-                                disabled={!isTempoConnected}
                                 className={`nodrag rounded-xl px-4 py-2 text-xs font-black transition-all ${
-                                    isTempoConnected
-                                        ? isPlaying
-                                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 hover:bg-orange-500/30'
-                                            : 'bg-orange-500 text-slate-950 hover:bg-orange-400'
-                                        : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                                    isPlaying
+                                        ? 'bg-orange-500/20 text-orange-300 border border-orange-500/40 hover:bg-orange-500/30'
+                                        : 'bg-orange-500 text-slate-950 hover:bg-orange-400'
                                 }`}
                             >
                                 {isPlaying ? 'STOP' : 'PLAY'}
@@ -237,11 +234,6 @@ export default function DrumNode({ id }: { id: string }) {
                             ))}
                         </div>
 
-                        {!isTempoConnected && (
-                            <div className="rounded-xl border border-indigo-500/20 bg-slate-800/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-300">
-                                Connect a Tempo node to run the sequencer
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -253,20 +245,6 @@ export default function DrumNode({ id }: { id: string }) {
                     </div>
                 )}
             </div>
-
-            <Handle
-                type="target"
-                id={TEMPO_INPUT_HANDLE_ID}
-                position={Position.Right}
-                style={{ top: 18, right: -8 }}
-                className={`w-4 h-4 border-4 border-slate-900 transition-all ${
-                    shouldHighlightTempoTarget
-                        ? 'bg-indigo-300 scale-125 shadow-[0_0_18px_rgba(165,180,252,0.95)]'
-                        : isTempoConnected
-                            ? 'bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.8)]'
-                            : 'bg-slate-600'
-                }`}
-            />
 
             <Handle
                 type="source"

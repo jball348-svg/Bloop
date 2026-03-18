@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Handle, Position } from 'reactflow';
 import * as Tone from 'tone';
 import {
     DEFAULT_TRANSPORT_BPM,
     MAX_TEMPO_BPM,
     MIN_TEMPO_BPM,
-    TEMPO_OUTPUT_HANDLE_ID,
-    isTempoEdge,
     useStore,
 } from '@/store/useStore';
 
@@ -17,9 +14,6 @@ export default function TempoNode({ id }: { id: string }) {
     const updateTempoBpm = useStore((state) => state.updateTempoBpm);
     const bpm = useStore((state) =>
         state.nodes.find((node) => node.id === id)?.data.bpm ?? DEFAULT_TRANSPORT_BPM
-    );
-    const hasTempoTargets = useStore((state) =>
-        state.edges.some((edge) => isTempoEdge(edge) && edge.source === id)
     );
 
     const [inputValue, setInputValue] = useState(String(bpm));
@@ -169,24 +163,11 @@ export default function TempoNode({ id }: { id: string }) {
                             <span>{MAX_TEMPO_BPM}</span>
                         </div>
                     </div>
-                </div>
-
-                {!hasTempoTargets && (
-                    <div className="mt-4 flex items-center gap-1.5 text-indigo-400 opacity-45">
-                        <div className="flex-1 h-px bg-current" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest">not connected</span>
-                        <div className="flex-1 h-px bg-current" />
+                    <div className="rounded-xl border border-indigo-500/20 bg-slate-800/70 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-300">
+                        Global transport broadcast
                     </div>
-                )}
+                </div>
             </div>
-
-            <Handle
-                type="source"
-                id={TEMPO_OUTPUT_HANDLE_ID}
-                position={Position.Bottom}
-                style={{ left: 20 }}
-                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 bg-indigo-500 shadow-[0_0_12px_rgba(129,140,248,0.85)] transition-all hover:scale-125"
-            />
         </div>
     );
 }

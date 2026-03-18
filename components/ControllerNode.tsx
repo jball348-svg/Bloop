@@ -3,9 +3,7 @@ import { Handle, Position } from 'reactflow';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
-    TEMPO_INPUT_HANDLE_ID,
     isAudioEdge,
-    isTempoEdge,
     useStore,
 } from '@/store/useStore';
 import { Scale } from '@tonaljs/tonal';
@@ -40,14 +38,10 @@ export default function ControllerNode({ id }: { id: string }) {
     const updateArpScale = useStore((state) => state.updateArpScale);
     const updateOctave = useStore((state) => state.updateOctave);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
-    const isDraggingTempoConnection = useStore((state) => state.isDraggingTempoConnection);
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
         return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
-    const isTempoConnected = useStore((state) =>
-        state.edges.some((edge) => isTempoEdge(edge) && edge.target === id)
-    );
     const octave = useStore((state) =>
         state.nodes.find((node) => node.id === id)?.data.octave ?? 4
     );
@@ -62,7 +56,6 @@ export default function ControllerNode({ id }: { id: string }) {
     const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
     const heldKeys = useRef<Set<string>>(new Set());
     const seqRef = useRef<Tone.Sequence | null>(null);
-    const shouldHighlightTempoTarget = subType === 'arp' && isDraggingTempoConnection;
 
     useEffect(() => {
         if (subType !== 'keys') return;
@@ -297,22 +290,6 @@ export default function ControllerNode({ id }: { id: string }) {
                     </div>
                 )}
             </div>
-
-            {subType === 'arp' && (
-                <Handle
-                    type="target"
-                    id={TEMPO_INPUT_HANDLE_ID}
-                    position={Position.Right}
-                    style={{ top: 18, right: -8 }}
-                    className={`w-4 h-4 border-4 border-slate-900 transition-all ${
-                        shouldHighlightTempoTarget
-                            ? 'bg-indigo-300 scale-125 shadow-[0_0_18px_rgba(165,180,252,0.95)]'
-                            : isTempoConnected
-                                ? 'bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.8)]'
-                                : 'bg-slate-600'
-                    }`}
-                />
-            )}
 
             <Handle
                 type="source"

@@ -5,6 +5,7 @@ import { useStore } from '@/store/useStore';
 
 const Toolbar = () => {
     const hasTempoNode = useStore((state) => state.nodes.some((node) => node.type === 'tempo'));
+    const hasSpeakerNode = useStore((state) => state.nodes.some((node) => node.type === 'speaker'));
 
     const onDragStart = (event: React.DragEvent, nodeType: string) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
@@ -16,7 +17,7 @@ const Toolbar = () => {
         { type: 'generator', label: 'Oscillator', color: 'bg-red-500' },
         { type: 'drum', label: 'Drums', color: 'bg-orange-500' },
         { type: 'effect', label: 'Effect', color: 'bg-fuchsia-500' },
-        { type: 'speaker', label: 'Speaker', color: 'bg-emerald-500' },
+        ...(!hasSpeakerNode ? [{ type: 'speaker', label: 'Speaker', color: 'bg-emerald-500' }] : []),
         ...(!hasTempoNode ? [{ type: 'tempo', label: 'Tempo', color: 'bg-indigo-500' }] : []),
     ];
 
