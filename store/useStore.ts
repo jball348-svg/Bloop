@@ -564,6 +564,9 @@ export const useStore = create<AppState>((set, get) => ({
         const { masterOutput, masterVolume, nodes } = get();
 
         if (masterOutput) {
+            // Update volume based on speaker presence when master output already exists
+            const targetVolume = hasSpeakerNode(nodes) ? volumePercentToDb(masterVolume) : -Infinity;
+            masterOutput.volume.rampTo(targetVolume, 0.1);
             return masterOutput;
         }
 
@@ -1412,22 +1415,25 @@ export const useStore = create<AppState>((set, get) => ({
                 }
             });
 
-        audioNodes.forEach((audioNode: Tone.ToneAudioNode, id: string) => {
-            const nodeInfo = nodesById.get(id);
+        // Only connect audio nodes to master output if speaker node is present
+        if (hasSpeakerNode(nodes)) {
+            audioNodes.forEach((audioNode: Tone.ToneAudioNode, id: string) => {
+                const nodeInfo = nodesById.get(id);
 
-            if (
-                !nodeInfo ||
-                nodeInfo.type === 'controller' ||
-                nodeInfo.type === 'chord' ||
-                nodeInfo.type === 'tempo' ||
-                nodeInfo.type === 'speaker' ||
-                routedSourceIds.has(id)
-            ) {
-                return;
-            }
+                if (
+                    !nodeInfo ||
+                    nodeInfo.type === 'controller' ||
+                    nodeInfo.type === 'chord' ||
+                    nodeInfo.type === 'tempo' ||
+                    nodeInfo.type === 'speaker' ||
+                    routedSourceIds.has(id)
+                ) {
+                    return;
+                }
 
-            audioNode.connect(masterOutput);
-        });
+                audioNode.connect(masterOutput);
+            });
+        }
     },
 
     initializeDefaultNodes: () => {
@@ -1447,7 +1453,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     clearCanvas: () => {
-        const { nodes, audioNodes, drumRacks, patterns } = get();
+        const { nodes, audioNodes, drumRacks, patterns, masterOutput } = get();
 
         // Stop and dispose all patterns (arpeggiators etc.)
         patterns.forEach((pattern) => {
@@ -1468,6 +1474,11 @@ export const useStore = create<AppState>((set, get) => ({
             node.disconnect().dispose();
         });
 
+        // Dispose master output
+        if (masterOutput) {
+            masterOutput.disconnect().dispose();
+        }
+
         set({
             nodes: [],
             edges: [],
@@ -1480,6 +1491,7 @@ export const useStore = create<AppState>((set, get) => ({
             activeDrumPads: new Set(),
             adjacentNodeIds: new Set(),
             autoEdgeIds: new Set(),
+            masterOutput: null,
         });
     },
 
