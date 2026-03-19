@@ -26,12 +26,14 @@ export default function ChordNode({ id }: { id: string }) {
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
 
-            <Handle
-                type="target"
-                id={AUDIO_INPUT_HANDLE_ID}
-                position={Position.Top}
-                className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-sky-400"
-            />
+            {(!nodeData?.isLocked || nodeData?.isEntry) && (
+                <Handle
+                    type="target"
+                    id={AUDIO_INPUT_HANDLE_ID}
+                    position={Position.Top}
+                    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-sky-400"
+                />
+            )}
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">
@@ -76,12 +78,14 @@ export default function ChordNode({ id }: { id: string }) {
                 )}
             </div>
 
-            <Handle
-                type="source"
-                id={AUDIO_OUTPUT_HANDLE_ID}
-                position={Position.Bottom}
-                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-sky-500"
-            />
+            {(!nodeData?.isLocked || nodeData?.isExit) && (
+                <Handle
+                    type="source"
+                    id={AUDIO_OUTPUT_HANDLE_ID}
+                    position={Position.Bottom}
+                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-sky-500"
+                />
+            )}
         </div>
     );
 }

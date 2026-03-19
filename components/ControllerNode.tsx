@@ -153,12 +153,14 @@ export default function ControllerNode({ id }: { id: string }) {
                 )}
             </div>
 
-            <Handle
-                type="source"
-                id={AUDIO_OUTPUT_HANDLE_ID}
-                position={Position.Bottom}
-                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-yellow-400"
-            />
+            {(!nodeData?.isLocked || nodeData?.isExit) && (
+                <Handle
+                    type="source"
+                    id={AUDIO_OUTPUT_HANDLE_ID}
+                    position={Position.Bottom}
+                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-yellow-400"
+                />
+            )}
         </div>
     );
 }

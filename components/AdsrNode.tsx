@@ -192,19 +192,23 @@ export default function AdsrNode({ id }: { id: string }) {
                 </div>
             )}
 
-            <Handle
-                type="target"
-                id="audio-in"
-                position={Position.Top}
-                className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-amber-600"
-            />
+            {(!nodeData?.isLocked || nodeData?.isEntry) && (
+                <Handle
+                    type="target"
+                    id="audio-in"
+                    position={Position.Top}
+                    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-amber-600"
+                />
+            )}
             
-            <Handle
-                type="source"
-                id="audio-out"
-                position={Position.Bottom}
-                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-amber-600"
-            />
+            {(!nodeData?.isLocked || nodeData?.isExit) && (
+                <Handle
+                    type="source"
+                    id="audio-out"
+                    position={Position.Bottom}
+                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-amber-600"
+                />
+            )}
         </div>
     );
 }

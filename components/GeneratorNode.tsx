@@ -45,12 +45,14 @@ export default function GeneratorNode({ id }: { id: string }) {
         }`}>
 
             {/* Input handle for MIDI data from Controller */}
-            <Handle
-                type="target"
-                id={AUDIO_INPUT_HANDLE_ID}
-                position={Position.Top}
-                className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-yellow-400"
-            />
+            {(!nodeData?.isLocked || nodeData?.isEntry) && (
+                <Handle
+                    type="target"
+                    id={AUDIO_INPUT_HANDLE_ID}
+                    position={Position.Top}
+                    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-yellow-400"
+                />
+            )}
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
@@ -108,12 +110,14 @@ export default function GeneratorNode({ id }: { id: string }) {
             </div>
 
             {/* Audio output port at the bottom */}
-            <Handle
-                type="source"
-                id={AUDIO_OUTPUT_HANDLE_ID}
-                position={Position.Bottom}
-                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-red-500"
-            />
+            {(!nodeData?.isLocked || nodeData?.isExit) && (
+                <Handle
+                    type="source"
+                    id={AUDIO_OUTPUT_HANDLE_ID}
+                    position={Position.Bottom}
+                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-red-500"
+                />
+            )}
         </div>
     );
 }

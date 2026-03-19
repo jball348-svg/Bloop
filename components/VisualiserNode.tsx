@@ -15,6 +15,7 @@ export default function VisualiserNode({ id }: { id: string }) {
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const audioNodes = useStore((state) => state.audioNodes);
     const edges = useStore((state) => state.edges);
+    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -160,18 +161,22 @@ export default function VisualiserNode({ id }: { id: string }) {
                 )}
             </div>
 
-            <Handle
-                type="target"
-                id={AUDIO_INPUT_HANDLE_ID}
-                position={Position.Top}
-                className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-pink-500"
-            />
-            <Handle
-                type="source"
-                id={AUDIO_OUTPUT_HANDLE_ID}
-                position={Position.Bottom}
-                className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-pink-500"
-            />
+            {(!nodeData?.isLocked || nodeData?.isEntry) && (
+                <Handle
+                    type="target"
+                    id={AUDIO_INPUT_HANDLE_ID}
+                    position={Position.Top}
+                    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-pink-500"
+                />
+            )}
+            {(!nodeData?.isLocked || nodeData?.isExit) && (
+                <Handle
+                    type="source"
+                    id={AUDIO_OUTPUT_HANDLE_ID}
+                    position={Position.Bottom}
+                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-pink-500"
+                />
+            )}
         </div>
     );
 }

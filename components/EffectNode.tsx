@@ -12,7 +12,8 @@ export default function EffectNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const subType = useStore((state) => state.nodes.find((node) => node.id === id)?.data.subType || 'none');
+    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const subType = nodeData?.subType || 'none';
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -204,22 +205,26 @@ export default function EffectNode({ id }: { id: string }) {
                 )}
             </div>
 
-            <Handle
-                type="target"
-                id={AUDIO_INPUT_HANDLE_ID}
-                position={Position.Top}
-                className={`w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all ${
-                    subType === 'none' ? 'bg-slate-600' : 'bg-fuchsia-500'
-                }`}
-            />
-            <Handle
-                type="source"
-                id={AUDIO_OUTPUT_HANDLE_ID}
-                position={Position.Bottom}
-                className={`w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all ${
-                    subType === 'none' ? 'bg-slate-600' : 'bg-fuchsia-500'
-                }`}
-            />
+            {(!nodeData?.isLocked || nodeData?.isEntry) && (
+                <Handle
+                    type="target"
+                    id={AUDIO_INPUT_HANDLE_ID}
+                    position={Position.Top}
+                    className={`w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all ${
+                        subType === 'none' ? 'bg-slate-600' : 'bg-fuchsia-500'
+                    }`}
+                />
+            )}
+            {(!nodeData?.isLocked || nodeData?.isExit) && (
+                <Handle
+                    type="source"
+                    id={AUDIO_OUTPUT_HANDLE_ID}
+                    position={Position.Bottom}
+                    className={`w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all ${
+                        subType === 'none' ? 'bg-slate-600' : 'bg-fuchsia-500'
+                    }`}
+                />
+            )}
         </div>
     );
 }

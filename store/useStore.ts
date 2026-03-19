@@ -108,6 +108,8 @@ export type AppNode = Node & {
         sustain?: number;
         release?: number;
         isLocked?: boolean;
+        isEntry?: boolean;
+        isExit?: boolean;
     };
     type: AudioNodeType;
 };
@@ -402,6 +404,61 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
 };
 const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
+
+// Cluster / Locking Helpers
+const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
+    const clusterIds = new Set<string>();
+    const queue = [startNodeId];
+    clusterIds.add(startNodeId);
+
+    while (queue.length > 0) {
+        const currentId = queue.shift()!;
+        const currentNode = allNodes.find(n => n.id === currentId);
+        if (!currentNode) continue;
+
+        const cDims = getDims(currentNode.type);
+
+        for (const other of allNodes) {
+            if (clusterIds.has(other.id)) continue;
+            if (other.type === 'tempo' || other.type === 'speaker') continue;
+
+            const oDims = getDims(other.type);
+            const gapRight = other.position.x - (currentNode.position.x + cDims.w);
+            const gapLeft  = currentNode.position.x - (other.position.x + oDims.w);
+            const horizGap = Math.max(gapRight, gapLeft);
+
+            const cCentreY = currentNode.position.y + cDims.h / 2;
+            const oCentreY = other.position.y + oDims.h / 2;
+            const vertDist = Math.abs(cCentreY - oCentreY);
+
+            if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                clusterIds.add(other.id);
+                queue.push(other.id);
+            }
+        }
+    }
+    return clusterIds;
+};
+
+const getClusterBoundaries = (clusterIds: Set<string>, allNodes: AppNode[]) => {
+    if (clusterIds.size === 0) return { entryId: null, exitId: null };
+
+    const clusterNodes = allNodes.filter(n => clusterIds.has(n.id));
+    
+    // Sort by signal order, then x, then y
+    clusterNodes.sort((a, b) => {
+        const orderA = SIGNAL_ORDER[a.type] ?? 99;
+        const orderB = SIGNAL_ORDER[b.type] ?? 99;
+        if (orderA !== orderB) return orderA - orderB;
+        if (a.position.x !== b.position.x) return a.position.x - b.position.x;
+        return a.position.y - b.position.y;
+    });
+
+    return {
+        entryId: clusterNodes[0].id,
+        exitId: clusterNodes[clusterNodes.length - 1].id,
+    };
+};
 
 // Gap threshold within which two nodes are considered "adjacent" (snapped)
 const ADJ_TOUCH_THRESHOLD = 48;
@@ -2017,11 +2074,33 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         set({
-            nodes: nodes.map(node => 
-                clusterIds.has(node.id)
-                    ? { ...node, data: { ...node.data, isLocked: nextLocked } }
-                    : node
-            )
+            nodes: nodes.map(node => {
+                if (!clusterIds.has(node.id)) return node;
+                
+                const { entryId, exitId } = getClusterBoundaries(clusterIds, nodes);
+                
+                return { 
+                    ...node, 
+                    data: { 
+                        ...node.data, 
+                        isLocked: nextLocked,
+                        isEntry: nextLocked ? node.id === entryId : undefined,
+                        isExit: nextLocked ? node.id === exitId : undefined,
+                    } 
+                };
+            }),
+            edges: get().edges.map(edge => {
+                // If both source and target are in the same locked cluster, hide the edge
+                if (nextLocked && clusterIds.has(edge.source) && clusterIds.has(edge.target)) {
+                    return { ...edge, hidden: true };
+                }
+                // If unlocking, show manual edges again (auto-edges stay hidden anyway)
+                if (!nextLocked && clusterIds.has(edge.source) && clusterIds.has(edge.target)) {
+                    const isAuto = edge.id.startsWith(AUTO_EDGE_PREFIX) || get().autoEdgeIds.has(edge.id);
+                    return { ...edge, hidden: isAuto };
+                }
+                return edge;
+            })
         });
     },
 
