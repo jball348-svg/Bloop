@@ -30,9 +30,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | # | Title | Status |
 |---|---|---|
 | [#27](https://github.com/jball348-svg/Bloop/issues/27) | Undo / Redo — Canvas Action History | ✅ Closed |
-| [#22](https://github.com/jball348-svg/Bloop/issues/22) | ADSR Envelope — Standalone Controller Node | 🔵 In Progress |
+| [#22](https://github.com/jball348-svg/Bloop/issues/22) | ADSR Envelope — Standalone Controller Node | ✅ Closed |
+| [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | 🔵 In Progress |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🟡 Backlog |
-| [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | 🟡 Backlog |
 | [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison / Detune Controls on Generator Node | 🟡 Backlog |
 | [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🟡 Backlog |
 | [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | 🟡 Backlog |
@@ -69,8 +69,8 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 No hard sequencing requirements within V3 synth work — these can be picked up in any order. Suggested priority:
 
 1. ~~**#27** Undo/Redo — highest day-to-day impact, no dependencies~~ ✅ Done
-2. **#22** ADSR — standalone controller node, high sound design value ← **current**
-3. **#24** Noise Generator — contained change, dropdown in existing Generator
+2. ~~**#22** ADSR — standalone controller node, high sound design value~~ ✅ Done
+3. **#24** Noise Generator — contained change, ADSR-compatible ← **current**
 4. **#25** Unison/Detune — contained change, Generator property
 5. **#23** Filter Node — new node type, more involved
 6. **#26** Preset Patches — depends on the canvas being stable, pairs with #12
@@ -91,7 +91,7 @@ For canvas structure work, order matters:
 ── V2 Complete ──
 
 V3 Synth (no hard deps between these):
-#22 (ADSR) · #23 (Filter) · #24 (Noise) · #25 (Unison)
+#22 (ADSR) ✅ · #23 (Filter) · #24 (Noise) · #25 (Unison)
 #27 (Undo/Redo) ✅ · #28 (Visualiser)
 #26 (Presets) ──► #12 (Save/Load)
 
