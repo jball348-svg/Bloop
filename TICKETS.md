@@ -40,7 +40,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 | # | Title | Status |
 |---|---|---|
-| [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Backlog |
+| [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | ✅ Closed |
 
 ### V3 — Canvas Structure (Active Backlog)
 
@@ -79,7 +79,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 4. ~~**#30** Keys Controller~~ ✅ Done
 5. ~~**#25** Unison & Detune~~ ✅ Done
 6. ~~**#28** Visualiser Node~~ ✅ Done
-7. **#12** Save/Load ← **next**
+7. ~~**#12** Save/Load~~ ✅ Done
 
 For canvas structure work, order matters:
 1. **#19** Exclude globals first
@@ -96,7 +96,7 @@ For canvas structure work, order matters:
 
 V3 Synth (complete):
 #22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #28 ✅ · #30 ✅
-#12 (Save/Load) — remaining V3
+#12 (Save/Load) ✅ Done
 
 V3 Canvas Structure:
 #19 ──► #15 ──► #16, #17, #18 ──► #20

@@ -48,10 +48,10 @@ export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
 export type DrumPart = (typeof DRUM_PARTS)[number];
 export type DrumPattern = Record<DrumPart, boolean[]>;
-type AppEdgeData = {
+export type AppEdgeData = {
     kind?: ConnectionKind;
 };
-type AppEdge = Edge<AppEdgeData>;
+export type AppEdge = Edge<AppEdgeData>;
 type DisposablePattern = {
     stop: () => DisposablePattern;
     dispose: () => void;
@@ -681,6 +681,7 @@ type AppState = {
     rebuildAudioGraph: () => void;
     initializeDefaultNodes: () => void;
     clearCanvas: () => void;
+    loadCanvas: (data: { nodes: AppNode[]; edges: AppEdge[]; masterVolume?: number }) => void;
     recalculateAdjacency: () => void;
     autoWireAdjacentNodes: () => void;
     saveSnapshot: () => void;
@@ -1741,6 +1742,43 @@ export const useStore = create<AppState>((set, get) => ({
             autoEdgeIds: new Set(),
             masterOutput: null,
         });
+    },
+
+    loadCanvas: (data) => {
+        get().saveSnapshot();
+        get().clearCanvas();
+
+        const { nodes, edges, masterVolume } = data;
+
+        set({
+            nodes: nodes || [],
+            edges: edges || [],
+            masterVolume: masterVolume ?? DEFAULT_MASTER_VOLUME,
+        });
+
+        // Apply master volume if speaker exists
+        if (hasSpeakerNode(nodes)) {
+            get().setMasterVolume(masterVolume ?? DEFAULT_MASTER_VOLUME);
+        }
+
+        // Reinitialize all audio nodes
+        nodes.forEach((node) => {
+            if (node.type === 'generator') {
+                get().initAudioNode(node.id, node.type, node.data.waveShape);
+            } else if (node.data.subType && node.data.subType !== 'none') {
+                get().initAudioNode(node.id, node.type, node.data.subType);
+            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
+                get().initAudioNode(node.id, node.type);
+            }
+            
+            // For tempo nodes, ensure global transport is synced
+            if (node.type === 'tempo' && node.data.bpm) {
+                Tone.getTransport().bpm.rampTo(node.data.bpm, 0.1);
+            }
+        });
+
+        get().rebuildAudioGraph();
+        get().recalculateAdjacency();
     },
 
     autoWireAdjacentNodes: () => {
