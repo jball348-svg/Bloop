@@ -1,83 +1,100 @@
-# Bloop v1
+# Bloop v2
 
-Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js, and Zustand. The final v1 build is a single-screen patching experience designed around fast experimentation: drag nodes onto the canvas, snap them into place, unlock the audio engine, and shape playable signal chains in real time.
+Bloop is a visual modular audio sandbox built with Next.js, React Flow, Tone.js, and Zustand. Users drag audio nodes onto a canvas, snap them into place, and shape playable signal chains in real time — no music theory or technical knowledge required.
 
-## v1 Final Highlights
+---
 
-- Drag-and-drop node palette for `Controller`, `Generator`, `Effect`, and `Speaker` nodes.
-- Browser-safe audio startup flow with a full-screen `START AUDIO ENGINE` gate.
-- The default scene opens with a controller, generator, and singleton speaker master control.
-- `15px` grid snapping across the whole canvas.
-- Anti-overlap drag behavior that snaps nodes flush left or right and aligns them into a shared row.
-- Proximity-based patching: adjacent nodes can auto-route audio through hidden edges instead of always relying on visible cables.
-- Cyan adjacency glow that signals when nodes are close enough to be treated as a chain.
-- Manual React Flow connections still work and remain editable.
-- `Controller` nodes can run as:
-  - an arpeggiator with selectable root note and scale
-  - a QWERTY keyboard with an on-screen piano and octave switching from `1` to `7`
-- `Generator` nodes use `Tone.PolySynth` and support `sine`, `square`, `triangle`, and `sawtooth` oscillator shapes.
-- `Effect` nodes support `Reverb`, `Delay`, `Distortion`, `Phaser`, and `BitCrusher`, with per-type controls plus mix and bypass.
-- `Tempo` is a singleton global transport controller; rhythmic nodes follow it automatically, or fall back to `120 BPM` when it is absent.
-- `Speaker` is a singleton global output controller with a smoothed master volume slider.
-- Drag-to-trash deletion removes the UI node, connected edges, and the underlying Tone resources together.
-- Node cards now carry stronger visual identity through type-specific background patterns, activity states, and "not connected" indicators.
+## V2 Feature Set
 
-## What Changed Since The Previous Docs Update
+### Node Types
 
-- The canvas is no longer just a manual cable-patching surface. Snapped adjacency now matters and can create hidden audio routes automatically.
-- The default scene now opens as a pre-aligned, pre-routed chain using hidden auto-edges.
-- Drag-stop logic now resolves overlaps with a more tactile "lego" feel by pushing nodes flush beside each other and aligning them by row.
-- Adjacency glow was added so the user can understand implied routing without seeing a wire.
-- Visible manual edges were restyled, while auto-managed edges stay hidden and only affect routing.
-- `Controller` keyboard mode gained octave selection, and arpeggiation moved to `Tone.Sequence` plus `Tone.Transport` instead of a simple interval loop.
-- `Generator` activity lights now reflect real note playback instead of pulsing constantly.
-- `Generator` visuals were updated to a red identity that matches the toolbar and node surface treatment.
-- `Controller`, `Generator`, and `Effect` cards now expose clearer empty-state feedback through "not connected" status bands.
-- The trash target was visually brought into the same cyan interaction language as adjacency and routing.
+| Node | Type | Description |
+|---|---|---|
+| **Controller** | Multi-instance | Arpeggiator or QWERTY keyboard. Fires note events to downstream nodes. |
+| **Chord** | Multi-instance | Transforms a single incoming note into a full chord voicing before passing it downstream. |
+| **Generator** | Multi-instance | Polyphonic oscillator. Receives note events and produces audio. Supports sine, square, triangle, sawtooth. |
+| **Drum** | Multi-instance | Drum machine with Hits mode (tap-to-trigger) and Grid mode (16-step sequencer). |
+| **Effect** | Multi-instance | Swappable audio processor: Reverb, Delay, Distortion, Phaser, BitCrusher. |
+| **Tempo** | Singleton | Global BPM broadcaster. Controls Tone.Transport — all rhythmic nodes follow it automatically. |
+| **Amplifier** | Singleton | Global master output. Controls master volume. All audio routes here without cables. |
+
+### Canvas & Interaction
+- **Empty canvas on load** — start from a blank slate every session
+- **New / Clear button** — System menu wipes the canvas and disposes all audio cleanly
+- **Drag-and-drop** from four contextual edge menus (see below)
+- **15px grid snapping** across the whole canvas
+- **Anti-overlap lego placement** — dragging onto an occupied position snaps nodes flush beside each other
+- **Adjacency detection** — nodes within 48px horizontally and 100px vertically qualify as adjacent
+- **Cyan adjacency glow** — visual indicator that nodes are close enough to auto-route
+- **Hidden auto-wiring** — adjacent nodes are connected with invisible edges that route audio without drawing cables
+- **Manual wiring** — visible cable connections still available for explicit routing
+- **Drag-to-trash deletion** — drag any node to the cyan bin in the bottom-right corner
+- **In-node delete button** — X button on each node for direct removal
+- **Extended zoom range** — zoom out to 5% for a full patch overview
+
+### Four Contextual Menus
+
+The toolbar has been replaced with four edge-docked menus:
+
+| Menu | Position | Contents |
+|---|---|---|
+| **Signals** | Top centre | Generator, Effect, Drum |
+| **Controllers** | Left centre | Controller, Chord |
+| **Global** | Right centre | Tempo, Amplifier (singletons — greyed out when already on canvas) |
+| **System** | Bottom centre | New (clears canvas) |
+
+---
 
 ## Tech Stack
 
-- `Next.js 16`
-- `React 19`
-- `React Flow 11`
-- `Tone.js 15`
-- `Zustand 5`
-- `Tailwind CSS 4`
-- `@tonaljs/tonal`
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Canvas | React Flow 11 |
+| Audio Engine | Tone.js 15 |
+| State | Zustand 5 |
+| Styling | Tailwind CSS 4 |
+| Music Theory | @tonaljs/tonal |
+| Language | TypeScript |
+
+---
 
 ## Project Structure
 
-- `app/page.tsx`: React Flow canvas setup, drag-and-drop, grid snapping, overlap resolution, trash-drop deletion, and adjacency recalculation hooks.
-- `store/useStore.ts`: Central app state, Tone node lifecycle, edge routing, hidden auto-edge generation, adjacency tracking, and note dispatch.
-- `components/ControllerNode.tsx`: Arpeggiator and keyboard controller UI, transport sequencing, keyboard listeners, and octave switching.
-- `components/GeneratorNode.tsx`: PolySynth source node with waveform selection and active-note indicator.
-- `components/EffectNode.tsx`: Switchable effect rack for reverb, delay, distortion, phaser, and bitcrusher.
-- `components/TempoNode.tsx`: Singleton global transport control with BPM input, slider, and beat pulse.
-- `components/SpeakerNode.tsx`: Singleton global output control with shared master volume.
-- `components/Toolbar.tsx`: Node palette for drag-adding modules.
-- `components/EngineControl.tsx`: Audio-unlock overlay and default-node initialization trigger.
-- `app/globals.css`: Global styling plus React Flow theming.
+```
+bloop/
+├── app/
+│   ├── page.tsx              # Canvas, drag/drop, snapping, overlap resolution, adjacency
+│   └── layout.tsx            # Root layout, fonts, metadata
+├── components/
+│   ├── SignalMenu.tsx         # Top menu — Generator, Effect, Drum
+│   ├── ControllerMenu.tsx     # Left menu — Controller, Chord
+│   ├── GlobalMenu.tsx         # Right menu — Tempo, Amplifier (singletons)
+│   ├── SystemMenu.tsx         # Bottom menu — New/Clear button
+│   ├── ControllerNode.tsx     # Arpeggiator + QWERTY keyboard
+│   ├── ChordNode.tsx          # Note-to-chord transformer
+│   ├── GeneratorNode.tsx      # Polyphonic oscillator
+│   ├── DrumNode.tsx           # Drum machine — Hits and Grid modes
+│   ├── EffectNode.tsx         # Swappable FX processor
+│   ├── TempoNode.tsx          # Global BPM — singleton
+│   ├── SpeakerNode.tsx        # Global output volume — singleton (Amplifier)
+│   └── EngineControl.tsx      # Audio unlock overlay
+├── store/
+│   └── useStore.ts            # All audio lifecycle, routing, adjacency, and state
+├── AGENTS.md                  # AI agent briefing — read before touching code
+├── TICKETS.md                 # Ticket status and work order
+└── PROJECT_OVERVIEW.md        # Full technical deep-dive
+```
+
+---
 
 ## Run Locally
 
-1. Install dependencies:
-
 ```bash
 npm install
-```
-
-2. Start the dev server:
-
-```bash
 npm run dev
 ```
 
-3. Open `http://localhost:3000`.
+Open `http://localhost:3000` and click **START AUDIO ENGINE** before testing any sound.
 
-4. Click `START AUDIO ENGINE` before testing any sound.
-
-`npm run dev` also clears a stale `:3000` lock before launching Next, which helps during repeated local restarts.
-
-## v1 Status
-
-This repository now reflects the end-of-v1 feature set. The next phase should be scoped as a separate v2 planning pass rather than treated as unfinished v1 implementation.
+`npm run dev` clears a stale `:3000` lock before launching, which helps during repeated local restarts.

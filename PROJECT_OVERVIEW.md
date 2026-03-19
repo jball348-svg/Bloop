@@ -1,318 +1,285 @@
-# Bloop v1 Project Overview
+# Bloop v2 — Project Deep-Dive
 
-This document is the end-of-v1 technical snapshot for Bloop. It is meant to capture the current implementation accurately before any v2 scoping begins.
+This document is the authoritative technical snapshot of Bloop at the end of V2. Read it before making any significant changes to the codebase.
+
+---
 
 ## 1. Executive Summary
 
-Bloop is a single-page visual audio sandbox built on React Flow for layout, Zustand for app state, and Tone.js for sound generation and processing. The core v1 idea is no longer just "draw cables between nodes." The shipped build combines explicit wiring with spatial patching:
+Bloop is a single-page visual audio sandbox. The core patching model combines two routing mechanisms:
 
-- Nodes can still be connected manually with React Flow edges.
-- Nodes that are horizontally adjacent can also auto-chain through hidden edges.
-- The canvas reinforces that behavior through snapping, anti-overlap placement, and cyan adjacency glow.
+- **Explicit wiring** — visible React Flow edges drawn by the user
+- **Spatial auto-wiring** — hidden edges generated automatically when nodes are snapped adjacent to each other
 
-The result is a more tactile patching model than the earlier MVP documentation described.
+The canvas starts empty. Users drag nodes from four edge-docked menus, position them, and the system handles routing automatically where nodes are close enough — or they can wire manually for explicit control.
 
-## 2. What Changed Since The Previous Documentation Pass
+---
 
-- The default boot graph is now pre-routed with hidden edges between the starter controller, generator, and speaker.
-- Adjacency became a first-class mechanic. Nearby nodes are detected, highlighted, and auto-wired when their spacing and row alignment qualify.
-- Dragging into overlap no longer leaves cards stacked awkwardly; drag-stop logic pushes nodes flush left or right and aligns them onto the same row.
-- Manual edges are no longer the only routing story. Hidden auto-edges now participate in `rebuildAudioGraph`.
-- `ControllerNode` gained octave selection for keyboard mode.
-- Arpeggiation moved from a basic `setInterval` loop to `Tone.Sequence` running against `Tone.Transport`.
-- Generator activity is now driven by real note state through `activeGenerators` in the store.
-- Generator visuals were redesigned from blue to red and now match the toolbar.
-- All node types now expose stronger "connected vs unconnected" feedback.
-- Node cards gained per-type patterned surfaces to make modules easier to scan visually.
+## 2. Architecture Overview
 
-## 3. Runtime Architecture
+### 2.1 Three-Layer Model
 
-### 3.1 UI Layer
+```
+UI Layer          app/page.tsx + components/
+State Layer       store/useStore.ts
+Audio Layer       Tone.js (inside the store)
+```
 
-The UI lives in `app/page.tsx` and renders a full-screen React Flow canvas. It owns:
+Components are pure UI — they read from the store and call store actions. They never own Tone.js instances directly.
 
-- custom node registration
-- drag-and-drop from the toolbar
-- grid snapping
-- edge update lifecycle callbacks
-- drag-stop overlap resolution
-- trash-bin hit detection
-- adjacency recalculation triggers
+### 2.2 Store as Single Source of Truth
 
-### 3.2 State Layer
+`store/useStore.ts` owns:
 
-`store/useStore.ts` is the authoritative runtime model. It stores both visual graph state and audio runtime state:
+| Map / Set | Contents |
+|---|---|
+| `nodes` | React Flow node definitions + app-specific data |
+| `edges` | Manual edges + hidden auto-managed edges |
+| `audioNodes` | `Map<id, Tone.ToneAudioNode>` |
+| `drumRacks` | `Map<id, DrumRack>` — per-drum-node synth instances |
+| `patterns` | `Map<id, DisposablePattern>` — timing objects |
+| `masterOutput` | Singleton `Tone.Volume` → `Tone.Destination` |
+| `activeChordVoicings` | Active chord voicing state for release tracking |
+| `generatorNoteCounts` | Per-note reference counts for polyphonic release |
+| `activeGenerators` | Set of generator IDs currently receiving note attacks |
+| `adjacentNodeIds` | Set of node IDs currently within snapping threshold |
+| `autoEdgeIds` | Set of store-managed hidden edge IDs |
 
-- `nodes`: React Flow node definitions plus app-specific node data
-- `edges`: manual edges plus hidden auto-managed edges
-- `audioNodes`: `Map<string, Tone.ToneAudioNode>`
-- `patterns`: retained disposable timing objects map
-- `activeGenerators`: set of generator ids currently receiving note attacks
-- `adjacentNodeIds`: set of nodes that qualify for adjacency glow
-- `autoEdgeIds`: set of store-managed hidden edge ids
+---
 
-The store is also responsible for lifecycle work that would normally be split across components:
+## 3. Node Taxonomy
 
-- audio node initialization
-- subtype replacement and disposal
-- graph rebuilds
-- note dispatch from controllers to generators
-- adjacency detection
-- hidden auto-edge generation
+### 3.1 Controllers (no audio node)
 
-### 3.3 Audio Layer
+**ControllerNode** — fires note events toward connected Chord or Generator nodes.
+- Arpeggiator mode: uses `@tonaljs/tonal` to build note collections, runs a `setInterval` loop, fires short `noteOn`/`noteOff` bursts
+- Keyboard mode: maps `A/W/S/E/D/F/T/G/Y/H/U/J/K` to chromatic notes across octaves 1–7, mirrors key state to an on-screen piano
 
-Tone.js nodes do not live in React component state. They live in the store and are recreated or disposed from there. This keeps the visual canvas and audio graph synchronized.
+**ChordNode** — transforms incoming single notes into full chord voicings.
+- Supported qualities: Major, Minor, Dominant7, Major7, Minor7, Sus2, Sus4, Diminished, Augmented
+- Uses `Note.transpose` from `@tonaljs/tonal` to build interval-based voicings
+- Tracks active voicings in `activeChordVoicings` to correctly release on `noteOff`
+- Has no Tone.js audio node — it transforms note events only
 
-The key lifecycle is:
+### 3.2 Generators (have audio nodes)
 
-1. A node is added or initialized.
-2. The store creates the correct Tone node for that visual node.
-3. `rebuildAudioGraph()` disconnects existing routes and reconnects the graph based on current edges.
-4. When nodes are removed or subtypes change, old Tone nodes are disconnected and disposed.
+**GeneratorNode** — polyphonic oscillator source.
+- Owns a `Tone.PolySynth` per instance
+- Waveform: sine / square / triangle / sawtooth
+- Receives note attacks via `triggerAttack` / `triggerRelease`
+- Activity indicator tied to `activeGenerators` store state
 
-Controllers are the exception: they do not create audio nodes. They emit note events toward connected generators.
+**DrumNode** — drum machine with two modes.
+- **Hits mode**: tap-to-trigger pads for kick, snare, closed hat, open hat
+- **Grid mode**: 16-step sequencer driven by `Tone.Loop` on `16n`
+- Each drum node owns a `DrumRack`: `Tone.MembraneSynth` (kick), `Tone.NoiseSynth` (snare), two `Tone.MetalSynth` instances (hats), all routed through a `Tone.Gain` output
+- Step highlighting is synced to the audio thread via `Tone.getDraw()`
+
+### 3.3 Effects (have audio nodes)
+
+**EffectNode** — swappable audio processor.
+
+| Subtype | Tone.js Node | Key Controls |
+|---|---|---|
+| Reverb | `Tone.Freeverb` | Mix, Room Size |
+| Delay | `Tone.FeedbackDelay` | Mix, Time, Feedback |
+| Distortion | `Tone.Distortion` | Mix, Drive |
+| Phaser | `Tone.Phaser` | Mix, Speed |
+| BitCrusher | `Tone.BitCrusher` | Mix, Bits |
+
+Changing subtype disposes the old Tone node and creates a new one, then calls `rebuildAudioGraph`.
+
+### 3.4 Singletons (global broadcast — no cables)
+
+**TempoNode** — global BPM broadcaster.
+- Sets `Tone.getTransport().bpm` directly
+- Only one instance allowed on the canvas
+- If removed, transport falls back to 120 BPM
+- Has no audio output handle — rhythmic nodes read from Transport automatically
+
+**SpeakerNode** (labelled Amplifier) — global master output.
+- Wraps a singleton `Tone.Volume` → `Tone.Destination`
+- All Generator and Drum audio nodes route to this via `rebuildAudioGraph` (no cable needed)
+- Only one instance allowed
+- If removed, master volume resets to default
+
+---
 
 ## 4. Canvas Interaction Model
 
 ### 4.1 Startup
 
-The app launches behind `EngineControl`. The user must click `START AUDIO ENGINE`, which:
-
-- calls `Tone.start()`
+The app opens with a blank canvas. `EngineControl` overlays a full-screen gate. The user clicks **START AUDIO ENGINE** which:
+- calls `Tone.start()` to satisfy browser audio unlock
 - starts `Tone.Transport`
-- initializes the default nodes already present in store state
+- calls `initializeDefaultNodes()` which initialises any existing nodes (empty on fresh load)
 
-This is required to satisfy browser audio unlock behavior.
+### 4.2 Four-Menu Navigation
 
-### 4.2 Drag And Drop
+The previous single `Toolbar.tsx` was replaced with four edge-docked menus:
+- `SignalMenu.tsx` — top, draggable: Generator, Effect, Drum
+- `ControllerMenu.tsx` — left, draggable: Controller, Chord
+- `GlobalMenu.tsx` — right, draggable: Tempo, Amplifier (greyed out when singleton already exists)
+- `SystemMenu.tsx` — bottom, button: New (clears canvas)
 
-`Toolbar` places node types onto the drag payload via `application/reactflow`. On drop:
+### 4.3 Drag and Drop
 
-- the canvas converts screen coordinates to flow coordinates
-- a node id is generated with `crypto.randomUUID()`
-- a default subtype is chosen
-- adjacency is recalculated on the next tick
+Menus set `application/reactflow` on the drag payload. On drop:
+- canvas converts screen coordinates to flow coordinates
+- node ID generated with `crypto.randomUUID()`
+- default subtype assigned per type
+- adjacency recalculated on next tick via `setTimeout`
 
-Default subtypes:
+### 4.4 Clear Canvas
 
-- `controller` -> `arp`
-- `generator` -> `wave`
-- `effect` -> `reverb`
-- `speaker` -> no subtype
+The **New** button in `SystemMenu` calls `clearCanvas()` in the store, which:
+- stops and disposes all patterns
+- disposes all drum racks
+- disposes all audio nodes
+- resets all store collections to empty Maps/Sets
 
-### 4.3 Grid Snap
+### 4.5 Grid Snapping
 
-The canvas uses a `15px` snap grid. This applies during layout interaction before the custom drag-stop corrections run.
+Canvas uses a 15px snap grid applied during drag interaction.
 
-### 4.4 Anti-Overlap "Lego" Placement
+### 4.6 Anti-Overlap Lego Placement
 
-On drag stop, the canvas:
+On drag stop:
+1. Trash-bin hit test runs first (drop-to-delete)
+2. Wait one tick for React Flow to finalise position
+3. Up to 10 passes: compare dragged node against all others
+4. On overlap > 100px², push dragged node flush left or right of obstacle, align to obstacle's Y row
+5. If position changed, `onNodesChange` is called to write the corrected position
+6. `recalculateAdjacency()` runs to refresh glow and auto-edges
 
-- checks whether the node was dropped over the trash bin
-- waits one tick so React Flow finalizes position
-- compares the dragged node against all other nodes
-- resolves overlap by pushing the dragged node flush to the left or right side of the obstacle
-- aligns the dragged node to the obstacle's row
-- repeats in multiple passes to handle chain reactions
+This relies on hard-coded `NODE_DIMS` that must stay in sync with the Tailwind widths/heights on each component.
 
-This logic depends on hard-coded node dimensions that match the rendered Tailwind widths and heights.
+### 4.7 Adjacency Detection
 
-### 4.5 Adjacency Detection
+Thresholds (in `useStore.ts`):
+- horizontal gap: `0px` to `48px` (ADJ_TOUCH_THRESHOLD)
+- vertical centre distance: `≤ 100px` (ADJ_Y_THRESHOLD)
+- Tempo and Speaker nodes are excluded from adjacency
 
-Adjacency is calculated from actual node positions and per-type dimensions.
+When two nodes qualify: both IDs added to `adjacentNodeIds`, cards render cyan ring/glow, auto-wiring recalculates.
 
-Thresholds:
-
-- horizontal gap must be between `0` and `48px`
-- vertical center distance must be `<= 100px`
-
-When two nodes qualify:
-
-- both ids are added to `adjacentNodeIds`
-- the cards render a cyan ring and glow
-- auto-wiring is recalculated immediately after
-
-### 4.6 Hidden Auto-Wiring
-
-Auto-wiring is one of the biggest v1 changes.
+### 4.8 Auto-Wiring
 
 Rules:
+- auto-edge IDs are prefixed `auto-`
+- stored as `hidden: true` in React Flow edges — audio routes through them, no visible cable drawn
+- manually drawn edges are preserved during recalculation
+- an auto-edge is skipped if a manual edge already covers the same pair
 
-- auto-edge ids are prefixed with `auto-`
-- auto-edges are stored in normal React Flow `edges`
-- auto-edges are `hidden: true`, so they route audio without drawing visible cables
-- manually drawn edges are preserved during auto-edge recalculation
-- an auto-edge is skipped if a manual edge already exists for the same source/target pair
+Allowed auto-wire direction pairs (`VALID_AUTO_WIRE_PAIRS`):
+```
+controller -> chord
+controller -> generator
+chord      -> generator
+generator  -> effect
+drum       -> effect
+effect     -> effect
+```
 
-Allowed auto-wire direction pairs:
+Speaker is never an auto-wire source. Signal direction is derived from `SIGNAL_ORDER` (not just left-to-right position).
 
-- `controller -> generator`
-- `generator -> effect`
-- `generator -> speaker`
-- `effect -> effect`
-- `effect -> speaker`
+---
 
-Signal direction is derived from a type order, not just left-to-right position:
+## 5. Audio Routing
 
-- `controller`
-- `generator`
-- `effect`
-- `speaker`
+`rebuildAudioGraph()` runs on every edge change:
+1. Disconnects all Tone nodes
+2. Reconnects via current edges (skipping controller, chord, tempo, speaker as sources/targets)
+3. Any audio node not reached by an edge is connected directly to `masterOutput`
 
-## 5. Audio Routing Details
+Two parallel flows:
+- **Note flow**: `controller → chord → generator` via `fireNoteOn` / `fireNoteOff`
+- **Audio flow**: `generator / drum → effect → masterOutput → Tone.Destination` via Tone `.connect()`
 
-`rebuildAudioGraph()` disconnects every Tone node first, then reconnects all current edges. Important behavior:
+Chord voicing is tracked so `noteOff` releases the correct chord notes even if the voicing was computed at `noteOn` time.
 
-- controller edges are skipped for audio connections because controllers are note sources, not audio processors
-- hidden auto-edges are included in audio routing
-- speaker nodes are always reconnected to `Tone.Destination`
+---
 
-This means there are effectively two flows in the app:
+## 6. Parameter Updates
 
-- note flow: controller -> generator via `fireNoteOn` / `fireNoteOff`
-- audio flow: generator/effect/speaker via Tone `.connect()`
+All parameter changes go through `updateNodeValue()` in the store.
 
-## 6. Node Implementations
+- All slider/knob changes use `rampTo(value, 0.1)` — never set directly (prevents audio clicks)
+- Wave shape changes are mirrored back into `node.data.waveShape`
+- Speaker volume delegates to `setMasterVolume()` which controls the singleton `masterOutput`
+- Drum mix controls the rack's `Tone.Gain` output gain
 
-### 6.1 Controller Node
+---
 
-`components/ControllerNode.tsx` supports two controller modes.
+## 7. Visual System
 
-Arpeggiator mode:
+### Colour Coding
 
-- stores `rootNote` and `scaleType` in node data
-- builds note collections with `@tonaljs/tonal`
-- runs a `Tone.Sequence` on `8n`
-- uses `Tone.Transport` at `120 BPM`
-- triggers short note-on / note-off bursts into downstream generators
+| Node | Border / Accent Colour |
+|---|---|
+| Controller | Amber / Yellow (`#eab308`) |
+| Chord | Sky blue (`#0ea5e9`) |
+| Generator | Blue (`#3b82f6`) |
+| Drum | Orange (`#f97316`) |
+| Effect | Fuchsia (`#d946ef`) |
+| Amplifier (Speaker) | Emerald (`#10b981`) |
+| Tempo | Indigo (`#6366f1`) |
 
-Keyboard mode:
+### Shared Canvas Language
+- Dark slate background (`#020617`)
+- Dotted React Flow grid
+- Cyan adjacency glow and rings
+- Cyan-glow manual edges (stroke: `#22d3ee`)
+- Dashed preview line while connecting
+- Cyan trash bin
 
-- maps the `A/W/S/E/D/F/T/G/Y/H/U/J/K` row to chromatic notes
-- supports octave switching from `1` through `7`
-- mirrors key state into the on-screen piano
-- releases any held notes during cleanup
+### Per-Node Surface Textures
+- Controller: horizontal staff lines
+- Generator: vertical frequency bars
+- Effect: diagonal stripes
+- Speaker: speaker-grill dot pattern
+- Drum: grid pattern
+- Chord: wave pattern
+- Tempo: radial pulse pattern
 
-The controller also renders:
+---
 
-- adjacency glow when snapped near a valid neighbor
-- a "not connected" band when no edge touches the node
-- a staff-line background pattern
-
-### 6.2 Generator Node
-
-`components/GeneratorNode.tsx` is the playable sound source.
-
-Implementation details:
-
-- each generator owns a `Tone.PolySynth`
-- waveform selection is applied through the synth oscillator config
-- supported shapes are `sine`, `square`, `triangle`, and `sawtooth`
-- activity lights are tied to `activeGenerators` in store state
-
-The node now uses a red visual identity and shows an unconnected status band when isolated.
-
-### 6.3 Effect Node
-
-`components/EffectNode.tsx` is polymorphic and can swap its internal Tone node at runtime.
-
-Supported subtypes:
-
-- `reverb` -> `Tone.Freeverb`
-- `delay` -> `Tone.FeedbackDelay`
-- `distortion` -> `Tone.Distortion`
-- `phaser` -> `Tone.Phaser`
-- `bitcrusher` -> `Tone.BitCrusher`
-
-Behavior:
-
-- changing subtype disposes the old Tone node and creates a new one
-- mix and bypass work through wet-value updates
-- subtype-specific controls drive different Tone parameters
-- UI control state such as mix, depth, time, and bypass currently lives in component state
-
-The node also participates fully in adjacency glow and unconnected-state messaging.
-
-### 6.4 Speaker Node
-
-`components/SpeakerNode.tsx` wraps a `Tone.Volume` routed to destination.
-
-Behavior:
-
-- initializes to `80%` volume on mount
-- supports mute and volume slider control
-- converts UI volume into decibel values through the store
-- uses `rampTo(..., 0.1)` for smoother volume changes
-
-It also renders adjacency glow and the unconnected banner when isolated.
-
-### 6.5 Engine Control
-
-`components/EngineControl.tsx` is a full-screen blocker until audio is unlocked. It is intentionally simple and acts as the runtime gate for initial node creation.
-
-## 7. Parameter Update Behavior
-
-The store's `updateNodeValue()` function handles most runtime parameter writes.
-
-Notable behavior:
-
-- wave shape changes are mirrored back into node data
-- `Tone.Volume` updates use a smoothed ramp
-- effect wet controls are ramped where supported
-- delay time and phaser frequency are smoothed
-- bit depth and distortion amount are applied directly
-
-This keeps UI movement from producing harsh jumps in the most obvious realtime cases.
-
-## 8. Visual System
-
-The v1 visual language is now more specific than the previous docs captured.
-
-Node colors:
-
-- controller: amber/yellow
-- generator: red
-- effect: fuchsia
-- speaker: emerald
-
-Shared canvas language:
-
-- dark slate background
-- dotted React Flow grid
-- cyan adjacency/routing accent
-- cyan-glow manual edges
-- dashed preview line while connecting
-
-Per-node textures:
-
-- controller: horizontal staff lines
-- generator: vertical frequency bars
-- effect: diagonal stripes
-- speaker: speaker-grill dot pattern
-
-## 9. File Map
+## 8. File Map
 
 | File | Responsibility |
-| :--- | :--- |
-| `app/page.tsx` | Canvas orchestration, drag/drop, snapping, overlap resolution, trash deletion, and adjacency refresh. |
-| `store/useStore.ts` | Store state, Tone node lifecycle, note dispatch, adjacency detection, hidden auto-edge management, and audio graph rebuilds. |
-| `components/ControllerNode.tsx` | Arpeggiator and keyboard controller behavior, keyboard listeners, scale selection, and octave selection. |
-| `components/GeneratorNode.tsx` | PolySynth waveform source with active-note status UI. |
-| `components/EffectNode.tsx` | Runtime-switchable effect node with mix/bypass and subtype-specific controls. |
-| `components/SpeakerNode.tsx` | Output gain control and mute UI. |
-| `components/Toolbar.tsx` | Drag source for spawning new modules. |
-| `components/EngineControl.tsx` | Audio unlock gate and default-node initialization entry point. |
-| `app/globals.css` | Tailwind import plus React Flow surface styling. |
+|---|---|
+| `app/page.tsx` | Canvas orchestration, drag/drop, snapping, overlap resolution, trash deletion, adjacency refresh |
+| `store/useStore.ts` | All audio node lifecycle, note dispatch, adjacency, auto-edge management, audio graph rebuilds |
+| `components/SignalMenu.tsx` | Top menu — Generator, Effect, Drum drag sources |
+| `components/ControllerMenu.tsx` | Left menu — Controller, Chord drag sources |
+| `components/GlobalMenu.tsx` | Right menu — Tempo, Amplifier singleton drag sources |
+| `components/SystemMenu.tsx` | Bottom menu — New/Clear button |
+| `components/ControllerNode.tsx` | Arpeggiator and keyboard modes, note event dispatch |
+| `components/ChordNode.tsx` | Chord quality selection, note-to-voicing transformation |
+| `components/GeneratorNode.tsx` | PolySynth waveform source, active-note indicator |
+| `components/DrumNode.tsx` | Drum machine — Hits mode and Grid sequencer |
+| `components/EffectNode.tsx` | Runtime-switchable FX with mix/bypass and subtype controls |
+| `components/TempoNode.tsx` | Singleton global BPM control |
+| `components/SpeakerNode.tsx` | Singleton global output volume |
+| `components/EngineControl.tsx` | Audio unlock gate and default-node initialisation entry point |
+| `app/globals.css` | Tailwind import, React Flow surface theming |
 
-## 10. Current v1 Constraints To Remember Before v2
+---
 
-- There is no persistence layer yet for patches or user settings.
-- Effect and speaker control UI state is mostly local to the component layer rather than fully serialized into node data.
-- Auto-wiring is strictly proximity-based and focused on horizontal chain building.
-- The app assumes a browser environment with direct keyboard access and an explicit audio-unlock action.
-- There is no automated test suite in the repository yet.
+## 9. V2 Constraints to Know Before V3
 
-## 11. Guidance For Future Changes
+- No persistence layer — patches do not survive a page reload (save/load is V3, tracked in #12)
+- Effect and controller UI state (mix value, bypass state, etc.) lives in component state — it is not serialised into node data
+- Auto-wiring is proximity-based only; no concept of locked groups or directional constraints yet (V3: #15–#20)
+- Global objects (Tempo, Amplifier) are not fully excluded from all adjacency edge cases — Speaker guard is V3 (#19)
+- No automated test suite
 
-If v2 work touches audio behavior, routing, adjacency, or node lifecycle, start with `store/useStore.ts`. If v2 work changes how patching feels on the canvas, read `app/page.tsx` and the store together, because layout behavior and audio routing are now tightly coupled through adjacency and hidden auto-edges.
+---
+
+## 10. Key Rules for Future Changes
+
+- **Audio behaviour, routing, adjacency, node lifecycle** → start in `store/useStore.ts`
+- **Canvas feel, snapping, drag** → `app/page.tsx` and `NODE_DIMS` (must stay in sync with Tailwind classes)
+- **New node types** → add to `nodeTypes` in `page.tsx`, `SIGNAL_ORDER` and `VALID_AUTO_WIRE_PAIRS` in `useStore.ts`, and `NODE_DIMS` in both files
+- **Always `.dispose()` Tone nodes** on removal — ghost audio and memory leaks are silent bugs
+- **Always `rampTo`** for parameter changes — never set directly
