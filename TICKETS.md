@@ -25,7 +25,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#13](https://github.com/jball348-svg/Bloop/issues/13) | Expand Canvas Zoom Range | ✅ Closed |
 | [#21](https://github.com/jball348-svg/Bloop/issues/21) | Comprehensive Documentation Review & Update | ✅ Closed |
 
-### V3 — Synth & Canvas (Active Backlog)
+### V3 — Synth & Canvas (Active)
 
 | # | Title | Status |
 |---|---|---|
@@ -34,10 +34,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | ✅ Closed |
 | [#30](https://github.com/jball348-svg/Bloop/issues/30) | Keys Controller — Split QWERTY Keyboard into Standalone Module | ✅ Closed |
 | [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | ✅ Closed |
-| [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🟡 Backlog |
-| [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🟡 Backlog |
-| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🟡 Backlog |
-| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | 🟡 Backlog |
+| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | 🔵 In Progress |
 | [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Backlog |
 
 ### V3 — Canvas Structure (Active Backlog)
@@ -51,11 +48,14 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
 | [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | 🟡 Backlog |
 
-### V4 — Structural (Do Not Action)
+### V4 — Do Not Action
 
 | # | Title | Status |
 |---|---|---|
+| [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
+| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🔵 V4, do not action |
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
+| [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
 
 ### Superseded / Closed
 
@@ -68,24 +68,19 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ## V3 Recommended Work Order
 
-No hard sequencing requirements within V3 synth work — these can be picked up in any order. Suggested priority:
-
-1. ~~**#27** Undo/Redo — highest day-to-day impact, no dependencies~~ ✅ Done
-2. ~~**#22** ADSR — standalone controller node, high sound design value~~ ✅ Done
-3. ~~**#24** Noise Generator — contained change, ADSR-compatible~~ ✅ Done
-4. ~~**#30** Keys Controller — clean split, low risk~~ ✅ Done
-5. ~~**#25** Unison & Detune — two new standalone signal nodes~~ ✅ Done
-6. **#31** Drum Input — add ADSR enveloping to Drum node ← **next**
-7. **#23** Filter Node — new node type, more involved
-8. **#26** Preset Patches — depends on the canvas being stable, pairs with #12
-9. **#12** Save/Load — significant, pairs with #26
-10. **#28** Visualiser — significant new node, scope carefully
+1. ~~**#27** Undo/Redo~~ ✅ Done
+2. ~~**#22** ADSR~~ ✅ Done
+3. ~~**#24** Noise Generator~~ ✅ Done
+4. ~~**#30** Keys Controller~~ ✅ Done
+5. ~~**#25** Unison & Detune~~ ✅ Done
+6. **#28** Visualiser Node ← **current**
+7. **#12** Save/Load
 
 For canvas structure work, order matters:
-1. **#19** Exclude globals first (guard change, no dependencies)
+1. **#19** Exclude globals first
 2. **#15** Module Locking (core)
 3. **#16**, **#17**, **#18** in parallel (all depend on #15)
-4. **#20** Wiring overhaul last (or independently)
+4. **#20** Wiring overhaul last
 
 ---
 
@@ -94,16 +89,15 @@ For canvas structure work, order matters:
 ```
 ── V2 Complete ──
 
-V3 Synth (no hard deps between these):
-#22 (ADSR) ✅ · #23 (Filter) · #24 (Noise) ✅ · #25 (Unison & Detune) ✅
-#27 (Undo/Redo) ✅ · #28 (Visualiser) · #30 (Keys Controller) ✅
-#31 (Drum Input) · #26 (Presets) ──► #12 (Save/Load)
+V3 Synth:
+#22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #30 ✅
+#28 (Visualiser) · #12 (Save/Load)
 
 V3 Canvas Structure:
 #19 ──► #15 ──► #16, #17, #18 ──► #20
 
-V4:
-#29 (Mixer model) — blocked until V3 complete + design phase
+V4 (do not action):
+#23 (Filter) · #26 (Presets) · #29 (Mixer) · #31 (Drum Input)
 ```
 
 ---
