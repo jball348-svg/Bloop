@@ -315,6 +315,7 @@ function BloopCanvasInner() {
                 isValidConnection={(connection: Connection) => validateConnection(connection)}
                 connectionLineStyle={{ stroke: '#475569', strokeWidth: 2, strokeDasharray: '5 5' }}
                 fitView
+                fitViewOptions={{ maxZoom: 0.8, padding: 0.2 }}
                 className="bg-slate-950"
                 edgesUpdatable={true}
                 snapToGrid={true}
