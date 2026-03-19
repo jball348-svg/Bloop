@@ -10,6 +10,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import LockButton from './LockButton';
 
 const DRUM_PART_CONFIG: Array<{ part: DrumPart; label: string; key: string }> = [
     { part: 'kick', label: 'Kick', key: 'A' },
@@ -100,7 +101,7 @@ export default function DrumNode({ id }: { id: string }) {
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3 mb-3">
                     <button
-                        className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-orange-500 hover:text-white hover:border-orange-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                        className="nodrag relative flex-shrink-0 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-orange-500 hover:text-white hover:border-orange-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                         style={{ boxShadow: `0 0 6px rgba(249, 115, 22, 0.3)` }}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -109,18 +110,21 @@ export default function DrumNode({ id }: { id: string }) {
                     >
                         ×
                     </button>
-                    <div className="flex flex-col gap-2">
+                    <div className="flex-1 flex flex-col gap-2 text-center">
                         <span className="text-[10px] font-black uppercase text-orange-400 tracking-[0.2em]">
                             Drums
                         </span>
                         <select
                             value={drumMode}
                             onChange={handleModeChange}
-                            className="nodrag bg-orange-500/10 text-[11px] font-black uppercase text-orange-300 tracking-[0.18em] border-none outline-none rounded-lg px-2 py-1.5"
+                            className="nodrag bg-orange-500/10 text-[11px] font-black uppercase text-orange-300 tracking-[0.18em] border-none outline-none rounded-lg px-2 py-1.5 mx-auto"
                         >
                             <option value="hits" className="bg-slate-900 text-orange-300">Hits</option>
                             <option value="grid" className="bg-slate-900 text-orange-300">Grid</option>
                         </select>
+                        <div className="flex justify-center">
+                            <LockButton id={id} isAdjacent={isAdjacent} accentColor="orange-500" />
+                        </div>
                     </div>
 
                     <div className="flex flex-col items-end gap-2">

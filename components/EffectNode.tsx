@@ -6,6 +6,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import LockButton from './LockButton';
 
 export default function EffectNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
@@ -78,6 +79,7 @@ export default function EffectNode({ id }: { id: string }) {
                             <option value="phaser" className="bg-slate-900 text-fuchsia-400">Cosmic Phaser</option>
                             <option value="bitcrusher" className="bg-slate-900 text-fuchsia-400">Digital Crusher</option>
                         </select>
+                        <LockButton id={id} isAdjacent={isAdjacent} accentColor="fuchsia-500" />
                     </div>
 
                     {subType !== 'none' && (

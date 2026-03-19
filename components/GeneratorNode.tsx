@@ -7,6 +7,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import LockButton from './LockButton';
 
 const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
 
@@ -55,7 +56,7 @@ export default function GeneratorNode({ id }: { id: string }) {
                 <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between items-center mb-3">
                         <button
-                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-red-500 hover:text-white hover:border-red-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                            className="nodrag relative flex-shrink-0 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-red-500 hover:text-white hover:border-red-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                             style={{ boxShadow: `0 0 6px rgba(239, 68, 68, 0.3)` }}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -64,8 +65,8 @@ export default function GeneratorNode({ id }: { id: string }) {
                         >
                             ×
                         </button>
-                        <div className="text-[10px] font-black uppercase text-red-400 tracking-[0.2em]">Generator</div>
-                        <div className="w-3.5 h-3.5" />
+                        <div className="flex-1 text-center text-[10px] font-black uppercase text-red-400 tracking-[0.2em]">Generator</div>
+                        <LockButton id={id} isAdjacent={isAdjacent} accentColor="red-500" />
                     </div>
 
                     <div className="flex flex-col gap-3">

@@ -6,6 +6,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import LockButton from './LockButton';
 
 export default function DetuneNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
@@ -50,10 +51,10 @@ export default function DetuneNode({ id }: { id: string }) {
                         >
                             ×
                         </button>
-                        <div className="text-[10px] font-black uppercase text-teal-400 tracking-[0.2em]">
+                        <div className="flex-1 text-[10px] font-black uppercase text-teal-400 tracking-[0.2em] text-center">
                             DETUNE
                         </div>
-                        <div className="w-3.5 h-3.5" />
+                        <LockButton id={id} isAdjacent={isAdjacent} accentColor="teal-500" />
                     </div>
 
                     <div className="flex flex-col gap-3">

@@ -6,6 +6,7 @@ import {
     useStore,
 } from '@/store/useStore';
 import * as Tone from 'tone';
+import LockButton from './LockButton';
 
 const buildKeyMap = (oct: number): Record<string, string> => ({
     'a': `C${oct}`, 'w': `C#${oct}`, 's': `D${oct}`,
@@ -120,9 +121,10 @@ export default function KeysNode({ id }: { id: string }) {
                         >
                             ×
                         </button>
-                        <div className="w-full text-[10px] font-black uppercase text-white tracking-[0.2em] border-none outline-none cursor-default px-1 py-1 truncate text-center">
+                        <div className="flex-1 text-[10px] font-black uppercase text-white tracking-[0.2em] border-none outline-none cursor-default truncate text-center">
                             KEYS
                         </div>
+                        <LockButton id={id} isAdjacent={isAdjacent} accentColor="white" />
                     </div>
 
                     <div className="flex flex-col items-center bg-white/5 p-4 rounded-xl border border-white/10">

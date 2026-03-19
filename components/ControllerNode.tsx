@@ -8,6 +8,7 @@ import {
 } from '@/store/useStore';
 import { Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
+import LockButton from './LockButton';
 
 const TONAL_SCALES = [
     'major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian',
@@ -98,9 +99,10 @@ export default function ControllerNode({ id }: { id: string }) {
                         >
                             ×
                         </button>
-                        <div className="w-full text-[10px] font-black uppercase text-yellow-400 tracking-[0.2em] border-none outline-none cursor-default px-1 py-1 truncate text-center">
+                        <div className="flex-1 text-[10px] font-black uppercase text-yellow-400 tracking-[0.2em] border-none outline-none cursor-default truncate text-center">
                             ARPEGGIATOR
                         </div>
+                        <LockButton id={id} isAdjacent={isAdjacent} accentColor="yellow-500" />
                     </div>
 
                     <div className="flex flex-col gap-3">

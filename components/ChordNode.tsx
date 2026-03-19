@@ -7,6 +7,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import LockButton from './LockButton';
 
 export default function ChordNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
@@ -33,7 +34,7 @@ export default function ChordNode({ id }: { id: string }) {
             />
 
             <div className="relative z-10 flex flex-1 flex-col">
-                <div className="mb-3">
+                <div className="flex justify-between items-center mb-3">
                     <button
                         className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-sky-500 hover:text-white hover:border-sky-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                         style={{ boxShadow: `0 0 6px rgba(168, 85, 247, 0.3)` }}
@@ -44,9 +45,10 @@ export default function ChordNode({ id }: { id: string }) {
                     >
                         ×
                     </button>
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-300">
+                    <div className="flex-1 text-center text-[10px] font-black uppercase tracking-[0.2em] text-sky-300">
                         Chord
-                    </span>
+                    </div>
+                    <LockButton id={id} isAdjacent={isAdjacent} accentColor="sky-500" />
                 </div>
 
                 <div className="flex flex-col gap-2">

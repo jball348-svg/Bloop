@@ -107,6 +107,7 @@ export type AppNode = Node & {
         decay?: number;
         sustain?: number;
         release?: number;
+        isLocked?: boolean;
     };
     type: AudioNodeType;
 };
@@ -681,6 +682,7 @@ type AppState = {
     loadCanvas: (data: { nodes: AppNode[]; edges: AppEdge[]; masterVolume?: number }) => void;
     recalculateAdjacency: () => void;
     autoWireAdjacentNodes: () => void;
+    toggleNodeLock: (id: string) => void;
     saveSnapshot: () => void;
     undo: () => void;
     redo: () => void;
@@ -735,6 +737,81 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     onNodesChange: (changes: NodeChange[]) => {
+        const { nodes } = get();
+        
+        // Find position changes that are drags
+        const positionChanges = changes.filter(
+            (c): c is { id: string; type: 'position'; position: { x: number; y: number }; dragging?: boolean } => 
+                c.type === 'position' && !!c.dragging
+        );
+
+        if (positionChanges.length === 1) {
+            const change = positionChanges[0];
+            const draggedNode = nodes.find(n => n.id === change.id);
+
+            if (draggedNode?.data.isLocked) {
+                const currentPos = draggedNode.position;
+                const nextPos = change.position;
+                const dx = nextPos.x - currentPos.x;
+                const dy = nextPos.y - currentPos.y;
+
+                if (dx !== 0 || dy !== 0) {
+                    // Find all nodes in the same locked cluster
+                    const lockedCluster = new Set<string>();
+                    const queue = [draggedNode.id];
+                    lockedCluster.add(draggedNode.id);
+
+                    while (queue.length > 0) {
+                        const currentId = queue.shift()!;
+                        const currentNode = nodes.find(n => n.id === currentId)!;
+                        const curDims = getDims(currentNode.type);
+
+                        nodes.forEach(n => {
+                            if (n.data.isLocked && !lockedCluster.has(n.id)) {
+                                const nDims = getDims(n.type);
+                                
+                                // Distance check (same as recalculateAdjacency)
+                                const gapRight = n.position.x - (currentNode.position.x + curDims.w);
+                                const gapLeft  = currentNode.position.x - (n.position.x + nDims.w);
+                                const horizGap = Math.max(gapRight, gapLeft);
+
+                                const curCentreY = currentNode.position.y + curDims.h / 2;
+                                const nCentreY = n.position.y + nDims.h / 2;
+                                const vertDist = Math.abs(curCentreY - nCentreY);
+
+                                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                                    lockedCluster.add(n.id);
+                                    queue.push(n.id);
+                                }
+                            }
+                        });
+                    }
+
+                    if (lockedCluster.size > 1) {
+                        // Apply movement to all nodes in cluster
+                        const allNodes = get().nodes;
+                        const nextNodes = allNodes.map(n => {
+                            if (lockedCluster.has(n.id)) {
+                                if (n.id === change.id) {
+                                    return { ...n, position: change.position };
+                                }
+                                return {
+                                    ...n,
+                                    position: {
+                                        x: n.position.x + dx,
+                                        y: n.position.y + dy
+                                    }
+                                };
+                            }
+                            return n;
+                        });
+                        set({ nodes: nextNodes });
+                        return;
+                    }
+                }
+            }
+        }
+
         set({
             nodes: applyNodeChanges(changes, get().nodes) as AppNode[],
         });
@@ -1898,6 +1975,54 @@ export const useStore = create<AppState>((set, get) => ({
         set({ adjacentNodeIds: new Set(adjacent) });
         // Auto-wire runs after adjacency so it sees the fresh adjacent set
         get().autoWireAdjacentNodes();
+    },
+
+    toggleNodeLock: (id: string) => {
+        const { nodes } = get();
+        const startNode = nodes.find(n => n.id === id);
+        if (!startNode) return;
+
+        const nextLocked = !startNode.data.isLocked;
+        
+        // Find all nodes in the same snapped cluster
+        const clusterIds = new Set<string>();
+        const queue = [id];
+        clusterIds.add(id);
+
+        while (queue.length > 0) {
+            const currentId = queue.shift()!;
+            const currentNode = nodes.find(n => n.id === currentId);
+            if (!currentNode) continue;
+
+            const cDims = getDims(currentNode.type);
+
+            for (const other of nodes) {
+                if (clusterIds.has(other.id)) continue;
+                if (other.type === 'tempo' || other.type === 'speaker') continue;
+
+                const oDims = getDims(other.type);
+                const gapRight = other.position.x - (currentNode.position.x + cDims.w);
+                const gapLeft  = currentNode.position.x - (other.position.x + oDims.w);
+                const horizGap = Math.max(gapRight, gapLeft);
+
+                const cCentreY = currentNode.position.y + cDims.h / 2;
+                const oCentreY = other.position.y + oDims.h / 2;
+                const vertDist = Math.abs(cCentreY - oCentreY);
+
+                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                    clusterIds.add(other.id);
+                    queue.push(other.id);
+                }
+            }
+        }
+
+        set({
+            nodes: nodes.map(node => 
+                clusterIds.has(node.id)
+                    ? { ...node, data: { ...node.data, isLocked: nextLocked } }
+                    : node
+            )
+        });
     },
 
     saveSnapshot: () => {

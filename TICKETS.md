@@ -47,7 +47,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | # | Title | Status |
 |---|---|---|
 | [#19](https://github.com/jball348-svg/Bloop/issues/19) | Exclude Global Objects (Tempo, Amplifier) from Snapping & Locking | ✅ Closed |
-| [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | 🟡 Backlog |
+| [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | ✅ Closed |
 | [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | 🟡 Backlog |
 | [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🟡 Backlog |
 | [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
@@ -83,7 +83,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 For canvas structure work, order matters:
 1. ~~**#19** Exclude globals first~~ ✅ Done
-2. **#15** Module Locking (core)
+2. ~~**#15** Module Locking (core)~~ ✅ Done
 3. **#16**, **#17**, **#18** in parallel (all depend on #15)
 4. **#20** Wiring overhaul last
 

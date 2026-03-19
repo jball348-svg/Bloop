@@ -9,6 +9,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import LockButton from './LockButton';
 
 export default function VisualiserNode({ id }: { id: string }) {
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
@@ -113,9 +114,10 @@ export default function VisualiserNode({ id }: { id: string }) {
                     >
                         ×
                     </button>
-                    <div className="text-[10px] font-black uppercase text-pink-400 tracking-[0.2em]">
+                    <div className="flex-1 text-[10px] font-black uppercase text-pink-400 tracking-[0.2em] text-center">
                         VISUALISER
                     </div>
+                    <LockButton id={id} isAdjacent={isAdjacent} accentColor="pink-500" />
                 </div>
 
                 <div className="flex gap-1 mb-3">

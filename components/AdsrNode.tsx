@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useStore } from '@/store/useStore';
+import LockButton from './LockButton';
 
 interface AdsrSliderProps {
     label: string;
@@ -116,7 +117,7 @@ export default function AdsrNode({ id }: { id: string }) {
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">
                     <button
-                        className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-amber-600 hover:text-white hover:border-amber-500 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                        className="nodrag relative flex-shrink-0 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-amber-600 hover:text-white hover:border-amber-500 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                         style={{ boxShadow: `0 0 6px rgba(146, 64, 14, 0.3)` }}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -128,7 +129,7 @@ export default function AdsrNode({ id }: { id: string }) {
                     <div className="text-[10px] font-black uppercase text-amber-600 tracking-[0.2em] text-center flex-1">
                         ADSR
                     </div>
-                    <div className="w-3.5 h-3.5" /> {/* Spacer for balance */}
+                    <LockButton id={id} isAdjacent={isAdjacent} accentColor="amber-700" />
                 </div>
 
                 <div className="flex flex-col gap-3">
