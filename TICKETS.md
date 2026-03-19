@@ -33,7 +33,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#22](https://github.com/jball348-svg/Bloop/issues/22) | ADSR Envelope — Standalone Controller Node | ✅ Closed |
 | [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | ✅ Closed |
 | [#30](https://github.com/jball348-svg/Bloop/issues/30) | Keys Controller — Split QWERTY Keyboard into Standalone Module | ✅ Closed |
-| [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | 🔵 In Progress |
+| [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | ✅ Closed |
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🟡 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🟡 Backlog |
 | [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🟡 Backlog |
@@ -74,8 +74,8 @@ No hard sequencing requirements within V3 synth work — these can be picked up 
 2. ~~**#22** ADSR — standalone controller node, high sound design value~~ ✅ Done
 3. ~~**#24** Noise Generator — contained change, ADSR-compatible~~ ✅ Done
 4. ~~**#30** Keys Controller — clean split, low risk~~ ✅ Done
-5. **#25** Unison & Detune — two new standalone signal nodes ← **current**
-6. **#31** Drum Input — add ADSR enveloping to Drum node
+5. ~~**#25** Unison & Detune — two new standalone signal nodes~~ ✅ Done
+6. **#31** Drum Input — add ADSR enveloping to Drum node ← **next**
 7. **#23** Filter Node — new node type, more involved
 8. **#26** Preset Patches — depends on the canvas being stable, pairs with #12
 9. **#12** Save/Load — significant, pairs with #26
@@ -95,7 +95,7 @@ For canvas structure work, order matters:
 ── V2 Complete ──
 
 V3 Synth (no hard deps between these):
-#22 (ADSR) ✅ · #23 (Filter) · #24 (Noise) ✅ · #25 (Unison & Detune)
+#22 (ADSR) ✅ · #23 (Filter) · #24 (Noise) ✅ · #25 (Unison & Detune) ✅
 #27 (Undo/Redo) ✅ · #28 (Visualiser) · #30 (Keys Controller) ✅
 #31 (Drum Input) · #26 (Presets) ──► #12 (Save/Load)
 
