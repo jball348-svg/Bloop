@@ -18,7 +18,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | ✅ Closed | v2, ux, polish |
 | [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | ✅ Closed | v2, ux, polish |
-| [#9](https://github.com/jball348-svg/Bloop/issues/9) | Split Toolbar into Four Contextual Menus | 🔴 Open | v2 |
+| [#9](https://github.com/jball348-svg/Bloop/issues/9) | Split Toolbar into Four Contextual Menus | ✅ Closed | v2 |
 | [#10](https://github.com/jball348-svg/Bloop/issues/10) | Empty Canvas on Initial Load | 🔴 Open | v2 |
 | [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | 🔴 Open | v2 |
 | [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Open (do not action) | v3, backlog |
@@ -48,24 +48,18 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 ### ✅ Phase 5 — UX (Complete)
 
 - ~~**#8** Node Delete Button — In-Canvas X button on all nodes~~
-  - No dependencies — ready to action
-  - Touches all `components/*Node.tsx` files only
 
 ### 🔴 Phase 6 — Canvas & Navigation (Current)
 
-- **#9** Split Toolbar into Four Contextual Menus
-  - No hard dependencies
-  - Refactor `Toolbar.tsx` → four new components: `ControllerMenu`, `SignalMenu`, `GlobalMenu`, `SystemMenu`
-  - Left: Controller, Chord | Top: Generator, Effect, Drums | Right: Tempo, Amplifier | Bottom: System (New button placeholder)
+- ~~**#9** Split Toolbar into Four Contextual Menus~~
 
 - **#10** Empty Canvas on Initial Load
   - No dependencies
-  - One-line change in `store/useStore.ts` (empty the initial `nodes` array)
-  - Confirm `initializeDefaultNodes` gracefully handles an empty list
+  - Three changes in `store/useStore.ts`: empty `nodes`, empty `edges`, empty `autoEdgeIds`
 
 - **#11** "New" Button Clears Canvas (System Menu)
-  - Depends on **#9** (System menu must exist) and **#10** (defines what "empty" means)
-  - Add `clearCanvas()` action to the store; dispose all audio nodes and patterns, then `set({ nodes: [], edges: [] })`
+  - Depends on **#9** ✅ and **#10**
+  - Wire the `New` button in `SystemMenu.tsx` to a new `clearCanvas()` store action
 
 ### 🟡 Phase 7 — Backlog (Do Not Action Yet)
 
@@ -78,11 +72,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ```
 #5 (Speaker) ─┐
-              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete)
+              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete) ──► #9 (Split Menus)
 #1 (Tempo)  ──┘
 #2 (Drums)  ──────────────────► #6 (Polish)
 
-#9  (Split Toolbar) ─────────────────────────────────────────────┐
+#9  (Split Toolbar) ✅ ───────────────────────────────────────────┐
                                                                   ├──► #11 (New Button)
 #10 (Empty Canvas) ──────────────────────────────────────────────┘
 
