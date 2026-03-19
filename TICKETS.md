@@ -20,7 +20,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | ✅ Closed | v2, ux, polish |
 | [#9](https://github.com/jball348-svg/Bloop/issues/9) | Split Toolbar into Four Contextual Menus | ✅ Closed | v2 |
 | [#10](https://github.com/jball348-svg/Bloop/issues/10) | Empty Canvas on Initial Load | ✅ Closed | v2 |
-| [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | 🔴 Open | v2 |
+| [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | ✅ Closed | v2 |
 | [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Open (do not action) | v3, backlog |
 | [#13](https://github.com/jball348-svg/Bloop/issues/13) | Expand Canvas Zoom Range | 🔴 Open | v2, ux |
 | [#14](https://github.com/jball348-svg/Bloop/issues/14) | Grouped Module Locking & Directional Wiring (superseded) | ✅ Closed | v3, backlog |
@@ -61,15 +61,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 - ~~**#9** Split Toolbar into Four Contextual Menus~~
 - ~~**#10** Empty Canvas on Initial Load~~
-
-- **#11** "New" Button Clears Canvas (System Menu)
-  - Depends on **#9** ✅ and **#10** ✅ — both done
-  - Wire the `New` button in `SystemMenu.tsx` to a new `clearCanvas()` store action
+- ~~**#11** "New" Button Clears Canvas~~
 
 - **#13** Expand Canvas Zoom Range
   - No dependencies
   - Single prop change in `app/page.tsx`: add `minZoom={0.1}` to `<ReactFlow>`
-  - Can be done in parallel with or after #11
 
 ### 🟡 Phase 7 — Backlog (Do Not Action Yet)
 
@@ -88,17 +84,13 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ```
 #5 (Speaker) ─┐
-              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete) ──► #9 ──► #10
+              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete) ──► #9 ──► #10 ──► #11
 #1 (Tempo)  ──┘
 #2 (Drums)  ──────────────────► #6 (Polish)
 
-#9  ✅ ──────────────────────┐
-                             ├──► #11 (New Button)
-#10 ✅ ──────────────────────┘
-
 #13 (Zoom) — no dependencies
 
-#12 (Save/Load/Presets) — blocked until #11 complete
+#12 (Save/Load/Presets) — blocked until #11 ✅ complete
 
 #19 (Exclude globals) ──────────────────────────────────────────► #15 (Module Locking)
                                                                          │
