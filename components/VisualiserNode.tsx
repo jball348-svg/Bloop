@@ -13,6 +13,7 @@ import {
 export default function VisualiserNode({ id }: { id: string }) {
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const audioNodes = useStore((state) => state.audioNodes);
+    const edges = useStore((state) => state.edges);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -41,7 +42,7 @@ export default function VisualiserNode({ id }: { id: string }) {
             analyser.dispose();
             fft.dispose();
         };
-    }, [id, audioNodes]);
+    }, [id, audioNodes, edges]);
 
     // Animation loop for canvas rendering
     useEffect(() => {
