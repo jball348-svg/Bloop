@@ -18,6 +18,10 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
 | [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | ✅ Closed | v2, ux, polish |
 | [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | ✅ Closed | v2, ux, polish |
+| [#9](https://github.com/jball348-svg/Bloop/issues/9) | Split Toolbar into Four Contextual Menus | 🔴 Open | v2 |
+| [#10](https://github.com/jball348-svg/Bloop/issues/10) | Empty Canvas on Initial Load | 🔴 Open | v2 |
+| [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | 🔴 Open | v2 |
+| [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Open (do not action) | v3, backlog |
 
 ---
 
@@ -47,8 +51,28 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
   - No dependencies — ready to action
   - Touches all `components/*Node.tsx` files only
 
-### 🟡 Phase 6 — Backlog (Do Not Action Yet)
+### 🔴 Phase 6 — Canvas & Navigation (Current)
+
+Work these in order — #10 is a quick win and unblocks #11; #9 is the largest lift and can go last.
+
+- **#10** Empty Canvas on Initial Load
+  - No dependencies
+  - One-line change in `store/useStore.ts` (empty the initial `nodes` array)
+  - Confirm `initializeDefaultNodes` gracefully handles an empty list
+
+- **#11** "New" Button Clears Canvas (System Menu)
+  - Depends on **#9** (needs the System menu to exist) and **#10** (defines what "empty" means)
+  - Add `clearCanvas()` action to the store; dispose all audio nodes and patterns, then `set({ nodes: [], edges: [] })`
+
+- **#9** Split Toolbar into Four Contextual Menus
+  - No hard code dependencies but should be done before #11 ships (System menu houses the New button)
+  - Refactor `Toolbar.tsx` → four new components: `ControllerMenu`, `SignalMenu`, `GlobalMenu`, `SystemMenu`
+  - Left: Controller, Chord | Top: Generator, Effect, Drums | Right: Tempo, Amplifier | Bottom: System (New button)
+
+### 🟡 Phase 7 — Backlog (Do Not Action Yet)
+
 - **#4** V3 Backlog — reference document only, do not implement
+- **#12** Enhanced System Menu (Save, Load, Presets) — blocked until Phase 6 is complete
 
 ---
 
@@ -56,11 +80,14 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ```
 #5 (Speaker) ─┐
-              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar)
+              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete)
 #1 (Tempo)  ──┘
 #2 (Drums)  ──────────────────► #6 (Polish)
 
-#8 (Delete Button) — no dependencies
+#10 (Empty Canvas) ──────────────────────────────────────────────► #11 (New Button)
+#9  (Split Toolbar) ─────────────────────────────────────────────► #11 (New Button)
+
+#12 (Save/Load/Presets) — blocked until #9, #10, #11 complete
 ```
 
 ---
