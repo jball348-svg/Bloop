@@ -775,7 +775,7 @@ export const useStore = create<AppState>((set, get) => ({
         let node: Tone.ToneAudioNode | null = null;
 
         if (type === 'generator') {
-            const waveShape = getGeneratorWaveShape(get().nodes, id);
+            const waveShape = (subType as WaveShape) || getGeneratorWaveShape(get().nodes, id);
             if (waveShape === 'noise') {
                 node = new Tone.Noise({ type: 'white' });
             } else {
