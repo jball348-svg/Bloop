@@ -313,7 +313,7 @@ const applyAdsrEnvelopes = (
 ) => {
     // Find all ADSR nodes downstream from the source
     const visitedAdsrNodes = new Set<string>();
-    
+
     const findAdsrNodes = (currentId: string) => {
         edges
             .filter((edge) => isAudioEdge(edge) && edge.source === currentId)
@@ -322,18 +322,18 @@ const applyAdsrEnvelopes = (
                 if (!targetNode || visitedAdsrNodes.has(targetNode.id)) {
                     return;
                 }
-                
+
                 if (targetNode.type === 'adsr') {
                     visitedAdsrNodes.add(targetNode.id);
                     // Apply this ADSR's envelope to all downstream generators
                     applyAdsrToDownstreamGenerators(targetNode.id, nodesById, edges, audioNodes);
                 }
-                
+
                 // Continue traversing
                 findAdsrNodes(targetNode.id);
             });
     };
-    
+
     findAdsrNodes(sourceId);
 };
 
@@ -347,9 +347,9 @@ const applyAdsrToDownstreamGenerators = (
     if (!adsrNode || adsrNode.type !== 'adsr') {
         return;
     }
-    
+
     const { attack = 0.01, decay = 0.1, sustain = 0.7, release = 0.5 } = adsrNode.data;
-    
+
     // Find all downstream generators
     const visited = new Set<string>();
     const findDownstreamGenerators = (currentId: string) => {
@@ -360,19 +360,19 @@ const applyAdsrToDownstreamGenerators = (
                 if (!targetNode || visited.has(targetNode.id)) {
                     return;
                 }
-                
+
                 visited.add(targetNode.id);
-                
+
                 if (targetNode.type === 'generator') {
                     const synth = audioNodes.get(targetNode.id);
                     if (synth instanceof Tone.PolySynth) {
-                        synth.set({ 
-                            envelope: { 
-                                attack, 
-                                decay, 
-                                sustain, 
-                                release 
-                            } 
+                        synth.set({
+                            envelope: {
+                                attack,
+                                decay,
+                                sustain,
+                                release
+                            }
                         });
                     }
                     // Note: Tone.Noise instances don't support envelope settings
@@ -383,24 +383,24 @@ const applyAdsrToDownstreamGenerators = (
                 }
             });
     };
-    
+
     findDownstreamGenerators(adsrId);
 };
 
 // Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
-    keys:        { w: 288, h: 320 },
-    chord:      { w: 224, h: 240 },
-    adsr:       { w: 224, h: 340 },
-    generator:  { w: 224, h: 220 },
-    drum:       { w: 320, h: 360 },
-    effect:     { w: 224, h: 260 },
-    unison:     { w: 224, h: 220 },
-    detune:     { w: 224, h: 200 },
+    keys: { w: 288, h: 320 },
+    chord: { w: 224, h: 240 },
+    adsr: { w: 224, h: 340 },
+    generator: { w: 224, h: 220 },
+    drum: { w: 320, h: 360 },
+    effect: { w: 224, h: 260 },
+    unison: { w: 224, h: 220 },
+    detune: { w: 224, h: 200 },
     visualiser: { w: 256, h: 280 },
-    speaker:    { w: 224, h: 200 },
-    tempo:      { w: 256, h: 240 },
+    speaker: { w: 224, h: 200 },
+    tempo: { w: 256, h: 240 },
 };
 const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
@@ -424,7 +424,7 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
 
             const oDims = getDims(other.type);
             const gapRight = other.position.x - (currentNode.position.x + cDims.w);
-            const gapLeft  = currentNode.position.x - (other.position.x + oDims.w);
+            const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
             const horizGap = Math.max(gapRight, gapLeft);
 
             const cCentreY = currentNode.position.y + cDims.h / 2;
@@ -444,7 +444,7 @@ const getClusterBoundaries = (clusterIds: Set<string>, allNodes: AppNode[]) => {
     if (clusterIds.size === 0) return { entryId: null, exitId: null };
 
     const clusterNodes = allNodes.filter(n => clusterIds.has(n.id));
-    
+
     // Sort by signal order, then x, then y
     clusterNodes.sort((a, b) => {
         const orderA = SIGNAL_ORDER[a.type] ?? 99;
@@ -542,10 +542,10 @@ const volumePercentToDb = (volume: number) => {
 };
 
 const createDefaultDrumPattern = (): DrumPattern => ({
-    kick:      [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
-    snare:     [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+    kick: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+    snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
     hatClosed: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
-    hatOpen:   [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+    hatOpen: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
 });
 
 const createDrumRack = (): DrumRack => {
@@ -795,10 +795,10 @@ export const useStore = create<AppState>((set, get) => ({
 
     onNodesChange: (changes: NodeChange[]) => {
         const { nodes } = get();
-        
+
         // Find position changes that are drags
         const positionChanges = changes.filter(
-            (c): c is { id: string; type: 'position'; position: { x: number; y: number }; dragging?: boolean } => 
+            (c): c is { id: string; type: 'position'; position: { x: number; y: number }; dragging?: boolean } =>
                 c.type === 'position' && !!c.dragging
         );
 
@@ -826,10 +826,10 @@ export const useStore = create<AppState>((set, get) => ({
                         nodes.forEach(n => {
                             if (n.data.isLocked && !lockedCluster.has(n.id)) {
                                 const nDims = getDims(n.type);
-                                
+
                                 // Distance check (same as recalculateAdjacency)
                                 const gapRight = n.position.x - (currentNode.position.x + curDims.w);
-                                const gapLeft  = currentNode.position.x - (n.position.x + nDims.w);
+                                const gapLeft = currentNode.position.x - (n.position.x + nDims.w);
                                 const horizGap = Math.max(gapRight, gapLeft);
 
                                 const curCentreY = currentNode.position.y + curDims.h / 2;
@@ -877,18 +877,18 @@ export const useStore = create<AppState>((set, get) => ({
     onEdgesChange: (changes: EdgeChange[]) => {
         const currentEdges = get().edges;
         const nextEdges = stripLegacyTempoEdges(applyEdgeChanges(changes, currentEdges) as AppEdge[]);
-        
+
         // Only snapshot for remove-type changes
         const hasRemoveChange = changes.some(change => change.type === 'remove');
         if (hasRemoveChange) {
             get().saveSnapshot();
         }
-        
+
         set({ edges: nextEdges });
         get().autoWireAdjacentNodes();
     },
 
-    onEdgeUpdateStart: () => {},
+    onEdgeUpdateStart: () => { },
 
     onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => {
         if (!get().isValidConnection(newConnection, oldEdge.id)) {
@@ -911,7 +911,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().autoWireAdjacentNodes();
     },
 
-    onEdgeUpdateEnd: () => {},
+    onEdgeUpdateEnd: () => { },
 
     onConnect: (connection: Connection) => {
         if (!get().isValidConnection(connection)) {
@@ -989,7 +989,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
         get().saveSnapshot();
-        
+
         const { audioNodes, patterns, nodes, edges } = get();
         const wasPlaying = nodes.find((n: AppNode) => n.id === id)?.data.isPlaying || false;
 
@@ -1020,13 +1020,13 @@ export const useStore = create<AppState>((set, get) => ({
         set({
             nodes: nodes.map((n: AppNode) =>
                 n.id === id
-                    ? { 
-                        ...n, 
-                        data: { 
-                            ...n.data, 
+                    ? {
+                        ...n,
+                        data: {
+                            ...n.data,
                             ...(mainType === 'generator' ? { waveShape: subType } : { subType }),
-                            isPlaying: wasPlaying 
-                        } 
+                            isPlaying: wasPlaying
+                        }
                     }
                     : n
             ),
@@ -1155,11 +1155,11 @@ export const useStore = create<AppState>((set, get) => ({
         if (value.waveShape) {
             const currentNode = get().nodes.find((n: AppNode) => n.id === id);
             const currentWaveShape = currentNode?.data.waveShape ?? 'sine';
-            
+
             // Check if we're switching between noise and non-noise waveforms
             const isSwitchingToNoise = value.waveShape === 'noise' && currentWaveShape !== 'noise';
             const isSwitchingFromNoise = currentWaveShape === 'noise' && value.waveShape !== 'noise';
-            
+
             if (isSwitchingToNoise || isSwitchingFromNoise) {
                 // Switching between noise and oscillator types requires changeNodeSubType
                 // changeNodeSubType will handle updating the node data, so return early
@@ -1168,7 +1168,7 @@ export const useStore = create<AppState>((set, get) => ({
             } else if (node instanceof Tone.PolySynth) {
                 node.set({ oscillator: { type: value.waveShape } as never });
             }
-            
+
             const nodes = get().nodes.map((n: AppNode) =>
                 n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n
             );
@@ -1202,7 +1202,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (node instanceof Tone.Gain && typeof value.mix === 'number') {
             const { drumRacks } = get();
             const isDrumOutput = Array.from(drumRacks.values()).some(rack => rack.output === node);
-            
+
             if (isDrumOutput) {
                 if (value.mix === 0) {
                     node.gain.rampTo(0, 0.1);
@@ -1429,10 +1429,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
-        
+
         // Apply ADSR envelopes to downstream generators before triggering notes
         applyAdsrEnvelopes(controllerId, nodesById, edges, audioNodes);
-        
+
         const dispatches = collectNoteDispatches(
             controllerId,
             note,
@@ -1596,7 +1596,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     addNode: (node: AppNode) => {
         get().saveSnapshot();
-        
+
         if (
             (node.type === 'tempo' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'tempo')) ||
             (node.type === 'speaker' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'speaker'))
@@ -1612,8 +1612,8 @@ export const useStore = create<AppState>((set, get) => ({
                         ...node.data,
                         label: node.data.label || 'Tempo',
                         bpm: clampTempoBpm(node.data.bpm ?? DEFAULT_TRANSPORT_BPM),
-                        },
-                    }
+                    },
+                }
                 : node.type === 'speaker'
                     ? {
                         ...node,
@@ -1622,37 +1622,37 @@ export const useStore = create<AppState>((set, get) => ({
                             label: node.data.label || 'Master Out',
                         },
                     }
-                : node.type === 'chord'
-                    ? {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            label: node.data.label || 'Chord',
-                            subType: node.data.subType ?? DEFAULT_CHORD_QUALITY,
-                        },
-                    }
-                : node.type === 'generator'
-                    ? {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            label: node.data.label || 'Oscillator',
-                            waveShape: node.data.waveShape ?? 'sine',
-                        },
-                    }
-                : node.type === 'drum'
-                    ? {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            label: node.data.label || 'Drums',
-                            drumMode: node.data.drumMode ?? 'hits',
-                            drumPattern: node.data.drumPattern ?? createDefaultDrumPattern(),
-                            currentStep: node.data.currentStep ?? -1,
-                            isPlaying: node.data.isPlaying ?? false,
-                        },
-                    }
-                : node;
+                    : node.type === 'chord'
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                label: node.data.label || 'Chord',
+                                subType: node.data.subType ?? DEFAULT_CHORD_QUALITY,
+                            },
+                        }
+                        : node.type === 'generator'
+                            ? {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    label: node.data.label || 'Oscillator',
+                                    waveShape: node.data.waveShape ?? 'sine',
+                                },
+                            }
+                            : node.type === 'drum'
+                                ? {
+                                    ...node,
+                                    data: {
+                                        ...node.data,
+                                        label: node.data.label || 'Drums',
+                                        drumMode: node.data.drumMode ?? 'hits',
+                                        drumPattern: node.data.drumPattern ?? createDefaultDrumPattern(),
+                                        currentStep: node.data.currentStep ?? -1,
+                                        isPlaying: node.data.isPlaying ?? false,
+                                    },
+                                }
+                                : node;
 
         set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
 
@@ -1679,7 +1679,7 @@ export const useStore = create<AppState>((set, get) => ({
 
     removeNodeAndCleanUp: (id: string) => {
         get().saveSnapshot();
-        
+
         const { nodes, edges } = get();
         const removedNode = nodes.find((node: AppNode) => node.id === id);
 
@@ -1901,7 +1901,7 @@ export const useStore = create<AppState>((set, get) => ({
             } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
                 get().initAudioNode(node.id, node.type);
             }
-            
+
             // For tempo nodes, ensure global transport is synced
             if (node.type === 'tempo' && node.data.bpm) {
                 Tone.getTransport().bpm.rampTo(node.data.bpm, 0.1);
@@ -1936,7 +1936,7 @@ export const useStore = create<AppState>((set, get) => ({
                 const bDims = getDims(b.type);
 
                 const gapRight = b.position.x - (a.position.x + aDims.w);
-                const gapLeft  = a.position.x - (b.position.x + bDims.w);
+                const gapLeft = a.position.x - (b.position.x + bDims.w);
                 const horizGap = Math.max(gapRight, gapLeft);
 
                 const aCentreY = a.position.y + aDims.h / 2;
@@ -1948,7 +1948,7 @@ export const useStore = create<AppState>((set, get) => ({
                 }
 
                 // Determine source/target by signal flow order
-                const leftNode  = a.position.x <= b.position.x ? a : b;
+                const leftNode = a.position.x <= b.position.x ? a : b;
                 const rightNode = a.position.x <= b.position.x ? b : a;
 
                 let sourceNode = leftNode;
@@ -2015,7 +2015,7 @@ export const useStore = create<AppState>((set, get) => ({
                 const bDims = getDims(b.type);
 
                 const gapRight = b.position.x - (a.position.x + aDims.w);
-                const gapLeft  = a.position.x - (b.position.x + bDims.w);
+                const gapLeft = a.position.x - (b.position.x + bDims.w);
                 const horizGap = Math.max(gapRight, gapLeft);
 
                 const aCentreY = a.position.y + aDims.h / 2;
@@ -2040,7 +2040,7 @@ export const useStore = create<AppState>((set, get) => ({
         if (!startNode) return;
 
         const nextLocked = !startNode.data.isLocked;
-        
+
         // Find all nodes in the same snapped cluster
         const clusterIds = new Set<string>();
         const queue = [id];
@@ -2059,7 +2059,7 @@ export const useStore = create<AppState>((set, get) => ({
 
                 const oDims = getDims(other.type);
                 const gapRight = other.position.x - (currentNode.position.x + cDims.w);
-                const gapLeft  = currentNode.position.x - (other.position.x + oDims.w);
+                const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
                 const horizGap = Math.max(gapRight, gapLeft);
 
                 const cCentreY = currentNode.position.y + cDims.h / 2;
@@ -2076,17 +2076,17 @@ export const useStore = create<AppState>((set, get) => ({
         set({
             nodes: nodes.map(node => {
                 if (!clusterIds.has(node.id)) return node;
-                
+
                 const { entryId, exitId } = getClusterBoundaries(clusterIds, nodes);
-                
-                return { 
-                    ...node, 
-                    data: { 
-                        ...node.data, 
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
                         isLocked: nextLocked,
                         isEntry: nextLocked ? node.id === entryId : undefined,
                         isExit: nextLocked ? node.id === exitId : undefined,
-                    } 
+                    }
                 };
             }),
             edges: get().edges.map(edge => {
@@ -2122,7 +2122,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         const currentSnapshot = { nodes: [...nodes], edges: [...edges] };
         const previousSnapshot = past[past.length - 1];
-        
+
         if (!previousSnapshot) return;
 
         // Push current state to future
@@ -2141,12 +2141,12 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
         const { audioNodes, drumRacks, patterns } = get();
-        
+
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
             node.disconnect().dispose();
         });
-        
+
         // Dispose all drum racks
         drumRacks.forEach((rack) => {
             rack.loop?.dispose();
@@ -2155,7 +2155,7 @@ export const useStore = create<AppState>((set, get) => ({
             rack.hatClosed.disconnect().dispose();
             rack.hatOpen.disconnect().dispose();
         });
-        
+
         // Dispose all patterns
         patterns.forEach((pattern) => {
             pattern.stop().dispose();
@@ -2192,7 +2192,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         const currentSnapshot = { nodes: [...nodes], edges: [...edges] };
         const nextSnapshot = future[future.length - 1];
-        
+
         if (!nextSnapshot) return;
 
         // Push current state to past
@@ -2211,12 +2211,12 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
         const { audioNodes, drumRacks, patterns } = get();
-        
+
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
             node.disconnect().dispose();
         });
-        
+
         // Dispose all drum racks
         drumRacks.forEach((rack) => {
             rack.loop?.dispose();
@@ -2225,7 +2225,7 @@ export const useStore = create<AppState>((set, get) => ({
             rack.hatClosed.disconnect().dispose();
             rack.hatOpen.disconnect().dispose();
         });
-        
+
         // Dispose all patterns
         patterns.forEach((pattern) => {
             pattern.stop().dispose();
