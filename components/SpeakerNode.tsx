@@ -15,7 +15,7 @@ export default function SpeakerNode({ id }: { id: string }) {
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
             <div className="relative z-10 flex flex-col">
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center mb-3">
                     <button
                         className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-emerald-500 hover:text-white hover:border-emerald-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                         style={{ boxShadow: `0 0 6px rgba(16, 185, 129, 0.3)` }}
@@ -26,7 +26,7 @@ export default function SpeakerNode({ id }: { id: string }) {
                     >
                         ×
                     </button>
-                    <div className="text-[10px] font-black uppercase text-emerald-400 tracking-[0.2em]">Amplifier</div>
+                    <div className="flex-1 text-[10px] font-black uppercase text-emerald-400 tracking-[0.2em]">Amplifier</div>
                 </div>
 
                 <div className="flex flex-col gap-3">
