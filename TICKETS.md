@@ -23,6 +23,13 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | 🔴 Open | v2 |
 | [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Open (do not action) | v3, backlog |
 | [#13](https://github.com/jball348-svg/Bloop/issues/13) | Expand Canvas Zoom Range | 🔴 Open | v2, ux |
+| [#14](https://github.com/jball348-svg/Bloop/issues/14) | Grouped Module Locking & Directional Wiring (superseded) | ✅ Closed | v3, backlog |
+| [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | 🟡 Open (do not action) | v3, backlog |
+| [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | 🟡 Open (do not action) | v3, backlog |
+| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🟡 Open (do not action) | v3, backlog |
+| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Open (do not action) | v3, backlog |
+| [#19](https://github.com/jball348-svg/Bloop/issues/19) | Exclude Global Objects (Tempo, Amplifier) from Snapping & Locking | 🟡 Open (do not action) | v3, backlog |
+| [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | 🟡 Open (do not action) | v3, backlog |
 
 ---
 
@@ -68,6 +75,12 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 - **#4** V3 Backlog — reference document only, do not implement
 - **#12** Enhanced System Menu (Save, Load, Presets) — blocked until Phase 6 is complete
+- **#19** Exclude Global Objects from Snapping & Locking — prerequisite for the locking work below
+- **#15** Snapped Module Locking — core group movement behaviour
+- **#16** Locked Groups Expose Single I/O — depends on #15
+- **#17** Controllers Lock Horizontally — depends on #15
+- **#18** Signal Chain Locks Vertically — depends on #15
+- **#20** Directional Wiring Overhaul — related to #17 and #18, can ship independently
 
 ---
 
@@ -75,17 +88,28 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ```
 #5 (Speaker) ─┐
-              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete) ──► #9 (Split Menus) ──► #10 (Empty Canvas)
+              ├──► #3 (Chord) ──► #6 (Polish) ──► #7 (Toolbar) ──► #8 (Delete) ──► #9 ──► #10
 #1 (Tempo)  ──┘
 #2 (Drums)  ──────────────────► #6 (Polish)
 
-#9  ✅ ──────────────────────────────────────────────────────────┐
-                                                                 ├──► #11 (New Button)
-#10 ✅ ──────────────────────────────────────────────────────────┘
+#9  ✅ ──────────────────────┐
+                             ├──► #11 (New Button)
+#10 ✅ ──────────────────────┘
 
 #13 (Zoom) — no dependencies
 
 #12 (Save/Load/Presets) — blocked until #11 complete
+
+#19 (Exclude globals) ──────────────────────────────────────────► #15 (Module Locking)
+                                                                         │
+                               ┌─────────────────────────────────────────┤
+                               ▼                 ▼                       ▼
+                            #16 (Single I/O)  #17 (H-lock)          #18 (V-lock)
+                                                 │                       │
+                                                 └───────────────────────┘
+                                                           │
+                                                           ▼
+                                                    #20 (Wiring overhaul)
 ```
 
 ---
