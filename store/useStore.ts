@@ -42,7 +42,7 @@ export const CHORD_QUALITY_OPTIONS = [
 export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys' | 'unison' | 'detune';
 export type ConnectionKind = 'audio' | 'tempo';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
@@ -86,6 +86,8 @@ type NodeValueUpdate = {
     decay?: number;
     sustain?: number;
     release?: number;
+    depth?: number;
+    pitch?: number;
 };
 
 export type AppNode = Node & {
@@ -391,6 +393,8 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     generator:  { w: 224, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
+    unison:     { w: 224, h: 220 },
+    detune:     { w: 224, h: 200 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
 };
@@ -414,6 +418,8 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     adsr: 0.75,
     generator: 1,
     drum: 1,
+    unison: 1.5,
+    detune: 1.5,
     effect: 2,
     speaker: 3,
 };
@@ -431,6 +437,18 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
+    'generator->unison',
+    'generator->detune',
+    'drum->unison',
+    'drum->detune',
+    'unison->effect',
+    'detune->effect',
+    'unison->unison',
+    'unison->detune',
+    'detune->unison',
+    'detune->detune',
+    'unison->speaker',
+    'detune->speaker',
     'generator->effect',
     'drum->effect',
     'effect->effect',
@@ -795,8 +813,6 @@ export const useStore = create<AppState>((set, get) => ({
             nextDrumRacks.set(id, rack);
             set({ drumRacks: nextDrumRacks });
             node = rack.output;
-        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr' || type === 'keys') {
-            return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
             if (actualSubType === 'reverb') {
@@ -812,6 +828,12 @@ export const useStore = create<AppState>((set, get) => ({
             } else {
                 node = new Tone.Volume(0);
             }
+        } else if (type === 'unison') {
+            node = new Tone.Chorus({ frequency: 3, delayTime: 2.5, depth: 0.7, wet: 0 }).start();
+        } else if (type === 'detune') {
+            node = new Tone.PitchShift({ pitch: 0, wet: 1 });
+        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr' || type === 'keys') {
+            return;
         }
 
         if (node) {
@@ -1062,6 +1084,13 @@ export const useStore = create<AppState>((set, get) => ({
             if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
         } else if (node instanceof Tone.BitCrusher) {
             if (typeof value.bits === 'number') node.bits.value = value.bits;
+        } else if (node instanceof Tone.Chorus) {
+            if (typeof value.depth === 'number') node.depth = value.depth;
+            if (typeof value.frequency === 'number') node.frequency.rampTo(value.frequency, 0.1);
+            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
+        } else if (node instanceof Tone.PitchShift) {
+            if (typeof value.pitch === 'number') node.pitch = value.pitch;
+            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
         }
 
         if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
@@ -1652,8 +1681,8 @@ export const useStore = create<AppState>((set, get) => ({
         nodes.forEach((node: AppNode) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum') {
-                get().initAudioNode(node.id, 'drum');
+            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune') {
+                get().initAudioNode(node.id, node.type);
             }
         });
         get().rebuildAudioGraph();

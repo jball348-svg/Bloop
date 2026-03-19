@@ -12,6 +12,8 @@ const SignalMenu = () => {
         { type: 'generator', label: 'Generator', color: 'bg-red-500' },
         { type: 'effect', label: 'Effect', color: 'bg-fuchsia-500' },
         { type: 'drum', label: 'Drum', color: 'bg-orange-500' },
+        { type: 'unison', label: 'Unison', color: 'bg-violet-500' },
+        { type: 'detune', label: 'Detune', color: 'bg-teal-500' },
     ];
 
     return (

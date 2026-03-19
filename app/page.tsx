@@ -22,6 +22,8 @@ import KeysNode from '@/components/KeysNode';
 import ChordNode from '@/components/ChordNode';
 import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
+import UnisonNode from '@/components/UnisonNode';
+import DetuneNode from '@/components/DetuneNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
 import AdsrNode from '@/components/AdsrNode';
@@ -43,6 +45,8 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     generator:  { w: 224, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
+    unison:     { w: 224, h: 220 },
+    detune:     { w: 224, h: 200 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
 };
@@ -110,6 +114,8 @@ function BloopCanvasInner() {
         chord: ChordNode,
         drum: DrumNode,
         effect: EffectNode,
+        unison: UnisonNode,
+        detune: DetuneNode,
         speaker: SpeakerNode,
         tempo: TempoNode,
         adsr: AdsrNode,
@@ -168,6 +174,12 @@ function BloopCanvasInner() {
         }
         if (type === 'drum') label = 'Drums';
         if (type === 'effect') subType = 'reverb';
+        if (type === 'unison') {
+            label = 'Unison';
+        }
+        if (type === 'detune') {
+            label = 'Detune';
+        }
         if (type === 'speaker') label = 'Master Out';
         if (type === 'tempo') label = 'Tempo';
 

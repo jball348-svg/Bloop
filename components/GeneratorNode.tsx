@@ -56,7 +56,7 @@ export default function GeneratorNode({ id }: { id: string }) {
                     <div className="flex justify-between items-center mb-3">
                         <button
                             className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-red-500 hover:text-white hover:border-red-400 flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
-                            style={{ boxShadow: `0 0 6px rgba(59, 130, 246, 0.3)` }}
+                            style={{ boxShadow: `0 0 6px rgba(239, 68, 68, 0.3)` }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 removeNodeAndCleanUp(id);
@@ -64,22 +64,26 @@ export default function GeneratorNode({ id }: { id: string }) {
                         >
                             ×
                         </button>
-                        <span className="text-[10px] font-black uppercase text-red-400 tracking-[0.2em]">Generator</span>
-                        <div className="flex items-center gap-1">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Mix</span>
+                        <div className="text-[10px] font-black uppercase text-red-400 tracking-[0.2em]">Generator</div>
+                        <div className="w-3.5 h-3.5" />
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2">
+                            <div className="flex justify-between items-end">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mix</label>
+                                <span className="text-[10px] font-mono text-red-400 font-bold">{mix}%</span>
+                            </div>
                             <input
                                 type="range"
                                 min="0"
                                 max="100"
                                 value={mix}
                                 onChange={handleMixChange}
-                                className="nodrag w-14 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
+                                className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
                             />
-                            <span className="text-[9px] font-mono text-red-400 w-6 text-right">{mix}</span>
                         </div>
-                    </div>
 
-                    <div className="flex flex-col gap-3">
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wave Shape</label>
                             <select

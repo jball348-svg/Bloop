@@ -19,6 +19,8 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Generator | Signal | `border-red-500` | `text-red-400` | `bg-red-500` | `red` |
 | Drum | Signal | `border-orange-500` | `text-orange-400` | `bg-orange-500` | `orange` |
 | Effect | Signal | `border-fuchsia-500` | `text-fuchsia-400` | `bg-fuchsia-500` | `fuchsia` |
+| Unison | Signal | `border-violet-500` | `text-violet-400` | `bg-violet-500` | `violet` |
+| Detune | Signal | `border-teal-500` | `text-teal-400` | `bg-teal-500` | `teal` |
 | Tempo | Global | `border-indigo-500` | `text-indigo-400` | n/a | `indigo` |
 | Amplifier | Global | `border-emerald-500` | `text-emerald-400` | n/a | `emerald` |
 
@@ -26,8 +28,6 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 
 Pick the next colour for any new node — each should be visually distinct from its neighbours in the menu.
 
-- `violet-500` — purple, cool
-- `teal-500` — teal/cyan-green, cool
 - `blue-500` — clean blue
 - `pink-500` — warm pink
 - `lime-500` — bright green
