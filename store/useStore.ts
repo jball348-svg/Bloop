@@ -42,7 +42,7 @@ export const CHORD_QUALITY_OPTIONS = [
 export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr';
 export type ConnectionKind = 'audio' | 'tempo';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth';
 export type DrumMode = 'hits' | 'grid';
@@ -82,6 +82,10 @@ type NodeValueUpdate = {
     frequency?: number;
     octaves?: number;
     bits?: number;
+    attack?: number;
+    decay?: number;
+    sustain?: number;
+    release?: number;
 };
 
 export type AppNode = Node & {
@@ -97,6 +101,10 @@ export type AppNode = Node & {
         waveShape?: WaveShape;
         octave?: number;
         bpm?: number;
+        attack?: number;
+        decay?: number;
+        sustain?: number;
+        release?: number;
     };
     type: AudioNodeType;
 };
@@ -242,6 +250,22 @@ const collectNoteDispatches = (
                 return;
             }
 
+            if (targetNode.type === 'adsr') {
+                // ADSR nodes pass through notes without transformation
+                dispatches.push(
+                    ...collectNoteDispatches(
+                        targetNode.id,
+                        note,
+                        nodesById,
+                        edges,
+                        chordVoicings,
+                        rememberVoicings,
+                        visited
+                    )
+                );
+                return;
+            }
+
             if (targetNode.type !== 'chord') {
                 return;
             }
@@ -276,10 +300,91 @@ const collectNoteDispatches = (
     return dispatches;
 };
 
+const applyAdsrEnvelopes = (
+    sourceId: string,
+    nodesById: Map<string, AppNode>,
+    edges: AppEdge[],
+    audioNodes: Map<string, Tone.ToneAudioNode>
+) => {
+    // Find all ADSR nodes downstream from the source
+    const visitedAdsrNodes = new Set<string>();
+    
+    const findAdsrNodes = (currentId: string) => {
+        edges
+            .filter((edge) => isAudioEdge(edge) && edge.source === currentId)
+            .forEach((edge) => {
+                const targetNode = nodesById.get(edge.target);
+                if (!targetNode || visitedAdsrNodes.has(targetNode.id)) {
+                    return;
+                }
+                
+                if (targetNode.type === 'adsr') {
+                    visitedAdsrNodes.add(targetNode.id);
+                    // Apply this ADSR's envelope to all downstream generators
+                    applyAdsrToDownstreamGenerators(targetNode.id, nodesById, edges, audioNodes);
+                }
+                
+                // Continue traversing
+                findAdsrNodes(targetNode.id);
+            });
+    };
+    
+    findAdsrNodes(sourceId);
+};
+
+const applyAdsrToDownstreamGenerators = (
+    adsrId: string,
+    nodesById: Map<string, AppNode>,
+    edges: AppEdge[],
+    audioNodes: Map<string, Tone.ToneAudioNode>
+) => {
+    const adsrNode = nodesById.get(adsrId);
+    if (!adsrNode || adsrNode.type !== 'adsr') {
+        return;
+    }
+    
+    const { attack = 0.01, decay = 0.1, sustain = 0.7, release = 0.5 } = adsrNode.data;
+    
+    // Find all downstream generators
+    const visited = new Set<string>();
+    const findDownstreamGenerators = (currentId: string) => {
+        edges
+            .filter((edge) => isAudioEdge(edge) && edge.source === currentId)
+            .forEach((edge) => {
+                const targetNode = nodesById.get(edge.target);
+                if (!targetNode || visited.has(targetNode.id)) {
+                    return;
+                }
+                
+                visited.add(targetNode.id);
+                
+                if (targetNode.type === 'generator') {
+                    const synth = audioNodes.get(targetNode.id);
+                    if (synth instanceof Tone.PolySynth) {
+                        synth.set({ 
+                            envelope: { 
+                                attack, 
+                                decay, 
+                                sustain, 
+                                release 
+                            } 
+                        });
+                    }
+                } else {
+                    // Continue traversing for other node types
+                    findDownstreamGenerators(targetNode.id);
+                }
+            });
+    };
+    
+    findDownstreamGenerators(adsrId);
+};
+
 // Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     chord:      { w: 224, h: 240 },
+    adsr:       { w: 224, h: 340 },
     generator:  { w: 224, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
@@ -302,6 +407,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
     chord: 0.5,
+    adsr: 0.75,
     generator: 1,
     drum: 1,
     effect: 2,
@@ -310,8 +416,13 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
 
 const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->chord',
+    'controller->adsr',
     'controller->generator',
+    'chord->adsr',
     'chord->generator',
+    'adsr->chord',
+    'adsr->generator',
+    'adsr->drum',
     'generator->effect',
     'drum->effect',
     'effect->effect',
@@ -671,7 +782,7 @@ export const useStore = create<AppState>((set, get) => ({
             nextDrumRacks.set(id, rack);
             set({ drumRacks: nextDrumRacks });
             node = rack.output;
-        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord') {
+        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr') {
             return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
@@ -828,6 +939,27 @@ export const useStore = create<AppState>((set, get) => ({
         const targetNode = get().nodes.find((candidate: AppNode) => candidate.id === id);
         if (targetNode?.type === 'speaker' && typeof value.volume === 'number') {
             get().setMasterVolume(value.volume);
+            return;
+        }
+
+        // Handle ADSR nodes (no audio node, just store parameters)
+        if (targetNode?.type === 'adsr') {
+            const nodes = get().nodes.map((n: AppNode) => {
+                if (n.id === id) {
+                    return {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            ...(typeof value.attack === 'number' && { attack: value.attack }),
+                            ...(typeof value.decay === 'number' && { decay: value.decay }),
+                            ...(typeof value.sustain === 'number' && { sustain: value.sustain }),
+                            ...(typeof value.release === 'number' && { release: value.release }),
+                        }
+                    };
+                }
+                return n;
+            });
+            set({ nodes });
             return;
         }
 
@@ -1071,6 +1203,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
+        
+        // Apply ADSR envelopes to downstream generators before triggering notes
+        applyAdsrEnvelopes(controllerId, nodesById, edges, audioNodes);
+        
         const dispatches = collectNoteDispatches(
             controllerId,
             note,

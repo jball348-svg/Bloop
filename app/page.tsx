@@ -23,6 +23,7 @@ import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
+import AdsrNode from '@/components/AdsrNode';
 import EngineControl from '@/components/EngineControl';
 import SignalMenu from '@/components/SignalMenu';
 import ControllerMenu from '@/components/ControllerMenu';
@@ -31,10 +32,11 @@ import SystemMenu from '@/components/SystemMenu';
 
 // Actual rendered widths from Tailwind classes on each component:
 //   ControllerNode → w-72 = 288px
-//   GeneratorNode / EffectNode / SpeakerNode → w-56 = 224px
+//   GeneratorNode / EffectNode / SpeakerNode / AdsrNode → w-56 = 224px
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     chord:      { w: 224, h: 240 },
+    adsr:       { w: 224, h: 340 },
     generator:  { w: 224, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
@@ -106,6 +108,7 @@ function BloopCanvasInner() {
         effect: EffectNode,
         speaker: SpeakerNode,
         tempo: TempoNode,
+        adsr: AdsrNode,
     }), []);
 
     const defaultEdgeOptions = useMemo(() => ({
@@ -148,6 +151,9 @@ function BloopCanvasInner() {
             subType = 'major';
             label = 'Chord';
         }
+        if (type === 'adsr') {
+            label = 'ADSR';
+        }
         if (type === 'generator') {
             subType = 'wave';
             label = 'Oscillator';
@@ -166,6 +172,7 @@ function BloopCanvasInner() {
                 subType,
                 isPlaying: false,
                 bpm,
+                ...(type === 'adsr' ? { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 } : {}),
                 ...(type === 'drum' ? { drumMode: 'hits' as const } : {}),
             },
         });

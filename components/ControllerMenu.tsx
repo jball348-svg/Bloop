@@ -11,6 +11,7 @@ const ControllerMenu = () => {
     const controllerTools = [
         { type: 'controller', label: 'Controller', color: 'bg-yellow-500' },
         { type: 'chord', label: 'Chord', color: 'bg-sky-500' },
+        { type: 'adsr', label: 'ADSR', color: 'bg-amber-700' },
     ];
 
     return (
