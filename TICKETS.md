@@ -1,4 +1,4 @@
-# TICKETS.md — Bloop V2 Work Order
+# TICKETS.md — Bloop Work Order
 
 This file tracks the current status of all GitHub Issues and defines the recommended order of implementation. **Update this file when you close a ticket.**
 
@@ -8,89 +8,98 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ## Current Status Snapshot
 
-| # | Title | Status | Labels |
-|---|---|---|---|
-| [#1](https://github.com/jball348-svg/Bloop/issues/1) | Tempo Node — Global Transport Controller | ✅ Closed | v2, node-type, audio-engine |
-| [#2](https://github.com/jball348-svg/Bloop/issues/2) | Drum Node — Hits & Grid Sequencer | ✅ Closed | v2, node-type, audio-engine |
-| [#3](https://github.com/jball348-svg/Bloop/issues/3) | Chord Node — Harmonic Voicing Transformer | ✅ Closed | v2, node-type, audio-engine |
-| [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog — Synth Overhaul, UX, Drum Samples | 🟡 Open (do not action) | v3, backlog |
-| [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed | v2, node-type, audio-engine |
-| [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed | v2, ux, polish |
-| [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | ✅ Closed | v2, ux, polish |
-| [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | ✅ Closed | v2, ux, polish |
-| [#9](https://github.com/jball348-svg/Bloop/issues/9) | Split Toolbar into Four Contextual Menus | ✅ Closed | v2 |
-| [#10](https://github.com/jball348-svg/Bloop/issues/10) | Empty Canvas on Initial Load | ✅ Closed | v2 |
-| [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | ✅ Closed | v2 |
-| [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Open (do not action) | v3, backlog |
-| [#13](https://github.com/jball348-svg/Bloop/issues/13) | Expand Canvas Zoom Range | ✅ Closed | v2, ux |
-| [#14](https://github.com/jball348-svg/Bloop/issues/14) | Grouped Module Locking & Directional Wiring (superseded) | ✅ Closed | v3, backlog |
-| [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | 🟡 Open (do not action) | v3, backlog |
-| [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | 🟡 Open (do not action) | v3, backlog |
-| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🟡 Open (do not action) | v3, backlog |
-| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Open (do not action) | v3, backlog |
-| [#19](https://github.com/jball348-svg/Bloop/issues/19) | Exclude Global Objects (Tempo, Amplifier) from Snapping & Locking | 🟡 Open (do not action) | v3, backlog |
-| [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | 🟡 Open (do not action) | v3, backlog |
-| [#21](https://github.com/jball348-svg/Bloop/issues/21) | Comprehensive Documentation Review & Update | ✅ Closed | v2 |
+### V2 — Complete ✅
+
+| # | Title | Status |
+|---|---|---|
+| [#1](https://github.com/jball348-svg/Bloop/issues/1) | Tempo Node — Global Transport Controller | ✅ Closed |
+| [#2](https://github.com/jball348-svg/Bloop/issues/2) | Drum Node — Hits & Grid Sequencer | ✅ Closed |
+| [#3](https://github.com/jball348-svg/Bloop/issues/3) | Chord Node — Harmonic Voicing Transformer | ✅ Closed |
+| [#5](https://github.com/jball348-svg/Bloop/issues/5) | Speaker Node Redesign — Shared Global Output | ✅ Closed |
+| [#6](https://github.com/jball348-svg/Bloop/issues/6) | UI Polish — Node Sizing, Mix Knob, Drum Fixes + Chord cleanup + Unique patterns | ✅ Closed |
+| [#7](https://github.com/jball348-svg/Bloop/issues/7) | Toolbar Layout — Singleton vs Multi-Instance | ✅ Closed |
+| [#8](https://github.com/jball348-svg/Bloop/issues/8) | Node Delete Button — In-Canvas X Button on All Nodes | ✅ Closed |
+| [#9](https://github.com/jball348-svg/Bloop/issues/9) | Split Toolbar into Four Contextual Menus | ✅ Closed |
+| [#10](https://github.com/jball348-svg/Bloop/issues/10) | Empty Canvas on Initial Load | ✅ Closed |
+| [#11](https://github.com/jball348-svg/Bloop/issues/11) | "New" Button Clears Canvas (System Menu) | ✅ Closed |
+| [#13](https://github.com/jball348-svg/Bloop/issues/13) | Expand Canvas Zoom Range | ✅ Closed |
+| [#21](https://github.com/jball348-svg/Bloop/issues/21) | Comprehensive Documentation Review & Update | ✅ Closed |
+
+### V3 — Synth & Canvas (Active Backlog)
+
+| # | Title | Status |
+|---|---|---|
+| [#22](https://github.com/jball348-svg/Bloop/issues/22) | ADSR Envelope Controls on Generator Node | 🟡 Backlog |
+| [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🟡 Backlog |
+| [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | 🟡 Backlog |
+| [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison / Detune Controls on Generator Node | 🟡 Backlog |
+| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🟡 Backlog |
+| [#27](https://github.com/jball348-svg/Bloop/issues/27) | Undo / Redo — Canvas Action History | 🟡 Backlog |
+| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | 🟡 Backlog |
+| [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Backlog |
+
+### V3 — Canvas Structure (Active Backlog)
+
+| # | Title | Status |
+|---|---|---|
+| [#19](https://github.com/jball348-svg/Bloop/issues/19) | Exclude Global Objects (Tempo, Amplifier) from Snapping & Locking | 🟡 Backlog |
+| [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | 🟡 Backlog |
+| [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | 🟡 Backlog |
+| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🟡 Backlog |
+| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
+| [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | 🟡 Backlog |
+
+### V4 — Structural (Do Not Action)
+
+| # | Title | Status |
+|---|---|---|
+| [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
+
+### Superseded / Closed
+
+| # | Title | Status |
+|---|---|---|
+| [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog Omnibus (superseded by #22–#29) | ✅ Closed |
+| [#14](https://github.com/jball348-svg/Bloop/issues/14) | Grouped Module Locking (superseded by #15–#20) | ✅ Closed |
 
 ---
 
-## Recommended Work Order
+## V3 Recommended Work Order
 
-### ✅ Phase 1 — Core Infrastructure (Complete)
+No hard sequencing requirements within V3 synth work — these can be picked up in any order. Suggested priority:
 
-- ~~**#5** Speaker Node Redesign~~ — removes wiring requirement, all generators route to `Tone.Destination` directly
-- ~~**#1** Tempo Node~~ — global BPM broadcaster via `Tone.Transport`, singleton logic
-- ~~**#2** Drum Node~~ — Hits & Grid modes, `Tone.MembraneSynth` / `NoiseSynth` / `MetalSynth`
+1. **#27** Undo/Redo — highest day-to-day impact, no dependencies
+2. **#22** ADSR — high sound design value, touches only Generator and store
+3. **#24** Noise Generator — contained change, dropdown in existing Generator
+4. **#25** Unison/Detune — contained change, Generator property
+5. **#23** Filter Node — new node type, more involved
+6. **#26** Preset Patches — depends on the canvas being stable, pairs with #12
+7. **#12** Save/Load — significant, pairs with #26
+8. **#28** Visualiser — significant new node, scope carefully
 
-### ✅ Phase 2 — New Nodes (Complete)
-
-- ~~**#3** Chord Node~~ — React Flow handles, store-side note event routing, handle clipping fix
-
-### ✅ Phase 3 — Polish (Complete)
-
-- ~~**#6** UI Polish~~ — node sizing, Generator Mix knob, Drum node fixes, Amplifier rename, Chord cleanup, unique background patterns
-
-### ✅ Phase 4 — Toolbar Layout (Complete)
-
-- ~~**#7** Toolbar Layout — Singleton section separation~~ — Modules vs Global sections, singleton slots grey out when present on canvas
-
-### ✅ Phase 5 — UX (Complete)
-
-- ~~**#8** Node Delete Button — In-Canvas X button on all nodes~~
-
-### ✅ Phase 6 — Canvas & Navigation (Complete)
-
-- ~~**#9** Split Toolbar into Four Contextual Menus~~
-- ~~**#10** Empty Canvas on Initial Load~~
-- ~~**#11** "New" Button Clears Canvas~~
-- ~~**#13** Expand Canvas Zoom Range~~
-
-### ✅ Phase 7 — Documentation (Complete)
-
-- ~~**#21** Comprehensive Documentation Review & Update~~
-
-### 🟡 V3 Backlog (Do Not Action Yet)
-
-- **#4** V3 Backlog (Synth Overhaul, UX, Drum Samples) — reference document only
-- **#12** Enhanced System Menu (Save, Load, Presets)
-- **#19** Exclude Global Objects from Snapping & Locking — prerequisite for locking work
-- **#15** Snapped Module Locking — core group movement behaviour
-- **#16** Locked Groups Expose Single I/O — depends on #15
-- **#17** Controllers Lock Horizontally — depends on #15
-- **#18** Signal Chain Locks Vertically — depends on #15
-- **#20** Directional Wiring Overhaul — related to #17/#18, can ship independently
+For canvas structure work, order matters:
+1. **#19** Exclude globals first (guard change, no dependencies)
+2. **#15** Module Locking (core)
+3. **#16**, **#17**, **#18** in parallel (all depend on #15)
+4. **#20** Wiring overhaul last (or independently)
 
 ---
 
 ## Dependency Graph
 
 ```
-#5 ──► #1, #2 ──► #3 ──► #6 ──► #7 ──► #8 ──► #9 ──► #10 ──► #11 ──► #13 ──► #21
-
 ── V2 Complete ──
 
+V3 Synth (no hard deps between these):
+#22 (ADSR) · #23 (Filter) · #24 (Noise) · #25 (Unison)
+#27 (Undo/Redo) · #28 (Visualiser)
+#26 (Presets) ──► #12 (Save/Load)
+
+V3 Canvas Structure:
 #19 ──► #15 ──► #16, #17, #18 ──► #20
-#12 (Save/Load) — unblocked after V2
+
+V4:
+#29 (Mixer model) — blocked until V3 complete + design phase
 ```
 
 ---
@@ -98,11 +107,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 ## How to Update This File
 
 When you close a ticket:
-1. Change its status in the table from `🔴 Open` to `✅ Closed`
+1. Change its status in the table from `🟡 Backlog` to `✅ Closed`
 2. Strike through its entry in the Work Order section using `~~text~~`
 3. Commit this file in the same PR as the work
 
 When a new ticket is added to GitHub Issues:
-1. Add a row to the Status Snapshot table
+1. Add a row to the appropriate Status Snapshot section
 2. Insert it into the Work Order at the appropriate phase
 3. Update the Dependency Graph if it has dependencies
