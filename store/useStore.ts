@@ -529,6 +529,7 @@ type AppState = {
     isValidConnection: (connection: Connection, ignoredEdgeId?: string) => boolean;
     rebuildAudioGraph: () => void;
     initializeDefaultNodes: () => void;
+    clearCanvas: () => void;
     recalculateAdjacency: () => void;
     autoWireAdjacentNodes: () => void;
 };
@@ -1415,6 +1416,43 @@ export const useStore = create<AppState>((set, get) => ({
             }
         });
         get().rebuildAudioGraph();
+    },
+
+    clearCanvas: () => {
+        const { nodes, audioNodes, drumRacks, patterns } = get();
+
+        // Stop and dispose all patterns (arpeggiators etc.)
+        patterns.forEach((pattern) => {
+            pattern.stop().dispose();
+        });
+
+        // Dispose all drum racks
+        drumRacks.forEach((rack) => {
+            rack.loop?.dispose();
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hatClosed.disconnect().dispose();
+            rack.hatOpen.disconnect().dispose();
+        });
+
+        // Dispose all audio nodes
+        audioNodes.forEach((node) => {
+            node.disconnect().dispose();
+        });
+
+        set({
+            nodes: [],
+            edges: [],
+            audioNodes: new Map(),
+            drumRacks: new Map(),
+            patterns: new Map(),
+            activeChordVoicings: new Map(),
+            generatorNoteCounts: new Map(),
+            activeGenerators: new Set(),
+            activeDrumPads: new Set(),
+            adjacentNodeIds: new Set(),
+            autoEdgeIds: new Set(),
+        });
     },
 
     autoWireAdjacentNodes: () => {
