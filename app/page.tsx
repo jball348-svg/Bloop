@@ -48,7 +48,7 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     effect:     { w: 224, h: 260 },
     unison:     { w: 224, h: 220 },
     detune:     { w: 224, h: 200 },
-    visualiser: { w: 256, h: 280 },
+    visualiser: { w: 224, h: 220 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
 };
