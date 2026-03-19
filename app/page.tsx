@@ -65,10 +65,38 @@ function BloopCanvasInner() {
 
     const recalculateAdjacency = useStore((state) => state.recalculateAdjacency);
     const sanitizeLegacyTempoEdges = useStore((state) => state.sanitizeLegacyTempoEdges);
+    const undo = useStore((state) => state.undo);
+    const redo = useStore((state) => state.redo);
+    const canUndo = useStore((state) => state.canUndo);
+    const canRedo = useStore((state) => state.canRedo);
+    
     useEffect(() => {
         sanitizeLegacyTempoEdges();
         recalculateAdjacency();
     }, [recalculateAdjacency, sanitizeLegacyTempoEdges]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Guard against input/select elements
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) {
+                return;
+            }
+
+            if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'z') {
+                e.preventDefault();
+                undo();
+            } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'z') {
+                e.preventDefault();
+                redo();
+            } else if (e.ctrlKey && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo]);
 
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,

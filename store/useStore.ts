@@ -499,6 +499,10 @@ type AppState = {
     activeDrumPads: Set<string>;
     adjacentNodeIds: Set<string>;
     autoEdgeIds: Set<string>;
+    past: Array<{ nodes: AppNode[]; edges: Edge[] }>;
+    future: Array<{ nodes: AppNode[]; edges: Edge[] }>;
+    canUndo: boolean;
+    canRedo: boolean;
     onNodesChange: OnNodesChange;
     onEdgesChange: OnEdgesChange;
     onConnect: OnConnect;
@@ -532,6 +536,9 @@ type AppState = {
     clearCanvas: () => void;
     recalculateAdjacency: () => void;
     autoWireAdjacentNodes: () => void;
+    saveSnapshot: () => void;
+    undo: () => void;
+    redo: () => void;
 };
 
 export const useStore = create<AppState>((set, get) => ({
@@ -548,6 +555,10 @@ export const useStore = create<AppState>((set, get) => ({
     activeDrumPads: new Set(),
     adjacentNodeIds: new Set(),
     autoEdgeIds: new Set(),
+    past: [],
+    future: [],
+    canUndo: false,
+    canRedo: false,
 
     ensureMasterOutput: () => {
         const { masterOutput, masterVolume, nodes } = get();
@@ -584,6 +595,13 @@ export const useStore = create<AppState>((set, get) => ({
     onEdgesChange: (changes: EdgeChange[]) => {
         const currentEdges = get().edges;
         const nextEdges = stripLegacyTempoEdges(applyEdgeChanges(changes, currentEdges) as AppEdge[]);
+        
+        // Only snapshot for remove-type changes
+        const hasRemoveChange = changes.some(change => change.type === 'remove');
+        if (hasRemoveChange) {
+            get().saveSnapshot();
+        }
+        
         set({ edges: nextEdges });
         get().autoWireAdjacentNodes();
     },
@@ -594,6 +612,8 @@ export const useStore = create<AppState>((set, get) => ({
         if (!get().isValidConnection(newConnection, oldEdge.id)) {
             return;
         }
+
+        get().saveSnapshot();
 
         const kind = getConnectionKind(newConnection, get().nodes);
         if (!kind) {
@@ -615,6 +635,8 @@ export const useStore = create<AppState>((set, get) => ({
         if (!get().isValidConnection(connection)) {
             return;
         }
+
+        get().saveSnapshot();
 
         const kind = getConnectionKind(connection, get().nodes);
         if (!kind) {
@@ -673,6 +695,8 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
+        get().saveSnapshot();
+        
         const { audioNodes, patterns, nodes, edges } = get();
         const wasPlaying = nodes.find((n: AppNode) => n.id === id)?.data.isPlaying || false;
 
@@ -1190,6 +1214,8 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     addNode: (node: AppNode) => {
+        get().saveSnapshot();
+        
         if (
             (node.type === 'tempo' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'tempo')) ||
             (node.type === 'speaker' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'speaker'))
@@ -1269,6 +1295,8 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     removeNodeAndCleanUp: (id: string) => {
+        get().saveSnapshot();
+        
         const { nodes, edges } = get();
         const removedNode = nodes.find((node: AppNode) => node.id === id);
 
@@ -1575,5 +1603,157 @@ export const useStore = create<AppState>((set, get) => ({
         set({ adjacentNodeIds: new Set(adjacent) });
         // Auto-wire runs after adjacency so it sees the fresh adjacent set
         get().autoWireAdjacentNodes();
+    },
+
+    saveSnapshot: () => {
+        const { nodes, edges, past } = get();
+        const snapshot = { nodes: [...nodes], edges: [...edges] };
+        const nextPast = [...past.slice(-49), snapshot]; // Keep last 50 entries
+        set({
+            past: nextPast,
+            future: [],
+            canUndo: nextPast.length > 0,
+            canRedo: false,
+        });
+    },
+
+    undo: () => {
+        const { past, future, nodes, edges } = get();
+        if (past.length === 0) return;
+
+        const currentSnapshot = { nodes: [...nodes], edges: [...edges] };
+        const previousSnapshot = past[past.length - 1];
+        
+        if (!previousSnapshot) return;
+
+        // Push current state to future
+        const nextFuture = [...future, currentSnapshot];
+        const nextPast = past.slice(0, -1);
+
+        // Restore previous state
+        set({
+            nodes: previousSnapshot.nodes,
+            edges: previousSnapshot.edges,
+            past: nextPast,
+            future: nextFuture,
+            canUndo: nextPast.length > 0,
+            canRedo: true,
+        });
+
+        // Re-sync audio: dispose all current audio nodes, then reinitialize
+        const { audioNodes, drumRacks, patterns } = get();
+        
+        // Dispose all audio nodes
+        audioNodes.forEach((node) => {
+            node.disconnect().dispose();
+        });
+        
+        // Dispose all drum racks
+        drumRacks.forEach((rack) => {
+            rack.loop?.dispose();
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hatClosed.disconnect().dispose();
+            rack.hatOpen.disconnect().dispose();
+        });
+        
+        // Dispose all patterns
+        patterns.forEach((pattern) => {
+            pattern.stop().dispose();
+        });
+
+        // Clear audio state
+        set({
+            audioNodes: new Map(),
+            drumRacks: new Map(),
+            patterns: new Map(),
+            activeChordVoicings: new Map(),
+            generatorNoteCounts: new Map(),
+            activeGenerators: new Set(),
+            activeDrumPads: new Set(),
+        });
+
+        // Reinitialize audio nodes for restored state
+        previousSnapshot.nodes.forEach((node) => {
+            if (node.data.subType && node.data.subType !== 'none') {
+                get().initAudioNode(node.id, node.type, node.data.subType);
+            } else if (node.type === 'drum') {
+                get().initAudioNode(node.id, node.type);
+            }
+        });
+
+        // Rebuild audio graph and recalculate adjacency
+        get().rebuildAudioGraph();
+        get().recalculateAdjacency();
+    },
+
+    redo: () => {
+        const { past, future, nodes, edges } = get();
+        if (future.length === 0) return;
+
+        const currentSnapshot = { nodes: [...nodes], edges: [...edges] };
+        const nextSnapshot = future[future.length - 1];
+        
+        if (!nextSnapshot) return;
+
+        // Push current state to past
+        const nextPast = [...past, currentSnapshot].slice(-50); // Keep last 50 entries
+        const nextFuture = future.slice(0, -1);
+
+        // Restore next state
+        set({
+            nodes: nextSnapshot.nodes,
+            edges: nextSnapshot.edges,
+            past: nextPast,
+            future: nextFuture,
+            canUndo: true,
+            canRedo: nextFuture.length > 0,
+        });
+
+        // Re-sync audio: dispose all current audio nodes, then reinitialize
+        const { audioNodes, drumRacks, patterns } = get();
+        
+        // Dispose all audio nodes
+        audioNodes.forEach((node) => {
+            node.disconnect().dispose();
+        });
+        
+        // Dispose all drum racks
+        drumRacks.forEach((rack) => {
+            rack.loop?.dispose();
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hatClosed.disconnect().dispose();
+            rack.hatOpen.disconnect().dispose();
+        });
+        
+        // Dispose all patterns
+        patterns.forEach((pattern) => {
+            pattern.stop().dispose();
+        });
+
+        // Clear audio state
+        set({
+            audioNodes: new Map(),
+            drumRacks: new Map(),
+            patterns: new Map(),
+            activeChordVoicings: new Map(),
+            generatorNoteCounts: new Map(),
+            activeGenerators: new Set(),
+            activeDrumPads: new Set(),
+        });
+
+        // Reinitialize audio nodes for restored state
+        nextSnapshot.nodes.forEach((node) => {
+            if (node.data.subType && node.data.subType !== 'none') {
+                get().initAudioNode(node.id, node.type, node.data.subType);
+            } else if (node.type === 'drum') {
+                get().initAudioNode(node.id, node.type);
+            }
+        });
+
+        // Rebuild audio graph and recalculate adjacency
+        get().rebuildAudioGraph();
+        get().recalculateAdjacency();
     },
 }));
