@@ -1,0 +1,35 @@
+'use client';
+
+import React from 'react';
+
+const ControllerMenu = () => {
+    const onDragStart = (event: React.DragEvent, nodeType: string) => {
+        event.dataTransfer.setData('application/reactflow', nodeType);
+        event.dataTransfer.effectAllowed = 'move';
+    };
+
+    const controllerTools = [
+        { type: 'controller', label: 'Controller', color: 'bg-yellow-500' },
+        { type: 'chord', label: 'Chord', color: 'bg-sky-500' },
+    ];
+
+    return (
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+            <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-2xl px-2 py-4 flex flex-col gap-3 shadow-xl">
+                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest self-center pb-1">CONTROLLERS</span>
+                {controllerTools.map((tool) => (
+                    <div
+                        key={tool.type}
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold text-white cursor-grab active:cursor-grabbing hover:scale-105 transition-transform ${tool.color}`}
+                        draggable={true}
+                        onDragStart={(e) => onDragStart(e, tool.type)}
+                    >
+                        {tool.label}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+export default ControllerMenu;

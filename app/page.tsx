@@ -24,7 +24,10 @@ import EffectNode from '@/components/EffectNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
 import EngineControl from '@/components/EngineControl';
-import Toolbar from '@/components/Toolbar';
+import SignalMenu from '@/components/SignalMenu';
+import ControllerMenu from '@/components/ControllerMenu';
+import GlobalMenu from '@/components/GlobalMenu';
+import SystemMenu from '@/components/SystemMenu';
 
 // Actual rendered widths from Tailwind classes on each component:
 //   ControllerNode → w-72 = 288px
@@ -236,7 +239,10 @@ function BloopCanvasInner() {
 
     return (
         <main className="w-screen h-screen relative">
-            <Toolbar />
+            <SignalMenu />
+            <ControllerMenu />
+            <GlobalMenu />
+            <SystemMenu />
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
