@@ -449,8 +449,6 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'unison->detune',
     'detune->unison',
     'detune->detune',
-    'unison->speaker',
-    'detune->speaker',
     'generator->effect',
     'drum->effect',
     'effect->effect',
@@ -460,7 +458,6 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'unison->visualiser',
     'detune->visualiser',
     'visualiser->effect',
-    'visualiser->speaker',
     'visualiser->visualiser',
 ]);
 
@@ -1798,7 +1795,7 @@ export const useStore = create<AppState>((set, get) => ({
             for (let j = i + 1; j < nodes.length; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
-                if (a.type === 'tempo' || b.type === 'tempo') {
+                if (a.type === 'tempo' || b.type === 'tempo' || a.type === 'speaker' || b.type === 'speaker') {
                     continue;
                 }
                 const aDims = getDims(a.type);
@@ -1877,7 +1874,7 @@ export const useStore = create<AppState>((set, get) => ({
             for (let j = i + 1; j < nodes.length; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
-                if (a.type === 'tempo' || b.type === 'tempo') {
+                if (a.type === 'tempo' || b.type === 'tempo' || a.type === 'speaker' || b.type === 'speaker') {
                     continue;
                 }
                 const aDims = getDims(a.type);

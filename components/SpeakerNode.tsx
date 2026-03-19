@@ -4,16 +4,13 @@ export default function SpeakerNode({ id }: { id: string }) {
     const masterVolume = useStore((state) => state.masterVolume);
     const setMasterVolume = useStore((state) => state.setMasterVolume);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setMasterVolume(parseFloat(e.target.value));
     };
 
     return (
-        <div className={`bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
-        }`}>
+        <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative">
             <div className="relative z-10 flex flex-col">
                 <div className="flex items-center mb-3">
                     <button

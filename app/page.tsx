@@ -229,6 +229,10 @@ function BloopCanvasInner() {
             if (!currentNode) return;
 
             const draggedDims = getDims(draggedNode.type ?? currentNode.type);
+            if (draggedNode.type === 'tempo' || draggedNode.type === 'speaker') {
+                useStore.getState().recalculateAdjacency();
+                return;
+            }
             let x = currentNode.position.x;
             let y = currentNode.position.y;
 
@@ -241,7 +245,7 @@ function BloopCanvasInner() {
                 let moved = false;
 
                 for (const n of allNodes) {
-                    if (n.id === draggedNode.id) continue;
+                    if (n.id === draggedNode.id || n.type === 'tempo' || n.type === 'speaker') continue;
 
                     const nDims = getDims(n.type);
 
