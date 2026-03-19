@@ -53,7 +53,10 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ### 🔴 Phase 6 — Canvas & Navigation (Current)
 
-Work these in order — #10 is a quick win and unblocks #11; #9 is the largest lift and can go last.
+- **#9** Split Toolbar into Four Contextual Menus
+  - No hard dependencies
+  - Refactor `Toolbar.tsx` → four new components: `ControllerMenu`, `SignalMenu`, `GlobalMenu`, `SystemMenu`
+  - Left: Controller, Chord | Top: Generator, Effect, Drums | Right: Tempo, Amplifier | Bottom: System (New button placeholder)
 
 - **#10** Empty Canvas on Initial Load
   - No dependencies
@@ -61,13 +64,8 @@ Work these in order — #10 is a quick win and unblocks #11; #9 is the largest l
   - Confirm `initializeDefaultNodes` gracefully handles an empty list
 
 - **#11** "New" Button Clears Canvas (System Menu)
-  - Depends on **#9** (needs the System menu to exist) and **#10** (defines what "empty" means)
+  - Depends on **#9** (System menu must exist) and **#10** (defines what "empty" means)
   - Add `clearCanvas()` action to the store; dispose all audio nodes and patterns, then `set({ nodes: [], edges: [] })`
-
-- **#9** Split Toolbar into Four Contextual Menus
-  - No hard code dependencies but should be done before #11 ships (System menu houses the New button)
-  - Refactor `Toolbar.tsx` → four new components: `ControllerMenu`, `SignalMenu`, `GlobalMenu`, `SystemMenu`
-  - Left: Controller, Chord | Top: Generator, Effect, Drums | Right: Tempo, Amplifier | Bottom: System (New button)
 
 ### 🟡 Phase 7 — Backlog (Do Not Action Yet)
 
@@ -84,8 +82,9 @@ Work these in order — #10 is a quick win and unblocks #11; #9 is the largest l
 #1 (Tempo)  ──┘
 #2 (Drums)  ──────────────────► #6 (Polish)
 
-#10 (Empty Canvas) ──────────────────────────────────────────────► #11 (New Button)
-#9  (Split Toolbar) ─────────────────────────────────────────────► #11 (New Button)
+#9  (Split Toolbar) ─────────────────────────────────────────────┐
+                                                                  ├──► #11 (New Button)
+#10 (Empty Canvas) ──────────────────────────────────────────────┘
 
 #12 (Save/Load/Presets) — blocked until #9, #10, #11 complete
 ```
