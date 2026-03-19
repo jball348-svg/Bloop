@@ -42,7 +42,7 @@ export const CHORD_QUALITY_OPTIONS = [
 export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys' | 'unison' | 'detune';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys' | 'unison' | 'detune' | 'visualiser';
 export type ConnectionKind = 'audio' | 'tempo';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
@@ -395,6 +395,7 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     effect:     { w: 224, h: 260 },
     unison:     { w: 224, h: 220 },
     detune:     { w: 224, h: 200 },
+    visualiser: { w: 256, h: 280 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
 };
@@ -421,6 +422,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     unison: 1.5,
     detune: 1.5,
     effect: 2,
+    visualiser: 2.5,
     speaker: 3,
 };
 
@@ -452,6 +454,14 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'generator->effect',
     'drum->effect',
     'effect->effect',
+    'generator->visualiser',
+    'drum->visualiser',
+    'effect->visualiser',
+    'unison->visualiser',
+    'detune->visualiser',
+    'visualiser->effect',
+    'visualiser->speaker',
+    'visualiser->visualiser',
 ]);
 
 const clampTempoBpm = (bpm: number) =>
@@ -832,6 +842,8 @@ export const useStore = create<AppState>((set, get) => ({
             node = new Tone.Chorus({ frequency: 3, delayTime: 2.5, depth: 0.7, wet: 0 }).start();
         } else if (type === 'detune') {
             node = new Tone.PitchShift({ pitch: 0, wet: 1 });
+        } else if (type === 'visualiser') {
+            node = new Tone.Gain(1); // passthrough — analysers are attached in the component
         } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr' || type === 'keys') {
             return;
         }
@@ -1526,7 +1538,7 @@ export const useStore = create<AppState>((set, get) => ({
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.waveShape);
         } else if (nextNode.data.subType && nextNode.data.subType !== 'none') {
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
-        } else if (nextNode.type === 'drum' || nextNode.type === 'unison' || nextNode.type === 'detune') {
+        } else if (nextNode.type === 'drum' || nextNode.type === 'unison' || nextNode.type === 'detune' || nextNode.type === 'visualiser') {
             get().initAudioNode(nextNode.id, nextNode.type);
         }
 
@@ -1681,7 +1693,7 @@ export const useStore = create<AppState>((set, get) => ({
         nodes.forEach((node: AppNode) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune') {
+            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
                 get().initAudioNode(node.id, node.type);
             }
         });

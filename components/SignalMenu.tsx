@@ -14,6 +14,7 @@ const SignalMenu = () => {
         { type: 'drum', label: 'Drum', color: 'bg-orange-500' },
         { type: 'unison', label: 'Unison', color: 'bg-violet-500' },
         { type: 'detune', label: 'Detune', color: 'bg-teal-500' },
+        { type: 'visualiser', label: 'Visualiser', color: 'bg-pink-500' },
     ];
 
     return (
