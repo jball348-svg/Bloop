@@ -3,11 +3,13 @@ import { Handle, Position } from 'reactflow';
 import * as Tone from 'tone';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
+    CONTROL_INPUT_HANDLE_ID,
     DEFAULT_TRANSPORT_BPM,
     DRUM_STEP_COUNT,
     type DrumMode,
     type DrumPart,
     isAudioEdge,
+    isControlEdge,
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
@@ -38,6 +40,12 @@ export default function DrumNode({ id }: { id: string }) {
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const activeDrumPads = useStore((state) => state.activeDrumPads);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
+    const isUnconnected = useStore((state) => {
+        const edges = state.edges;
+        const hasControlIn = edges.some(e => isControlEdge(e) && e.target === id);
+        const hasAudioOut = edges.some(e => isAudioEdge(e) && e.source === id);
+        return !hasControlIn && !hasAudioOut;
+    });
 
     const drumMode = nodeData?.drumMode ?? 'hits';
     const drumPattern = nodeData?.drumPattern;
@@ -97,6 +105,15 @@ export default function DrumNode({ id }: { id: string }) {
         <div className={`bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
+
+            {(!nodeData?.isLocked || nodeData?.isEntry) && (
+                <Handle
+                    type="target"
+                    id={CONTROL_INPUT_HANDLE_ID}
+                    position={Position.Left}
+                    className="w-4 h-4 border-4 border-slate-900 !-left-2 hover:scale-125 transition-all bg-yellow-400"
+                />
+            )}
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -247,6 +264,13 @@ export default function DrumNode({ id }: { id: string }) {
                             ))}
                         </div>
 
+                    </div>
+                )}
+                {isUnconnected && (
+                    <div className="mt-3 flex items-center gap-1.5 opacity-40 text-orange-500">
+                        <div className="flex-1 h-px bg-current" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">not connected</span>
+                        <div className="flex-1 h-px bg-current" />
                     </div>
                 )}
             </div>

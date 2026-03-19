@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
-import { useStore } from '@/store/useStore';
+import {
+    CONTROL_INPUT_HANDLE_ID,
+    CONTROL_OUTPUT_HANDLE_ID,
+    isControlEdge,
+    useStore,
+} from '@/store/useStore';
 import LockButton from './LockButton';
 
 interface AdsrSliderProps {
@@ -84,7 +89,7 @@ export default function AdsrNode({ id }: { id: string }) {
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
-        return !edges.some((edge) => edge.source === id || edge.target === id);
+        return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
     
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
@@ -195,18 +200,18 @@ export default function AdsrNode({ id }: { id: string }) {
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle
                     type="target"
-                    id="audio-in"
-                    position={Position.Top}
-                    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-amber-600"
+                    id={CONTROL_INPUT_HANDLE_ID}
+                    position={Position.Left}
+                    className="w-4 h-4 border-4 border-slate-900 !-left-2 hover:scale-125 transition-all bg-amber-600"
                 />
             )}
             
             {(!nodeData?.isLocked || nodeData?.isExit) && (
                 <Handle
                     type="source"
-                    id="audio-out"
-                    position={Position.Bottom}
-                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-amber-600"
+                    id={CONTROL_OUTPUT_HANDLE_ID}
+                    position={Position.Right}
+                    className="w-4 h-4 border-4 border-slate-900 !-right-2 hover:scale-125 transition-all bg-amber-600"
                 />
             )}
         </div>

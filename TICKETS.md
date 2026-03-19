@@ -49,9 +49,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#19](https://github.com/jball348-svg/Bloop/issues/19) | Exclude Global Objects (Tempo, Amplifier) from Snapping & Locking | ✅ Closed |
 | [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | ✅ Closed |
 | [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | ✅ Closed |
-| [#32](https://github.com/jball348-svg/Bloop/issues/32) | Control/Audio Signal Domain Separation — Architectural Wiring Overhaul | 🟡 Active — supersedes #20 |
-| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🔒 Blocked by #32 |
-| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🔒 Blocked by #32 |
+| [#32](https://github.com/jball348-svg/Bloop/issues/32) | Control/Audio Signal Domain Separation — Architectural Wiring Overhaul | ✅ Closed |
+| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🟡 Backlog |
+| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
 | [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | ⛔ Superseded by #32 |
 
 ### V4 — Do Not Action
@@ -87,8 +87,8 @@ For canvas structure work, order matters:
 1. ~~**#19** Exclude globals first~~ ✅ Done
 2. ~~**#15** Module Locking (core)~~ ✅ Done
 3. ~~**#16**~~ ✅ Done
-4. **#32** Control/Audio domain separation ← **do this next**
-5. **#17**, **#18** in parallel (both depend on #32 — the directional handle changes are the foundation)
+4. ~~**#32** Control/Audio domain separation~~ ✅ Done
+5. **#17**, **#18** in parallel (both unblocked)
 
 ---
 
@@ -102,7 +102,7 @@ V3 Synth (complete):
 #12 (Save/Load) ✅ Done
 
 V3 Canvas Structure:
-#19 ──► #15 ──► #16 ──► #32 ──► #17, #18
+#19 ──► #15 ──► #16 ──► #32 ✅ ──► #17, #18
 
 V4 (do not action):
 #23 (Filter) · #26 (Presets) · #29 (Mixer) · #31 (Drum Input)

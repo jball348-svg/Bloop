@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
-    AUDIO_OUTPUT_HANDLE_ID,
+    CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
-    isAudioEdge,
+    isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { Scale } from '@tonaljs/tonal';
@@ -26,7 +26,7 @@ export default function ControllerNode({ id }: { id: string }) {
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
-        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
+        return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
     const octave = useStore((state) =>
         state.nodes.find((node) => node.id === id)?.data.octave ?? 4
@@ -156,9 +156,9 @@ export default function ControllerNode({ id }: { id: string }) {
             {(!nodeData?.isLocked || nodeData?.isExit) && (
                 <Handle
                     type="source"
-                    id={AUDIO_OUTPUT_HANDLE_ID}
-                    position={Position.Bottom}
-                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-yellow-400"
+                    id={CONTROL_OUTPUT_HANDLE_ID}
+                    position={Position.Right}
+                    className="w-4 h-4 border-4 border-slate-900 !-right-2 hover:scale-125 transition-all bg-yellow-400"
                 />
             )}
         </div>

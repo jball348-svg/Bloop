@@ -26,6 +26,8 @@ export const AUDIO_INPUT_HANDLE_ID = 'audio-in';
 export const AUDIO_OUTPUT_HANDLE_ID = 'audio-out';
 export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
+export const CONTROL_INPUT_HANDLE_ID = 'control-in';
+export const CONTROL_OUTPUT_HANDLE_ID = 'control-out';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
 export const CHORD_QUALITY_OPTIONS = [
@@ -43,7 +45,7 @@ export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
 export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys' | 'unison' | 'detune' | 'visualiser';
-export type ConnectionKind = 'audio' | 'tempo';
+export type ConnectionKind = 'audio' | 'tempo' | 'control';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
 export type DrumPart = (typeof DRUM_PARTS)[number];
@@ -242,7 +244,7 @@ const collectNoteDispatches = (
     const dispatches: NoteDispatch[] = [];
 
     edges
-        .filter((edge) => isAudioEdge(edge) && edge.source === sourceId)
+        .filter((edge) => isControlEdge(edge) && edge.source === sourceId)
         .forEach((edge) => {
             const targetNode = nodesById.get(edge.target);
 
@@ -316,7 +318,7 @@ const applyAdsrEnvelopes = (
 
     const findAdsrNodes = (currentId: string) => {
         edges
-            .filter((edge) => isAudioEdge(edge) && edge.source === currentId)
+            .filter((edge) => isControlEdge(edge) && edge.source === currentId)
             .forEach((edge) => {
                 const targetNode = nodesById.get(edge.target);
                 if (!targetNode || visitedAdsrNodes.has(targetNode.id)) {
@@ -354,7 +356,7 @@ const applyAdsrToDownstreamGenerators = (
     const visited = new Set<string>();
     const findDownstreamGenerators = (currentId: string) => {
         edges
-            .filter((edge) => isAudioEdge(edge) && edge.source === currentId)
+            .filter((edge) => isControlEdge(edge) && edge.source === currentId)
             .forEach((edge) => {
                 const targetNode = nodesById.get(edge.target);
                 if (!targetNode || visited.has(targetNode.id)) {
@@ -521,6 +523,21 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'visualiser->visualiser',
 ]);
 
+const CONTROL_WIRE_PAIRS = new Set([
+    'controller->chord',
+    'controller->adsr',
+    'controller->generator',
+    'keys->chord',
+    'keys->adsr',
+    'keys->generator',
+    'keys->drum',
+    'chord->adsr',
+    'chord->generator',
+    'adsr->chord',
+    'adsr->generator',
+    'adsr->drum',
+]);
+
 const clampTempoBpm = (bpm: number) =>
     Math.min(MAX_TEMPO_BPM, Math.max(MIN_TEMPO_BPM, Math.round(bpm)));
 
@@ -613,7 +630,12 @@ export const isTempoEdge = (edge: Edge<AppEdgeData>) =>
     edge.sourceHandle === TEMPO_OUTPUT_HANDLE_ID ||
     edge.targetHandle === TEMPO_INPUT_HANDLE_ID;
 
-export const isAudioEdge = (edge: Edge<AppEdgeData>) => !isTempoEdge(edge);
+export const isControlEdge = (edge: Edge<AppEdgeData>) =>
+    edge.data?.kind === 'control' ||
+    edge.sourceHandle === CONTROL_OUTPUT_HANDLE_ID ||
+    edge.targetHandle === CONTROL_INPUT_HANDLE_ID;
+
+export const isAudioEdge = (edge: Edge<AppEdgeData>) => !isTempoEdge(edge) && !isControlEdge(edge);
 
 const stripLegacyTempoEdges = (edges: AppEdge[]) =>
     edges.filter((edge) => !isTempoEdge(edge));
@@ -624,6 +646,7 @@ const isValidGraphConnection = (
     edges: Edge<AppEdgeData>[],
     ignoredEdgeId?: string
 ) => {
+    // Basic sanity
     if (!connection.source || !connection.target || connection.source === connection.target) {
         return false;
     }
@@ -635,30 +658,32 @@ const isValidGraphConnection = (
         return false;
     }
 
+    // Singletons cannot be wired
     if (sourceNode.type === 'speaker' || targetNode.type === 'speaker') {
         return false;
     }
-
-    if (
-        sourceNode.type === 'tempo' ||
-        targetNode.type === 'tempo' ||
-        connection.sourceHandle === TEMPO_OUTPUT_HANDLE_ID ||
-        connection.targetHandle === TEMPO_INPUT_HANDLE_ID ||
-        (connection.sourceHandle && connection.sourceHandle !== AUDIO_OUTPUT_HANDLE_ID) ||
-        (connection.targetHandle && connection.targetHandle !== AUDIO_INPUT_HANDLE_ID)
-    ) {
+    if (sourceNode.type === 'tempo' || targetNode.type === 'tempo') {
         return false;
     }
 
+    // Strict domain matching — control-out MUST connect to control-in, audio-out MUST connect to audio-in
+    const isControlConn = connection.sourceHandle === CONTROL_OUTPUT_HANDLE_ID && connection.targetHandle === CONTROL_INPUT_HANDLE_ID;
+    const isAudioConn = connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID && connection.targetHandle === AUDIO_INPUT_HANDLE_ID;
+
+    if (!isControlConn && !isAudioConn) {
+        return false; // Cross-domain attempt: reject
+    }
+
+    // Semantic node-type check (musical sense)
     const pairKey = `${sourceNode.type}->${targetNode.type}`;
     if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) {
         return false;
     }
 
+    // Duplicate prevention
     return !edges.some((edge) =>
         edge.id !== ignoredEdgeId &&
         !edge.id.startsWith(AUTO_EDGE_PREFIX) &&
-        isAudioEdge(edge) &&
         edge.source === connection.source &&
         edge.target === connection.target &&
         edge.sourceHandle === connection.sourceHandle &&
@@ -670,24 +695,33 @@ const getConnectionKind = (
     connection: Connection,
     nodes: AppNode[]
 ): ConnectionKind | null => {
-    const sourceNode = nodes.find((node) => node.id === connection.source);
-    const targetNode = nodes.find((node) => node.id === connection.target);
-
-    if (!sourceNode || !targetNode) {
-        return null;
-    }
-
-    return 'audio';
+    if (connection.sourceHandle === CONTROL_OUTPUT_HANDLE_ID) return 'control';
+    if (connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID) return 'audio';
+    return null;
 };
 
-const getEdgePresentation = (kind: ConnectionKind) => ({
-    style: {
-        stroke: '#22d3ee',
-        strokeWidth: 2.5,
-        filter: 'drop-shadow(0 0 6px #22d3ee)',
-    },
-    data: { kind },
-});
+const getEdgePresentation = (kind: ConnectionKind) => {
+    if (kind === 'control') {
+        return {
+            style: {
+                stroke: '#fbbf24', // amber-400 — matches controller theme
+                strokeWidth: 2,
+                strokeDasharray: '6 4',
+                filter: 'drop-shadow(0 0 4px rgba(251,191,36,0.5))',
+            },
+            data: { kind },
+        };
+    }
+    // Audio — existing cyan style
+    return {
+        style: {
+            stroke: '#22d3ee',
+            strokeWidth: 2.5,
+            filter: 'drop-shadow(0 0 6px #22d3ee)',
+        },
+        data: { kind },
+    };
+};
 
 type AppState = {
     nodes: AppNode[];
@@ -1925,7 +1959,7 @@ export const useStore = create<AppState>((set, get) => ({
                 .map((e: Edge) => e.id),
         ]);
 
-        const desiredAutoEdges: Array<{ source: string; target: string; id: string }> = [];
+        const desiredAutoEdges: Array<{ source: string; target: string; sourceHandle: string; targetHandle: string; kind: ConnectionKind; id: string }> = [];
 
         for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
@@ -1963,11 +1997,17 @@ export const useStore = create<AppState>((set, get) => ({
                 const pairKey = `${sourceNode.type}->${targetNode.type}`;
                 if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) continue;
 
+                const kind = CONTROL_WIRE_PAIRS.has(pairKey) ? 'control' : 'audio';
+                const sourceHandle = kind === 'control' ? CONTROL_OUTPUT_HANDLE_ID : AUDIO_OUTPUT_HANDLE_ID;
+                const targetHandle = kind === 'control' ? CONTROL_INPUT_HANDLE_ID : AUDIO_INPUT_HANDLE_ID;
+
                 // Don't create an auto-edge if a manual edge already exists for this pair
                 const manualExists = edges.some(
                     (e: Edge) =>
                         e.source === sourceNode.id &&
                         e.target === targetNode.id &&
+                        e.sourceHandle === sourceHandle &&
+                        e.targetHandle === targetHandle &&
                         !managedIds.has(e.id)
                 );
                 if (manualExists) continue;
@@ -1975,8 +2015,11 @@ export const useStore = create<AppState>((set, get) => ({
                 desiredAutoEdges.push({
                     source: sourceNode.id,
                     target: targetNode.id,
+                    sourceHandle,
+                    targetHandle,
+                    kind,
                     id: `${AUTO_EDGE_PREFIX}${sourceNode.id}-${targetNode.id}`,
-                });
+                } as any);
             }
         }
 
@@ -1985,13 +2028,15 @@ export const useStore = create<AppState>((set, get) => ({
         // Keep all manually drawn edges; rebuild the auto set from scratch
         const manualEdges = edges.filter((e: AppEdge) => !managedIds.has(e.id));
 
-        // Auto-edges are hidden: audio routes through them, no visual wire rendered
-        const nextAutoEdges: AppEdge[] = desiredAutoEdges.map(({ source, target, id }) => ({
+        // Auto-edges are hidden: audio/control routes through them, no visual wire rendered
+        const nextAutoEdges: AppEdge[] = desiredAutoEdges.map(({ source, target, sourceHandle, targetHandle, kind, id }) => ({
             id,
             source,
             target,
+            sourceHandle,
+            targetHandle,
             hidden: true, // invisible — connection is implied by the snap/glow, not a cable
-            data: { kind: 'audio' },
+            data: { kind },
         }));
 
         set({

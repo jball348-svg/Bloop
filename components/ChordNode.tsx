@@ -1,10 +1,10 @@
 import { Handle, Position } from 'reactflow';
 import {
-    AUDIO_INPUT_HANDLE_ID,
-    AUDIO_OUTPUT_HANDLE_ID,
+    CONTROL_INPUT_HANDLE_ID,
+    CONTROL_OUTPUT_HANDLE_ID,
     CHORD_QUALITY_OPTIONS,
     DEFAULT_CHORD_QUALITY,
-    isAudioEdge,
+    isControlEdge,
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
@@ -16,7 +16,7 @@ export default function ChordNode({ id }: { id: string }) {
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
-        return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
+        return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
 
     const quality = nodeData?.subType || DEFAULT_CHORD_QUALITY;
@@ -29,9 +29,9 @@ export default function ChordNode({ id }: { id: string }) {
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle
                     type="target"
-                    id={AUDIO_INPUT_HANDLE_ID}
-                    position={Position.Top}
-                    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-sky-400"
+                    id={CONTROL_INPUT_HANDLE_ID}
+                    position={Position.Left}
+                    className="w-4 h-4 border-4 border-slate-900 !-left-2 hover:scale-125 transition-all bg-sky-400"
                 />
             )}
 
@@ -81,9 +81,9 @@ export default function ChordNode({ id }: { id: string }) {
             {(!nodeData?.isLocked || nodeData?.isExit) && (
                 <Handle
                     type="source"
-                    id={AUDIO_OUTPUT_HANDLE_ID}
-                    position={Position.Bottom}
-                    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-sky-500"
+                    id={CONTROL_OUTPUT_HANDLE_ID}
+                    position={Position.Right}
+                    className="w-4 h-4 border-4 border-slate-900 !-right-2 hover:scale-125 transition-all bg-sky-500"
                 />
             )}
         </div>
