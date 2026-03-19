@@ -264,6 +264,7 @@ function BloopCanvasInner() {
                 edgesUpdatable={true}
                 snapToGrid={true}
                 snapGrid={[SNAP_GRID, SNAP_GRID]}
+                minZoom={0.05}
             >
                 <Background
                     variant={BackgroundVariant.Dots}
