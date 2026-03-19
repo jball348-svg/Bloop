@@ -1526,7 +1526,7 @@ export const useStore = create<AppState>((set, get) => ({
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.waveShape);
         } else if (nextNode.data.subType && nextNode.data.subType !== 'none') {
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
-        } else if (nextNode.type === 'drum') {
+        } else if (nextNode.type === 'drum' || nextNode.type === 'unison' || nextNode.type === 'detune') {
             get().initAudioNode(nextNode.id, nextNode.type);
         }
 

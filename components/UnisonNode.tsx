@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
@@ -20,6 +20,14 @@ export default function UnisonNode({ id }: { id: string }) {
     const [speed, setSpeed] = useState(30);
     const [mix, setMix] = useState(50);
     const [isBypassed, setIsBypassed] = useState(false);
+
+    useEffect(() => {
+        updateNodeValue(id, {
+            wet: 0.5,
+            depth: 0.7,
+            frequency: 0.5 + (30 / 100) * 9.5,
+        });
+    }, [id]);
 
     const handleDepthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = parseFloat(e.target.value);

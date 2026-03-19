@@ -23,7 +23,7 @@ export default function DetuneNode({ id }: { id: string }) {
     const handleCentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const val = parseFloat(e.target.value);
         setCents(val);
-        updateNodeValue(id, { pitch: val / 100 });
+        updateNodeValue(id, { pitch: (val / 100) * 12 });
     };
 
     const handleMixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
