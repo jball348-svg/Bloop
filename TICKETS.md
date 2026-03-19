@@ -32,8 +32,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#27](https://github.com/jball348-svg/Bloop/issues/27) | Undo / Redo — Canvas Action History | ✅ Closed |
 | [#22](https://github.com/jball348-svg/Bloop/issues/22) | ADSR Envelope — Standalone Controller Node | ✅ Closed |
 | [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | ✅ Closed |
-| [#30](https://github.com/jball348-svg/Bloop/issues/30) | Keys Controller — Split QWERTY Keyboard into Standalone Module | 🔵 In Progress |
-| [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | 🟡 Backlog |
+| [#30](https://github.com/jball348-svg/Bloop/issues/30) | Keys Controller — Split QWERTY Keyboard into Standalone Module | ✅ Closed |
+| [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | 🔵 In Progress |
+| [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🟡 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🟡 Backlog |
 | [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🟡 Backlog |
 | [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | 🟡 Backlog |
@@ -72,12 +73,13 @@ No hard sequencing requirements within V3 synth work — these can be picked up 
 1. ~~**#27** Undo/Redo — highest day-to-day impact, no dependencies~~ ✅ Done
 2. ~~**#22** ADSR — standalone controller node, high sound design value~~ ✅ Done
 3. ~~**#24** Noise Generator — contained change, ADSR-compatible~~ ✅ Done
-4. **#30** Keys Controller — clean split, low risk ← **current**
-5. **#25** Unison & Detune — two new standalone signal nodes
-6. **#23** Filter Node — new node type, more involved
-7. **#26** Preset Patches — depends on the canvas being stable, pairs with #12
-8. **#12** Save/Load — significant, pairs with #26
-9. **#28** Visualiser — significant new node, scope carefully
+4. ~~**#30** Keys Controller — clean split, low risk~~ ✅ Done
+5. **#25** Unison & Detune — two new standalone signal nodes ← **current**
+6. **#31** Drum Input — add ADSR enveloping to Drum node
+7. **#23** Filter Node — new node type, more involved
+8. **#26** Preset Patches — depends on the canvas being stable, pairs with #12
+9. **#12** Save/Load — significant, pairs with #26
+10. **#28** Visualiser — significant new node, scope carefully
 
 For canvas structure work, order matters:
 1. **#19** Exclude globals first (guard change, no dependencies)
@@ -94,8 +96,8 @@ For canvas structure work, order matters:
 
 V3 Synth (no hard deps between these):
 #22 (ADSR) ✅ · #23 (Filter) · #24 (Noise) ✅ · #25 (Unison & Detune)
-#27 (Undo/Redo) ✅ · #28 (Visualiser) · #30 (Keys Controller)
-#26 (Presets) ──► #12 (Save/Load)
+#27 (Undo/Redo) ✅ · #28 (Visualiser) · #30 (Keys Controller) ✅
+#31 (Drum Input) · #26 (Presets) ──► #12 (Save/Load)
 
 V3 Canvas Structure:
 #19 ──► #15 ──► #16, #17, #18 ──► #20
