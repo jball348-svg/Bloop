@@ -25,12 +25,12 @@ const GlobalMenu = () => {
     return (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
             <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-2xl px-2 py-4 flex flex-col gap-3 shadow-xl">
-                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest pb-1">GLOBAL</span>
+                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest text-center pb-1">GLOBAL</span>
                 {globalTools.map((tool) => (
                     <div
                         key={tool.type}
                         title={tool.isPresent ? `${tool.label} is already on the canvas` : undefined}
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all text-center ${
                             tool.isPresent
                                 ? 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
                                 : `${tool.color} text-white cursor-grab active:cursor-grabbing hover:scale-105` 

@@ -42,7 +42,7 @@ export const CHORD_QUALITY_OPTIONS = [
 export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr';
+export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys';
 export type ConnectionKind = 'audio' | 'tempo';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
@@ -385,6 +385,7 @@ const applyAdsrToDownstreamGenerators = (
 // Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
+    keys:        { w: 288, h: 320 },
     chord:      { w: 224, h: 240 },
     adsr:       { w: 224, h: 340 },
     generator:  { w: 224, h: 220 },
@@ -408,6 +409,7 @@ const drumPadTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
+    keys: 0,
     chord: 0.5,
     adsr: 0.75,
     generator: 1,
@@ -420,6 +422,10 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->chord',
     'controller->adsr',
     'controller->generator',
+    'keys->chord',
+    'keys->adsr',
+    'keys->generator',
+    'keys->drum',
     'chord->adsr',
     'chord->generator',
     'adsr->chord',
@@ -789,7 +795,7 @@ export const useStore = create<AppState>((set, get) => ({
             nextDrumRacks.set(id, rack);
             set({ drumRacks: nextDrumRacks });
             node = rack.output;
-        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr') {
+        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr' || type === 'keys') {
             return;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
@@ -1008,6 +1014,16 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         if (node instanceof Tone.PolySynth && typeof value.mix === 'number') {
+            if (value.mix === 0) {
+                node.volume.rampTo(-Infinity, 0.1);
+            } else {
+                const db = ((value.mix - 1) / 99) * 36 - 30;
+                node.volume.rampTo(db, 0.1);
+            }
+        }
+
+        // Handle noise mix - Tone.Noise has a volume property
+        if (node instanceof Tone.Noise && typeof value.mix === 'number') {
             if (value.mix === 0) {
                 node.volume.rampTo(-Infinity, 0.1);
             } else {
@@ -1264,7 +1280,10 @@ export const useStore = create<AppState>((set, get) => ({
                     voicedNote
                 );
             } else if (targetNode instanceof Tone.Noise) {
-                targetNode.start();
+                // Only start if not already active to avoid "Start time must be strictly greater than previous start time" error
+                if (!get().activeGenerators.has(generatorId)) {
+                    targetNode.start();
+                }
                 // For noise, we don't track note counts since noise has no pitch
                 // Just add to active generators for UI feedback
                 const nextActiveGenerators = new Set(get().activeGenerators);

@@ -18,6 +18,7 @@ import {
 } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
+import KeysNode from '@/components/KeysNode';
 import ChordNode from '@/components/ChordNode';
 import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
@@ -32,9 +33,11 @@ import SystemMenu from '@/components/SystemMenu';
 
 // Actual rendered widths from Tailwind classes on each component:
 //   ControllerNode → w-72 = 288px
+//   KeysNode → w-72 = 288px
 //   GeneratorNode / EffectNode / SpeakerNode / AdsrNode → w-56 = 224px
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
+    keys:        { w: 288, h: 320 },
     chord:      { w: 224, h: 240 },
     adsr:       { w: 224, h: 340 },
     generator:  { w: 224, h: 220 },
@@ -103,6 +106,7 @@ function BloopCanvasInner() {
     const nodeTypes = useMemo(() => ({
         generator: GeneratorNode,
         controller: ControllerNode,
+        keys: KeysNode,
         chord: ChordNode,
         drum: DrumNode,
         effect: EffectNode,
@@ -147,6 +151,10 @@ function BloopCanvasInner() {
         let label = '';
         const bpm = DEFAULT_TRANSPORT_BPM;
         if (type === 'controller') subType = 'arp';
+        if (type === 'keys') {
+            subType = 'keys';
+            label = 'Keys';
+        }
         if (type === 'chord') {
             subType = 'major';
             label = 'Chord';

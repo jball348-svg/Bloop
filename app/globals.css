@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020617;
+  --background: #0f172a;
   --foreground: #f8fafc;
 }
 
@@ -37,7 +37,7 @@ body {
 }
 
 .react-flow__background {
-  background-color: #020617;
+  background-color: #0f172a;
 }
 
 .react-flow__controls {

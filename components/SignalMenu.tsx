@@ -16,12 +16,12 @@ const SignalMenu = () => {
 
     return (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-            <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-full px-4 py-2 flex flex-row gap-3 shadow-xl">
-                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest self-center pb-1">SIGNALS</span>
+            <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-full px-4 py-2 flex flex-row gap-3 shadow-xl items-center">
+                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest text-center">SIGNALS</span>
                 {signalTools.map((tool) => (
                     <div
                         key={tool.type}
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold text-white cursor-grab active:cursor-grabbing hover:scale-105 transition-transform ${tool.color}`}
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold text-white cursor-grab active:cursor-grabbing hover:scale-105 transition-transform text-center ${tool.color}`}
                         draggable={true}
                         onDragStart={(e) => onDragStart(e, tool.type)}
                     >
