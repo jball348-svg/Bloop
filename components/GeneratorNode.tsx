@@ -8,7 +8,7 @@ import {
     useStore,
 } from '@/store/useStore';
 
-const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth'];
+const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
 
 export default function GeneratorNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);

@@ -44,7 +44,7 @@ export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
 export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr';
 export type ConnectionKind = 'audio' | 'tempo';
-export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth';
+export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
 export type DrumPart = (typeof DRUM_PARTS)[number];
 export type DrumPattern = Record<DrumPart, boolean[]>;
@@ -370,6 +370,8 @@ const applyAdsrToDownstreamGenerators = (
                             } 
                         });
                     }
+                    // Note: Tone.Noise instances don't support envelope settings
+                    // They will be controlled by start/stop for amplitude gating
                 } else {
                     // Continue traversing for other node types
                     findDownstreamGenerators(targetNode.id);
@@ -773,9 +775,14 @@ export const useStore = create<AppState>((set, get) => ({
         let node: Tone.ToneAudioNode | null = null;
 
         if (type === 'generator') {
-            const generator = new Tone.PolySynth();
-            generator.set({ oscillator: { type: getGeneratorWaveShape(get().nodes, id) } as never });
-            node = generator;
+            const waveShape = getGeneratorWaveShape(get().nodes, id);
+            if (waveShape === 'noise') {
+                node = new Tone.Noise({ type: 'white' });
+            } else {
+                const generator = new Tone.PolySynth();
+                generator.set({ oscillator: { type: waveShape } as never });
+                node = generator;
+            }
         } else if (type === 'drum') {
             const rack = createDrumRack();
             const nextDrumRacks = new Map(get().drumRacks);
@@ -841,7 +848,14 @@ export const useStore = create<AppState>((set, get) => ({
         set({
             nodes: nodes.map((n: AppNode) =>
                 n.id === id
-                    ? { ...n, data: { ...n.data, subType, isPlaying: wasPlaying } }
+                    ? { 
+                        ...n, 
+                        data: { 
+                            ...n.data, 
+                            ...(mainType === 'generator' ? { waveShape: subType } : { subType }),
+                            isPlaying: wasPlaying 
+                        } 
+                    }
                     : n
             ),
             edges: nextEdges,
@@ -967,11 +981,22 @@ export const useStore = create<AppState>((set, get) => ({
         if (!node) return;
 
         if (value.waveShape) {
-            if (node instanceof Tone.Oscillator) {
-                node.set({ type: value.waveShape });
+            const currentNode = get().nodes.find((n: AppNode) => n.id === id);
+            const currentWaveShape = currentNode?.data.waveShape ?? 'sine';
+            
+            // Check if we're switching between noise and non-noise waveforms
+            const isSwitchingToNoise = value.waveShape === 'noise' && currentWaveShape !== 'noise';
+            const isSwitchingFromNoise = currentWaveShape === 'noise' && value.waveShape !== 'noise';
+            
+            if (isSwitchingToNoise || isSwitchingFromNoise) {
+                // Switching between noise and oscillator types requires changeNodeSubType
+                // changeNodeSubType will handle updating the node data, so return early
+                get().changeNodeSubType(id, 'generator', value.waveShape);
+                return;
             } else if (node instanceof Tone.PolySynth) {
                 node.set({ oscillator: { type: value.waveShape } as never });
             }
+            
             const nodes = get().nodes.map((n: AppNode) =>
                 n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n
             );
@@ -1180,6 +1205,11 @@ export const useStore = create<AppState>((set, get) => ({
                 generatorNoteCounts: nextGeneratorNoteCounts,
                 activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
             });
+        } else if (node instanceof Tone.Noise) {
+            node.start();
+            set({
+                activeGenerators: new Set([...get().activeGenerators, id]),
+            });
         }
     },
 
@@ -1195,6 +1225,13 @@ export const useStore = create<AppState>((set, get) => ({
             set({
                 generatorNoteCounts: nextGeneratorNoteCounts,
                 activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+            });
+        } else if (node instanceof Tone.Noise) {
+            node.stop();
+            const nextActiveGenerators = new Set(get().activeGenerators);
+            nextActiveGenerators.delete(id);
+            set({
+                activeGenerators: nextActiveGenerators,
             });
         }
     },
@@ -1226,6 +1263,13 @@ export const useStore = create<AppState>((set, get) => ({
                     generatorId,
                     voicedNote
                 );
+            } else if (targetNode instanceof Tone.Noise) {
+                targetNode.start();
+                // For noise, we don't track note counts since noise has no pitch
+                // Just add to active generators for UI feedback
+                const nextActiveGenerators = new Set(get().activeGenerators);
+                nextActiveGenerators.add(generatorId);
+                set({ activeGenerators: nextActiveGenerators });
             }
         });
 
@@ -1259,6 +1303,12 @@ export const useStore = create<AppState>((set, get) => ({
                     generatorId,
                     voicedNote
                 );
+            } else if (targetNode instanceof Tone.Noise) {
+                targetNode.stop();
+                // Remove from active generators for UI feedback
+                const nextActiveGenerators = new Set(get().activeGenerators);
+                nextActiveGenerators.delete(generatorId);
+                set({ activeGenerators: nextActiveGenerators });
             }
         });
 
@@ -1424,7 +1474,9 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
-        if (nextNode.data.subType && nextNode.data.subType !== 'none') {
+        if (nextNode.type === 'generator') {
+            get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.waveShape);
+        } else if (nextNode.data.subType && nextNode.data.subType !== 'none') {
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
         } else if (nextNode.type === 'drum') {
             get().initAudioNode(nextNode.id, nextNode.type);
