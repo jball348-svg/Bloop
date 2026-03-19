@@ -93,15 +93,9 @@ export default function DrumNode({ id }: { id: string }) {
     }, [id, updateNodeValue]);
 
     return (
-        <div className={`bg-slate-900 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative${
+        <div className={`bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
-            <div
-                className="absolute inset-0 opacity-[0.05] pointer-events-none rounded-2xl overflow-hidden"
-                style={{
-                    backgroundImage: 'repeating-linear-gradient(45deg, #f97316 0, #f97316 1px, transparent 1px, transparent 14px)',
-                }}
-            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-3 mb-3">

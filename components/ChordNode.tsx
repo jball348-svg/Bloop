@@ -21,18 +21,9 @@ export default function ChordNode({ id }: { id: string }) {
     const quality = nodeData?.subType || DEFAULT_CHORD_QUALITY;
 
     return (
-        <div className={`bg-slate-900 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative${
+        <div className={`bg-slate-800 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
-            <div className="absolute inset-0 pointer-events-none rounded-2xl opacity-[0.06] overflow-hidden">
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        backgroundImage: 'repeating-linear-gradient(135deg, #38bdf8 0, #38bdf8 1px, transparent 1px, transparent 12px)',
-                    }}
-                />
-                <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-sky-400/10 blur-2xl" />
-            </div>
 
             <Handle
                 type="target"

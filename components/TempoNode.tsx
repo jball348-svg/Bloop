@@ -87,13 +87,7 @@ export default function TempoNode({ id }: { id: string }) {
     };
 
     return (
-        <div className="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative">
-            <div
-                className="absolute inset-0 rounded-2xl overflow-hidden opacity-[0.05] pointer-events-none"
-                style={{
-                    backgroundImage: 'repeating-linear-gradient(135deg, #818cf8 0, #818cf8 1px, transparent 1px, transparent 16px)',
-                }}
-            />
+        <div className="bg-slate-800 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative">
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-4 mb-3">

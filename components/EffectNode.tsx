@@ -47,19 +47,9 @@ export default function EffectNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-slate-900 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative${
+        <div className={`bg-slate-800 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
-            {/* Effect Pattern Aesthetic */}
-            {subType !== 'none' && (
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none rounded-2xl overflow-hidden">
-                    <div className="absolute inset-0"
-                         style={{
-                             backgroundImage: 'repeating-linear-gradient(45deg, #d946ef 0, #d946ef 1px, transparent 0, transparent 50%)',
-                             backgroundSize: '10px 10px'
-                         }} />
-                </div>
-            )}
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">

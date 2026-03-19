@@ -103,23 +103,15 @@ export default function KeysNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-black border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative${
+        <div className={`bg-slate-800 border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
-            {/* Keys pattern — horizontal staff lines, like music notation */}
-            <div
-                className="absolute inset-0 opacity-[0.04] pointer-events-none rounded-2xl overflow-hidden"
-                style={{
-                    backgroundImage: 'repeating-linear-gradient(0deg, #ffffff 0, #ffffff 1px, transparent 0, transparent 100%)',
-                    backgroundSize: '100% 12px',
-                }}
-            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between items-center mb-3">
                         <button
-                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-white/10 border border-white/20 text-white/60 hover:bg-white hover:text-black hover:border-white flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-white hover:text-black hover:border-white flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                             style={{ boxShadow: `0 0 6px rgba(255, 255, 255, 0.3)` }}
                             onClick={(e) => {
                                 e.stopPropagation();

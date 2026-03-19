@@ -109,17 +109,9 @@ export default function AdsrNode({ id }: { id: string }) {
     };
     
     return (
-        <div className={`bg-slate-900 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative${
+        <div className={`bg-slate-800 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
         }`}>
-            {/* Controller pattern — horizontal staff lines, like music notation */}
-            <div
-                className="absolute inset-0 opacity-[0.04] pointer-events-none rounded-2xl overflow-hidden"
-                style={{
-                    backgroundImage: 'repeating-linear-gradient(0deg, #92400e 0, #92400e 1px, transparent 0, transparent 100%)',
-                    backgroundSize: '100% 12px',
-                }}
-            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">
