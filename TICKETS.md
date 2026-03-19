@@ -25,7 +25,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#13](https://github.com/jball348-svg/Bloop/issues/13) | Expand Canvas Zoom Range | ✅ Closed |
 | [#21](https://github.com/jball348-svg/Bloop/issues/21) | Comprehensive Documentation Review & Update | ✅ Closed |
 
-### V3 — Synth & Canvas (Active)
+### V3 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
@@ -34,7 +34,12 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | ✅ Closed |
 | [#30](https://github.com/jball348-svg/Bloop/issues/30) | Keys Controller — Split QWERTY Keyboard into Standalone Module | ✅ Closed |
 | [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | ✅ Closed |
-| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | 🔵 In Progress |
+| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | ✅ Closed |
+
+### V3 — Remaining Backlog
+
+| # | Title | Status |
+|---|---|---|
 | [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | 🟡 Backlog |
 
 ### V3 — Canvas Structure (Active Backlog)
@@ -73,8 +78,8 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 3. ~~**#24** Noise Generator~~ ✅ Done
 4. ~~**#30** Keys Controller~~ ✅ Done
 5. ~~**#25** Unison & Detune~~ ✅ Done
-6. **#28** Visualiser Node ← **current**
-7. **#12** Save/Load
+6. ~~**#28** Visualiser Node~~ ✅ Done
+7. **#12** Save/Load ← **next**
 
 For canvas structure work, order matters:
 1. **#19** Exclude globals first
@@ -89,9 +94,9 @@ For canvas structure work, order matters:
 ```
 ── V2 Complete ──
 
-V3 Synth:
-#22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #30 ✅
-#28 (Visualiser) · #12 (Save/Load)
+V3 Synth (complete):
+#22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #28 ✅ · #30 ✅
+#12 (Save/Load) — remaining V3
 
 V3 Canvas Structure:
 #19 ──► #15 ──► #16, #17, #18 ──► #20
