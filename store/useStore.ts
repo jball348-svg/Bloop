@@ -534,35 +534,8 @@ type AppState = {
 };
 
 export const useStore = create<AppState>((set, get) => ({
-    nodes: [
-        {
-            id: 'node-1',
-            type: 'controller',
-            data: { label: 'Arp Controller', subType: 'arp' },
-            position: { x: 60, y: 200 },
-        },
-        {
-            id: 'node-2',
-            type: 'generator',
-            data: { label: 'Oscillator', subType: 'wave', waveShape: 'sine' },
-            position: { x: 348, y: 200 },
-        },
-        {
-            id: 'node-3',
-            type: 'speaker',
-            data: { label: 'Master Out' },
-            position: { x: 572, y: 200 },
-        },
-    ],
-    // Auto-edges start hidden — audio still routes through them, no visible wire
-    edges: [
-        {
-            id: 'auto-node-1-node-2',
-            source: 'node-1',
-            target: 'node-2',
-            hidden: true,
-        },
-    ],
+    nodes: [],
+    edges: [],
     audioNodes: new Map(),
     masterOutput: null,
     masterVolume: DEFAULT_MASTER_VOLUME,
@@ -573,7 +546,7 @@ export const useStore = create<AppState>((set, get) => ({
     activeGenerators: new Set(),
     activeDrumPads: new Set(),
     adjacentNodeIds: new Set(),
-    autoEdgeIds: new Set(['auto-node-1-node-2']),
+    autoEdgeIds: new Set(),
 
     ensureMasterOutput: () => {
         const { masterOutput, masterVolume, nodes } = get();
