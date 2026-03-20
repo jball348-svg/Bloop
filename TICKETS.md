@@ -54,10 +54,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
 | [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | ⛔ Superseded by #32 |
 
-### V4 — Do Not Action
+### V4 — Backlog
 
 | # | Title | Status |
 |---|---|---|
+| [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection | 🔵 V4 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
 | [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🔵 V4, do not action |
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
@@ -102,9 +103,12 @@ V3 Synth (complete):
 #12 (Save/Load) ✅ Done
 
 V3 Canvas Structure:
-#19 ──► #15 ──► #16 ──► #32 ✅ ──► #17, #18
+#19 ──► #15 ──► #16 ──► #32 ✅ ──► #17 ✅, #18 (backlog)
 
-V4 (do not action):
+V4 Bug Fixes:
+#33 (Bug Omnibus — snap/audio/drum-adsr/text-select)
+
+V4 Features (do not action):
 #23 (Filter) · #26 (Presets) · #29 (Mixer) · #31 (Drum Input)
 ```
 
