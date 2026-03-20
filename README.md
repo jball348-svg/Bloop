@@ -47,6 +47,10 @@ Bloop is a visual modular audio sandbox built with Next.js, React Flow, and Tone
 - **Drag-to-trash deletion** — drag any node to the bin in the bottom-right corner
 - **In-node delete button** — × button on each node for direct removal
 - **Extended zoom range** — zoom out to 5% for a full patch overview
+- **Save / Load** — users can save patches as `.bloop` files and load them back into the canvas
+- **Starter Presets** — curated starter patches available in the System menu
+- **Directional Snapping** — Controller nodes snap horizontally; Signal nodes snap vertically to prevent routing errors
+- **Module Locking** — snapped groups can be "locked" into a single movable object, exposing only necessary handles
 
 ### Four Contextual Menus
 
@@ -55,7 +59,7 @@ Bloop is a visual modular audio sandbox built with Next.js, React Flow, and Tone
 | **Signals** | Top centre | Generator, Effect, Drum, Unison, Detune, Visualiser |
 | **Controllers** | Left centre | Arp, Keys, ADSR, Chord |
 | **Global** | Right centre | Tempo, Amplifier (greyed out when already on canvas) |
-| **System** | Bottom centre | New (clears canvas), Undo, Redo |
+| **System** | Bottom centre | New (clears canvas), Save, Load, Presets, Undo, Redo |
 
 ---
 
@@ -84,7 +88,7 @@ bloop/
 │   ├── SignalMenu.tsx         # Top menu — Generator, Effect, Drum, Unison, Detune, Visualiser
 │   ├── ControllerMenu.tsx     # Left menu — Arp, Keys, ADSR, Chord
 │   ├── GlobalMenu.tsx         # Right menu — Tempo, Amplifier (singletons)
-│   ├── SystemMenu.tsx         # Bottom menu — New/Clear, Undo/Redo
+│   ├── SystemMenu.tsx         # Bottom menu — New, Save, Load, Presets, Undo/Redo
 │   ├── ControllerNode.tsx     # Arpeggiator — fires note events
 │   ├── KeysNode.tsx           # QWERTY keyboard controller — black/white theme
 │   ├── AdsrNode.tsx           # ADSR envelope controller — pass-through with live diagram
@@ -99,7 +103,8 @@ bloop/
 │   ├── SpeakerNode.tsx        # Global output volume — singleton (Amplifier)
 │   └── EngineControl.tsx      # Audio unlock overlay
 ├── store/
-│   └── useStore.ts            # All audio lifecycle, routing, undo/redo, adjacency, and state
+│   ├── useStore.ts            # All audio lifecycle, routing, undo/redo, adjacency, and state
+│   └── presets.ts             # Curated starter patches for the Presets menu
 ├── AGENTS.md                  # AI agent briefing — read before touching code
 ├── STYLE_GUIDE.md             # Node colour registry and design system
 ├── TICKETS.md                 # Ticket status and work order

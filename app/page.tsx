@@ -226,23 +226,22 @@ function BloopCanvasInner() {
             }
         }
 
+        // Capture nodes and position synchronously before the timeout
+        const allNodes = useStore.getState().nodes;
+        const initialX = draggedNode.position.x;
+        const initialY = draggedNode.position.y;
+
         // Defer one tick so ReactFlow finishes writing its own snapped position first
         setTimeout(() => {
-            const allNodes = useStore.getState().nodes;
-            const currentNode = allNodes.find(n => n.id === draggedNode.id);
-            if (!currentNode) return;
-
-            const draggedDims = getDims(draggedNode.type ?? currentNode.type);
             if (draggedNode.type === 'tempo' || draggedNode.type === 'speaker') {
                 useStore.getState().recalculateAdjacency();
                 return;
             }
-            let x = currentNode.position.x;
-            let y = currentNode.position.y;
+            
+            let x = initialX;
+            let y = initialY;
 
-            // Store original position to check if there was actual overlap
-            const originalX = x;
-            const originalY = y;
+            const draggedDims = getDims(draggedNode.type!);
 
             // Multi-pass to handle chain reactions (A pushes into B which also overlaps C)
             for (let pass = 0; pass < 10; pass++) {
@@ -272,31 +271,41 @@ function BloopCanvasInner() {
                             draggedNode.type as AudioNodeType,
                             n.type as AudioNodeType
                         );
+                        console.log('snap check:', draggedNode.type, 'vs', n.type, '→ axis:', axis);
 
-                        // For now, only handle horizontal (control domain) snapping
-                        // Vertical audio snapping is added in #18
-                        if (axis !== 'horizontal') continue;
+                        if (axis === 'horizontal') {
+                            // Use signal flow direction to determine correct left/right placement.
+                            const draggedType = draggedNode.type as AudioNodeType;
+                            const nType = n.type as AudioNodeType;
+                            const draggedIsUpstream = CONTROL_WIRE_PAIRS.has(`${draggedType}->${nType}`);
 
-                        // Use signal flow direction to determine correct left/right placement.
-                        // Centre-based logic caused upstream nodes (e.g. arpeggiator) to snap
-                        // to the wrong side when dragged from the right. CONTROL_WIRE_PAIRS
-                        // encodes which node is upstream, so we use that instead.
-                        const draggedType = draggedNode.type as AudioNodeType;
-                        const nType = n.type as AudioNodeType;
-                        const draggedIsUpstream = CONTROL_WIRE_PAIRS.has(`${draggedType}->${nType}`);
+                            if (draggedIsUpstream) {
+                                // Dragged node feeds into n → it belongs to the LEFT of n
+                                x = snap(n.position.x - draggedDims.w);
+                            } else {
+                                // n feeds into dragged node → it belongs to the RIGHT of n
+                                x = snap(n.position.x + nDims.w);
+                            }
 
-                        if (draggedIsUpstream) {
-                            // Dragged node feeds into n → it belongs to the LEFT of n
-                            x = snap(n.position.x - draggedDims.w);
-                        } else {
-                            // n feeds into dragged node → it belongs to the RIGHT of n
-                            x = snap(n.position.x + nDims.w);
+                            // Align Y so nodes sit on the same row
+                            y = n.position.y;
+                            moved = true;
+                        } else if (axis === 'vertical') {
+                            // Push up/down, align X (new behavior)
+                            const draggedCentreY = y + draggedDims.h / 2;
+                            const nCentreY = n.position.y + nDims.h / 2;
+                            if (draggedCentreY >= nCentreY) {
+                                // Dragged node centre is below obstacle centre → snap below
+                                y = snap(n.position.y + nDims.h);
+                            } else {
+                                // Dragged node centre is above obstacle centre → snap above
+                                y = snap(n.position.y - draggedDims.h);
+                            }
+                            x = n.position.x; // align to same column
+                            moved = true;
                         }
 
-                        // Align Y so nodes sit on the same row
-                        y = n.position.y;
-
-                        moved = true;
+                        if (moved) break; // stop checking other stationary nodes — one snap per pass
                     }
                 }
 
@@ -304,7 +313,7 @@ function BloopCanvasInner() {
             }
 
             // Only update if position actually changed from original
-            if (x !== originalX || y !== originalY) {
+            if (x !== initialX || y !== initialY) {
                 useStore.getState().onNodesChange([{
                     id: draggedNode.id,
                     type: 'position',

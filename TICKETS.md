@@ -34,25 +34,14 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#24](https://github.com/jball348-svg/Bloop/issues/24) | Noise Generator — New Waveform Option on Generator Node | ✅ Closed |
 | [#30](https://github.com/jball348-svg/Bloop/issues/30) | Keys Controller — Split QWERTY Keyboard into Standalone Module | ✅ Closed |
 | [#25](https://github.com/jball348-svg/Bloop/issues/25) | Unison & Detune — Standalone Signal Nodes | ✅ Closed |
-| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | ✅ Closed (Fix: Snapping/Locking added) |
-
-### V3 — Remaining Backlog
-
-| # | Title | Status |
-|---|---|---|
+| [#28](https://github.com/jball348-svg/Bloop/issues/28) | Visualiser Node — Real-Time Waveform / Spectrum Display | ✅ Closed |
 | [#12](https://github.com/jball348-svg/Bloop/issues/12) | Enhanced System Menu — Save, Load & Presets | ✅ Closed |
-
-### V3 — Canvas Structure (Active Backlog)
-
-| # | Title | Status |
-|---|---|---|
 | [#19](https://github.com/jball348-svg/Bloop/issues/19) | Exclude Global Objects (Tempo, Amplifier) from Snapping & Locking | ✅ Closed |
 | [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | ✅ Closed |
 | [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | ✅ Closed |
 | [#32](https://github.com/jball348-svg/Bloop/issues/32) | Control/Audio Signal Domain Separation — Architectural Wiring Overhaul | ✅ Closed |
 | [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | ✅ Closed |
-| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
-| [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | ⛔ Superseded by #32 |
+| [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | ✅ Closed |
 
 ### V4 — Backlog
 
@@ -60,7 +49,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 |---|---|---|
 | [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection | 🔵 V4 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
-| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | 🔵 V4, do not action |
+| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | ✅ Closed (v3) |
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
 
@@ -83,13 +72,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 5. ~~**#25** Unison & Detune~~ ✅ Done
 6. ~~**#28** Visualiser Node~~ ✅ Done
 7. ~~**#12** Save/Load~~ ✅ Done
-
-For canvas structure work, order matters:
-1. ~~**#19** Exclude globals first~~ ✅ Done
-2. ~~**#15** Module Locking (core)~~ ✅ Done
-3. ~~**#16**~~ ✅ Done
-4. ~~**#32** Control/Audio domain separation~~ ✅ Done
-5. ~~**#17**~~, **#18** (Both unblocked)
+8. ~~**#19** Exclude globals first~~ ✅ Done
+9. ~~**#15** Module Locking (core)~~ ✅ Done
+10. ~~**#16** Handle Filter~~ ✅ Done
+11. ~~**#32** Control/Audio domain separation~~ ✅ Done
+12. ~~**#17**, **#18** Directional Snapping~~ ✅ Done
 
 ---
 
@@ -102,14 +89,14 @@ V3 Synth (complete):
 #22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #28 ✅ · #30 ✅
 #12 (Save/Load) ✅ Done
 
-V3 Canvas Structure:
-#19 ──► #15 ──► #16 ──► #32 ✅ ──► #17 ✅, #18 (backlog)
+V3 Canvas Structure (complete):
+#19 ✅ · #15 ✅ · #16 ✅ · #32 ✅ · #17 ✅ · #18 ✅
 
 V4 Bug Fixes:
 #33 (Bug Omnibus — snap/audio/drum-adsr/text-select)
 
 V4 Features (do not action):
-#23 (Filter) · #26 (Presets) · #29 (Mixer) · #31 (Drum Input)
+#23 (Filter) · #29 (Mixer) · #31 (Drum Input)
 ```
 
 ---

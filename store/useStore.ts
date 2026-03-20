@@ -436,21 +436,36 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
             if (clusterIds.has(other.id)) continue;
             if (other.type === 'tempo' || other.type === 'speaker') continue;
 
-            const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
-            if (axis !== 'horizontal') continue;
-
             const oDims = getDims(other.type);
-            const gapRight = other.position.x - (currentNode.position.x + cDims.w);
-            const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
-            const horizGap = Math.max(gapRight, gapLeft);
+            const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
 
-            const cCentreY = currentNode.position.y + cDims.h / 2;
-            const oCentreY = other.position.y + oDims.h / 2;
-            const vertDist = Math.abs(cCentreY - oCentreY);
+            if (axis === 'horizontal') {
+                const gapRight = other.position.x - (currentNode.position.x + cDims.w);
+                const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
+                const horizGap = Math.max(gapRight, gapLeft);
 
-            if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
-                clusterIds.add(other.id);
-                queue.push(other.id);
+                const cCentreY = currentNode.position.y + cDims.h / 2;
+                const oCentreY = other.position.y + oDims.h / 2;
+                const vertDist = Math.abs(cCentreY - oCentreY);
+
+                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                    clusterIds.add(other.id);
+                    queue.push(other.id);
+                }
+            } else if (axis === 'vertical') {
+                const oDims = getDims(other.type);
+                const gapBelow = other.position.y - (currentNode.position.y + cDims.h);
+                const gapAbove = currentNode.position.y - (other.position.y + oDims.h);
+                const vGap = Math.max(gapBelow, gapAbove);
+
+                const cCentreX = currentNode.position.x + cDims.w / 2;
+                const oCentreX = other.position.x + oDims.w / 2;
+                const hDist = Math.abs(cCentreX - oCentreX);
+
+                if (vGap >= 0 && vGap <= ADJ_VERT_THRESHOLD && hDist <= ADJ_X_THRESHOLD) {
+                    clusterIds.add(other.id);
+                    queue.push(other.id);
+                }
             }
         }
     }
@@ -481,6 +496,8 @@ const getClusterBoundaries = (clusterIds: Set<string>, allNodes: AppNode[]) => {
 const ADJ_TOUCH_THRESHOLD = 48;
 // Y-centres must be within this many px of each other to count as adjacent
 const ADJ_Y_THRESHOLD = 100;
+const ADJ_VERT_THRESHOLD = 48;  // max vertical gap between stacked audio nodes (px)
+const ADJ_X_THRESHOLD = 100;    // max horizontal centre misalignment for vertical snapping (px)
 
 const AUTO_EDGE_PREFIX = 'auto-';
 const DRUM_PAD_HIGHLIGHT_MS = 120;
@@ -879,22 +896,35 @@ export const useStore = create<AppState>((set, get) => ({
                         nodes.forEach(n => {
                             if (n.data.isLocked && !lockedCluster.has(n.id)) {
                                 const axis = getNodeAdjacencyAxis(currentNode.type, n.type);
-                                if (axis !== 'horizontal') return;
-
                                 const nDims = getDims(n.type);
 
-                                // Distance check (same as recalculateAdjacency)
-                                const gapRight = n.position.x - (currentNode.position.x + curDims.w);
-                                const gapLeft = currentNode.position.x - (n.position.x + nDims.w);
-                                const horizGap = Math.max(gapRight, gapLeft);
+                                if (axis === 'horizontal') {
+                                    // Distance check (same as recalculateAdjacency)
+                                    const gapRight = n.position.x - (currentNode.position.x + curDims.w);
+                                    const gapLeft = currentNode.position.x - (n.position.x + nDims.w);
+                                    const horizGap = Math.max(gapRight, gapLeft);
 
-                                const curCentreY = currentNode.position.y + curDims.h / 2;
-                                const nCentreY = n.position.y + nDims.h / 2;
-                                const vertDist = Math.abs(curCentreY - nCentreY);
+                                    const curCentreY = currentNode.position.y + curDims.h / 2;
+                                    const nCentreY = n.position.y + nDims.h / 2;
+                                    const vertDist = Math.abs(curCentreY - nCentreY);
 
-                                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
-                                    lockedCluster.add(n.id);
-                                    queue.push(n.id);
+                                    if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                                        lockedCluster.add(n.id);
+                                        queue.push(n.id);
+                                    }
+                                } else if (axis === 'vertical') {
+                                    const gapBelow = n.position.y - (currentNode.position.y + curDims.h);
+                                    const gapAbove = currentNode.position.y - (n.position.y + nDims.h);
+                                    const vGap = Math.max(gapBelow, gapAbove);
+
+                                    const cCentreX = currentNode.position.x + curDims.w / 2;
+                                    const nCentreX = n.position.x + nDims.w / 2;
+                                    const hDist = Math.abs(cCentreX - nCentreX);
+
+                                    if (vGap >= 0 && vGap <= ADJ_VERT_THRESHOLD && hDist <= ADJ_X_THRESHOLD) {
+                                        lockedCluster.add(n.id);
+                                        queue.push(n.id);
+                                    }
                                 }
                             }
                         });
@@ -1999,9 +2029,14 @@ export const useStore = create<AppState>((set, get) => ({
                 const bCentreY = b.position.y + bDims.h / 2;
                 const vertDist = Math.abs(aCentreY - bCentreY);
 
-                if (horizGap < 0 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) {
-                    continue;
-                }
+                // Vertical gap metrics
+                const gapBelow = b.position.y - (a.position.y + aDims.h);
+                const gapAbove = a.position.y - (b.position.y + bDims.h);
+                const vertGap = Math.max(gapBelow, gapAbove);
+
+                const aCentreX = a.position.x + aDims.w / 2;
+                const bCentreX = b.position.x + bDims.w / 2;
+                const horizDist = Math.abs(aCentreX - bCentreX);
 
                 // Determine source/target by signal flow order
                 const leftNode = a.position.x <= b.position.x ? a : b;
@@ -2018,12 +2053,18 @@ export const useStore = create<AppState>((set, get) => ({
                 if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) continue;
 
                 const isControlPair = CONTROL_WIRE_PAIRS.has(pairKey);
-                // For now only wire control pairs — audio vertical pairs handled by #18
-                if (!isControlPair) continue;
 
-                const kind = 'control';
-                const sourceHandle = CONTROL_OUTPUT_HANDLE_ID;
-                const targetHandle = CONTROL_INPUT_HANDLE_ID;
+                if (isControlPair) {
+                    // Horizontal check
+                    if (horizGap < 0 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) continue;
+                } else {
+                    // Vertical check (audio domain)
+                    if (vertGap < 0 || vertGap > ADJ_VERT_THRESHOLD || horizDist > ADJ_X_THRESHOLD) continue;
+                }
+
+                const kind = isControlPair ? 'control' : 'audio';
+                const sourceHandle = isControlPair ? CONTROL_OUTPUT_HANDLE_ID : AUDIO_OUTPUT_HANDLE_ID;
+                const targetHandle = isControlPair ? CONTROL_INPUT_HANDLE_ID : AUDIO_INPUT_HANDLE_ID;
 
                 // Don't create an auto-edge if a manual edge already exists for this pair
                 const manualExists = edges.some(
@@ -2093,13 +2134,26 @@ export const useStore = create<AppState>((set, get) => ({
                 const bCentreY = b.position.y + bDims.h / 2;
                 const vertDist = Math.abs(aCentreY - bCentreY);
 
-                const axis = getNodeAdjacencyAxis(a.type, b.type);
-                if (axis !== 'horizontal') continue; // only control horizontal for now
+                const gapBelow = b.position.y - (a.position.y + aDims.h);
+                const gapAbove = a.position.y - (b.position.y + bDims.h);
+                const vertGap = Math.max(gapBelow, gapAbove);
 
-                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
-                    adjacent.add(a.id);
-                    adjacent.add(b.id);
+                const aCentreX = a.position.x + aDims.w / 2;
+                const bCentreX = b.position.x + bDims.w / 2;
+                const horizDist = Math.abs(aCentreX - bCentreX);
+
+                const axis = getNodeAdjacencyAxis(a.type, b.type);
+                if (axis === null) continue;
+
+                if (axis === 'horizontal') {
+                    if (horizGap < 0 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) continue;
+                } else {
+                    // vertical
+                    if (vertGap < 0 || vertGap > ADJ_VERT_THRESHOLD || horizDist > ADJ_X_THRESHOLD) continue;
                 }
+
+                adjacent.add(a.id);
+                adjacent.add(b.id);
             }
         }
 
@@ -2132,20 +2186,34 @@ export const useStore = create<AppState>((set, get) => ({
                 if (other.type === 'tempo' || other.type === 'speaker') continue;
 
                 const oDims = getDims(other.type);
-                const gapRight = other.position.x - (currentNode.position.x + cDims.w);
-                const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
-                const horizGap = Math.max(gapRight, gapLeft);
-
-                const cCentreY = currentNode.position.y + cDims.h / 2;
-                const oCentreY = other.position.y + oDims.h / 2;
-                const vertDist = Math.abs(cCentreY - oCentreY);
-
                 const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
-                if (axis !== 'horizontal') continue;
 
-                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
-                    clusterIds.add(other.id);
-                    queue.push(other.id);
+                if (axis === 'horizontal') {
+                    const gapRight = other.position.x - (currentNode.position.x + cDims.w);
+                    const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
+                    const horizGap = Math.max(gapRight, gapLeft);
+
+                    const cCentreY = currentNode.position.y + cDims.h / 2;
+                    const oCentreY = other.position.y + oDims.h / 2;
+                    const vertDist = Math.abs(cCentreY - oCentreY);
+
+                    if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                        clusterIds.add(other.id);
+                        queue.push(other.id);
+                    }
+                } else if (axis === 'vertical') {
+                    const gapBelow = other.position.y - (currentNode.position.y + cDims.h);
+                    const gapAbove = currentNode.position.y - (other.position.y + oDims.h);
+                    const vGap = Math.max(gapBelow, gapAbove);
+
+                    const cCentreX = currentNode.position.x + cDims.w / 2;
+                    const oCentreX = other.position.x + oDims.w / 2;
+                    const hDist = Math.abs(cCentreX - oCentreX);
+
+                    if (vGap >= 0 && vGap <= ADJ_VERT_THRESHOLD && hDist <= ADJ_X_THRESHOLD) {
+                        clusterIds.add(other.id);
+                        queue.push(other.id);
+                    }
                 }
             }
         }

@@ -40,8 +40,6 @@ Pick the next colour for any new node — each should be visually distinct from 
 
 ## Shared Structural Patterns
 
-All nodes must follow these patterns. Do not deviate without a strong reason.
-
 ### Node Container
 ```tsx
 <div className={`bg-slate-800 border-2 border-[COLOUR] rounded-2xl p-3 shadow-2xl text-white w-[WIDTH] flex flex-col transition-all hover:shadow-[COLOUR]/20 group relative${
@@ -49,89 +47,35 @@ All nodes must follow these patterns. Do not deviate without a strong reason.
 }`}>
 ```
 - Background is always `bg-slate-800`
-- Adjacency glow is always `ring-cyan-400` — never change this
+- Adjacency glow is always `ring-cyan-400`
 
-### Delete Button (top-left of every node)
+### Locking System (v3 New)
+Nodes within a snapped group can be locked to move logically as one object.
 ```tsx
-<button
-    className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-[COLOUR] hover:text-white hover:border-[COLOUR-lighter] flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
-    style={{ boxShadow: `0 0 6px rgba([COLOUR_RGB], 0.3)` }}
-    onClick={(e) => { e.stopPropagation(); removeNodeAndCleanUp(id); }}
->
-    ×
-</button>
+<LockButton id={id} isAdjacent={isAdjacent} accentColor="[COLOUR]" />
 ```
+- The `LockButton` component handles state sync across snapped clusters.
+- When `isLocked` is true, dragging any node in the cluster moves all of them.
 
-### Node Header Label
-```tsx
-<div className="text-[10px] font-black uppercase text-[COLOUR] tracking-[0.2em]">
-    NODE NAME
-</div>
-```
+### Handles & Routing Constraints
+V3 introduced directional routing rules based on handle IDs.
+- **Control Path**: Uses `Position.Left` (`control-in`) and `Position.Right` (`control-out`).
+- **Audio Path**: Uses `Position.Top` (`audio-in`) and `Position.Bottom` (`audio-out`).
 
-### Parameter Labels
+**Conditional Handle Rendering** (Locked Groups):
+To prevent mid-chain connections in locked groups, only the entry and exit points should render handles.
 ```tsx
-<label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Param Name</label>
-```
-Always `text-slate-400`. Never the node accent colour.
-
-### Sliders
-```tsx
-<input
-    type="range"
-    className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-[COLOUR]"
-/>
-```
-Track is always `h-1 bg-slate-800`. Thumb uses `accent-[COLOUR]`.
-
-### Value Readouts
-```tsx
-<span className="text-[10px] font-mono text-[COLOUR] font-bold">{val}%</span>
-```
-Readouts use the node accent colour.
-
-### "Not Connected" Indicator
-```tsx
-{isUnconnected && (
-    <div className="mt-3 flex items-center gap-1.5 opacity-40 text-[COLOUR]">
-        <div className="flex-1 h-px bg-current" />
-        <span className="text-[9px] font-bold uppercase tracking-widest">not connected</span>
-        <div className="flex-1 h-px bg-current" />
-    </div>
+{(!nodeData?.isLocked || nodeData?.isEntry) && (
+    <Handle type="target" id="[CONTROL/AUDIO]_INPUT_ID" position={[Left/Top]} ... />
 )}
 ```
-Always `opacity-40` in the node accent colour.
 
-### Handles
-```tsx
-<Handle
-    type="target"
-    id={AUDIO_INPUT_HANDLE_ID}
-    position={Position.Top}
-    className="w-4 h-4 border-4 border-slate-900 !-top-2 hover:scale-125 transition-all bg-[COLOUR]"
-/>
-<Handle
-    type="source"
-    id={AUDIO_OUTPUT_HANDLE_ID}
-    position={Position.Bottom}
-    className="w-4 h-4 border-4 border-slate-900 !-bottom-2 hover:scale-125 transition-all bg-[COLOUR]"
-/>
-```
-Handle border is always `border-slate-900`. Size always `w-4 h-4`. Colour matches node accent.
-
-**Exception — Generator top input handle:** uses `bg-yellow-400` (Controller family colour) to signal it receives Controller/note events.
-
-### Dropdowns / Selects
-```tsx
-<select className="nodrag bg-slate-800 text-[10px] text-[COLOUR] border-none outline-none rounded p-1">
-```
-Background always `bg-slate-800`. Text in node accent colour.
+### Delete Button
+Always in the top-left of every node. Hoover state uses the node accent colour.
 
 ---
 
 ## Node Width Reference
-
-Standard widths used across node types. Keep nodes compact — these are the current values:
 
 | Node | Width |
 |---|---|
@@ -141,25 +85,11 @@ Standard widths used across node types. Keep nodes compact — these are the cur
 | Effect / Chord / ADSR / Speaker | `w-56` (224px) |
 | Tempo | `w-64` (256px) |
 
-New signal-chain nodes should default to `w-56` unless they need more space for controls.
-
 ---
 
 ## Menu Colour Coordination
 
-Each contextual menu's draggable pill entries should match the node colour of the items they spawn:
-
-- **Controllers menu** (left): yellow, white, amber
-- **Signals menu** (top): red, orange, fuchsia + any new signal nodes
+- **Controllers menu** (left): yellow, white, amber, sky
+- **Signals menu** (top): red, orange, fuchsia, violet, teal, pink
 - **Global menu** (right): indigo, emerald
-- **System menu** (bottom): neutral/slate
-
----
-
-## Rules for New Nodes
-
-1. **Pick a unique colour** from the Available list above and mark it as taken here
-2. **Follow the structural patterns** above — don't invent new layout conventions
-3. **Update `NODE_DIMS`** in `useStore.ts` with the correct pixel dimensions
-4. **Update this file** — add the new node to the In Use table and remove the colour from Available
-5. **Update `AGENTS.md`** if the node represents a significant architectural addition
+- **System menu** (bottom): neutral/slate (New, Save, Load, Presets, Undo, Redo)
