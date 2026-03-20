@@ -408,6 +408,17 @@ const DEFAULT_DIMS = { w: 224, h: 220 };
 const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
 // Cluster / Locking Helpers
+export const getNodeAdjacencyAxis = (
+    typeA: AudioNodeType,
+    typeB: AudioNodeType
+): 'horizontal' | 'vertical' | null => {
+    const ab = `${typeA}->${typeB}`;
+    const ba = `${typeB}->${typeA}`;
+    if (CONTROL_WIRE_PAIRS.has(ab) || CONTROL_WIRE_PAIRS.has(ba)) return 'horizontal';
+    if (VALID_AUTO_WIRE_PAIRS.has(ab) || VALID_AUTO_WIRE_PAIRS.has(ba)) return 'vertical';
+    return null;
+};
+
 const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
     const clusterIds = new Set<string>();
     const queue = [startNodeId];
@@ -423,6 +434,9 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
         for (const other of allNodes) {
             if (clusterIds.has(other.id)) continue;
             if (other.type === 'tempo' || other.type === 'speaker') continue;
+
+            const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
+            if (axis !== 'horizontal') continue;
 
             const oDims = getDims(other.type);
             const gapRight = other.position.x - (currentNode.position.x + cDims.w);
@@ -486,7 +500,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     speaker: 3,
 };
 
-const VALID_AUTO_WIRE_PAIRS = new Set([
+export const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->chord',
     'controller->adsr',
     'controller->generator',
@@ -525,7 +539,7 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'visualiser->visualiser',
 ]);
 
-const CONTROL_WIRE_PAIRS = new Set([
+export const CONTROL_WIRE_PAIRS = new Set([
     'controller->chord',
     'controller->adsr',
     'controller->generator',
@@ -863,6 +877,9 @@ export const useStore = create<AppState>((set, get) => ({
 
                         nodes.forEach(n => {
                             if (n.data.isLocked && !lockedCluster.has(n.id)) {
+                                const axis = getNodeAdjacencyAxis(currentNode.type, n.type);
+                                if (axis !== 'horizontal') return;
+
                                 const nDims = getDims(n.type);
 
                                 // Distance check (same as recalculateAdjacency)
@@ -1999,9 +2016,13 @@ export const useStore = create<AppState>((set, get) => ({
                 const pairKey = `${sourceNode.type}->${targetNode.type}`;
                 if (!VALID_AUTO_WIRE_PAIRS.has(pairKey)) continue;
 
-                const kind = CONTROL_WIRE_PAIRS.has(pairKey) ? 'control' : 'audio';
-                const sourceHandle = kind === 'control' ? CONTROL_OUTPUT_HANDLE_ID : AUDIO_OUTPUT_HANDLE_ID;
-                const targetHandle = kind === 'control' ? CONTROL_INPUT_HANDLE_ID : AUDIO_INPUT_HANDLE_ID;
+                const isControlPair = CONTROL_WIRE_PAIRS.has(pairKey);
+                // For now only wire control pairs — audio vertical pairs handled by #18
+                if (!isControlPair) continue;
+
+                const kind = 'control';
+                const sourceHandle = CONTROL_OUTPUT_HANDLE_ID;
+                const targetHandle = CONTROL_INPUT_HANDLE_ID;
 
                 // Don't create an auto-edge if a manual edge already exists for this pair
                 const manualExists = edges.some(
@@ -2071,6 +2092,9 @@ export const useStore = create<AppState>((set, get) => ({
                 const bCentreY = b.position.y + bDims.h / 2;
                 const vertDist = Math.abs(aCentreY - bCentreY);
 
+                const axis = getNodeAdjacencyAxis(a.type, b.type);
+                if (axis !== 'horizontal') continue; // only control horizontal for now
+
                 if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
                     adjacent.add(a.id);
                     adjacent.add(b.id);
@@ -2114,6 +2138,9 @@ export const useStore = create<AppState>((set, get) => ({
                 const cCentreY = currentNode.position.y + cDims.h / 2;
                 const oCentreY = other.position.y + oDims.h / 2;
                 const vertDist = Math.abs(cCentreY - oCentreY);
+
+                const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
+                if (axis !== 'horizontal') continue;
 
                 if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
                     clusterIds.add(other.id);

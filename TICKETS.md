@@ -50,7 +50,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#15](https://github.com/jball348-svg/Bloop/issues/15) | Snapped Module Locking — Move Group as One Object | ✅ Closed |
 | [#16](https://github.com/jball348-svg/Bloop/issues/16) | Locked Groups Expose Single Input/Output Only | ✅ Closed |
 | [#32](https://github.com/jball348-svg/Bloop/issues/32) | Control/Audio Signal Domain Separation — Architectural Wiring Overhaul | ✅ Closed |
-| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | 🟡 Backlog |
+| [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | ✅ Closed |
 | [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | 🟡 Backlog |
 | [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul — Controllers Horizontal, Signal Vertical | ⛔ Superseded by #32 |
 
@@ -88,7 +88,7 @@ For canvas structure work, order matters:
 2. ~~**#15** Module Locking (core)~~ ✅ Done
 3. ~~**#16**~~ ✅ Done
 4. ~~**#32** Control/Audio domain separation~~ ✅ Done
-5. **#17**, **#18** in parallel (both unblocked)
+5. ~~**#17**~~, **#18** (Both unblocked)
 
 ---
 

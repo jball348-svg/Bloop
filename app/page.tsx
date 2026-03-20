@@ -15,6 +15,9 @@ import {
     useStore,
     AudioNodeType,
     DEFAULT_TRANSPORT_BPM,
+    CONTROL_WIRE_PAIRS,
+    VALID_AUTO_WIRE_PAIRS,
+    getNodeAdjacencyAxis,
 } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
@@ -263,10 +266,16 @@ function BloopCanvasInner() {
                         const minOverlapArea = 100; // Minimum 10x10 pixels of overlap
                         if (overlapArea < minOverlapArea) continue;
 
-                        // Snap based on where the dragged node's centre is relative to
-                        // the obstacle's centre — this gives the intuitive lego-click feel.
-                        // If dragged centre is to the RIGHT of obstacle centre → go right.
-                        // If dragged centre is to the LEFT  of obstacle centre → go left.
+                        // Determine snap axis for this pair
+                        const axis = getNodeAdjacencyAxis(
+                            draggedNode.type as AudioNodeType,
+                            n.type as AudioNodeType
+                        );
+
+                        // For now, only handle horizontal (control domain) snapping
+                        // Vertical audio snapping is added in #18
+                        if (axis !== 'horizontal') continue;
+
                         const draggedCentreX = x + draggedDims.w / 2;
                         const nCentreX = n.position.x + nDims.w / 2;
 
