@@ -47,9 +47,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 | # | Title | Status |
 |---|---|---|
-| [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection | 🔵 V4 Backlog |
+| [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection, N→S gaps | 🔵 V4 Backlog |
+| [#34](https://github.com/jball348-svg/Bloop/issues/34) | V4 Visual Polish — Cable Colours & Snapped-Node Glow Theming | 🔵 V4 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
-| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | ✅ Closed (v3) |
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
 
@@ -60,6 +60,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#4](https://github.com/jball348-svg/Bloop/issues/4) | V3 Backlog Omnibus (superseded by #22–#29) | ✅ Closed |
 | [#14](https://github.com/jball348-svg/Bloop/issues/14) | Grouped Module Locking (superseded by #15–#20) | ✅ Closed |
 | [#20](https://github.com/jball348-svg/Bloop/issues/20) | Directional Wiring Overhaul (superseded by #32) | ⛔ Superseded |
+| [#26](https://github.com/jball348-svg/Bloop/issues/26) | Preset Patches — Load Pre-Built Graphs from System Menu | ✅ Closed (absorbed into #12) |
 
 ---
 
@@ -74,9 +75,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 7. ~~**#12** Save/Load~~ ✅ Done
 8. ~~**#19** Exclude globals first~~ ✅ Done
 9. ~~**#15** Module Locking (core)~~ ✅ Done
-10. ~~**#16** Handle Filter~~ ✅ Done
+10. ~~**#16** Handle filter~~ ✅ Done
 11. ~~**#32** Control/Audio domain separation~~ ✅ Done
-12. ~~**#17**, **#18** Directional Snapping~~ ✅ Done
+12. ~~**#17**, **#18** Directional snapping~~ ✅ Done
 
 ---
 
@@ -87,13 +88,17 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 V3 Synth (complete):
 #22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #28 ✅ · #30 ✅
-#12 (Save/Load) ✅ Done
+#12 (Save/Load) ✅
 
 V3 Canvas Structure (complete):
 #19 ✅ · #15 ✅ · #16 ✅ · #32 ✅ · #17 ✅ · #18 ✅
 
 V4 Bug Fixes:
-#33 (Bug Omnibus — snap/audio/drum-adsr/text-select)
+#33 (Bug Omnibus — snap to controller/keys, noise switch, drum ADSR,
+      system audio conflict, text selection bleed, N→S gap & missed snap)
+
+V4 Polish:
+#34 (Cable colours: control→neon green; glow ring follows domain colour)
 
 V4 Features (do not action):
 #23 (Filter) · #29 (Mixer) · #31 (Drum Input)
@@ -104,7 +109,7 @@ V4 Features (do not action):
 ## How to Update This File
 
 When you close a ticket:
-1. Change its status in the table from `🟡 Backlog` to `✅ Closed`
+1. Change its status in the table from `🔵 V4 Backlog` / `🟡 Backlog` to `✅ Closed`
 2. Strike through its entry in the Work Order section using `~~text~~`
 3. Commit this file in the same PR as the work
 
