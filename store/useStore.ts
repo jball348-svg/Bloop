@@ -512,6 +512,8 @@ const VALID_AUTO_WIRE_PAIRS = new Set([
     'generator->effect',
     'drum->effect',
     'effect->effect',
+    'effect->unison',
+    'effect->detune',
     'generator->visualiser',
     'drum->visualiser',
     'effect->visualiser',
