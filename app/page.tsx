@@ -40,13 +40,14 @@ import SystemMenu from '@/components/SystemMenu';
 // Actual rendered widths from Tailwind classes on each component:
 //   ControllerNode → w-72 = 288px
 //   KeysNode → w-72 = 288px
-//   GeneratorNode / EffectNode / SpeakerNode / AdsrNode → w-56 = 224px
+//   GeneratorNode → w-60 = 240px
+//   EffectNode / SpeakerNode / AdsrNode / ChordNode → w-56 = 224px
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys:        { w: 288, h: 320 },
     chord:      { w: 224, h: 240 },
     adsr:       { w: 224, h: 340 },
-    generator:  { w: 224, h: 220 },
+    generator:  { w: 240, h: 220 },
     drum:       { w: 320, h: 360 },
     effect:     { w: 224, h: 260 },
     unison:     { w: 224, h: 220 },
@@ -276,18 +277,23 @@ function BloopCanvasInner() {
                         // Vertical audio snapping is added in #18
                         if (axis !== 'horizontal') continue;
 
-                        const draggedCentreX = x + draggedDims.w / 2;
-                        const nCentreX = n.position.x + nDims.w / 2;
+                        // Use signal flow direction to determine correct left/right placement.
+                        // Centre-based logic caused upstream nodes (e.g. arpeggiator) to snap
+                        // to the wrong side when dragged from the right. CONTROL_WIRE_PAIRS
+                        // encodes which node is upstream, so we use that instead.
+                        const draggedType = draggedNode.type as AudioNodeType;
+                        const nType = n.type as AudioNodeType;
+                        const draggedIsUpstream = CONTROL_WIRE_PAIRS.has(`${draggedType}->${nType}`);
 
-                        if (draggedCentreX >= nCentreX) {
-                            // Snap dragged node's LEFT edge flush with obstacle's RIGHT edge
-                            x = snap(n.position.x + nDims.w);
-                        } else {
-                            // Snap dragged node's RIGHT edge flush with obstacle's LEFT edge
+                        if (draggedIsUpstream) {
+                            // Dragged node feeds into n → it belongs to the LEFT of n
                             x = snap(n.position.x - draggedDims.w);
+                        } else {
+                            // n feeds into dragged node → it belongs to the RIGHT of n
+                            x = snap(n.position.x + nDims.w);
                         }
 
-                        // Also align Y so nodes sit on the same row — the lego row feel
+                        // Align Y so nodes sit on the same row
                         y = n.position.y;
 
                         moved = true;

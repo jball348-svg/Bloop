@@ -390,12 +390,13 @@ const applyAdsrToDownstreamGenerators = (
 };
 
 // Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
+// GeneratorNode uses w-60 = 240px; most others use w-56 = 224px
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys: { w: 288, h: 320 },
     chord: { w: 224, h: 240 },
     adsr: { w: 224, h: 340 },
-    generator: { w: 224, h: 220 },
+    generator: { w: 240, h: 220 },
     drum: { w: 320, h: 360 },
     effect: { w: 224, h: 260 },
     unison: { w: 224, h: 220 },
