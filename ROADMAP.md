@@ -24,7 +24,7 @@ Bloop v3 shipped:
 |---|---|---|
 | [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection, N→S gaps | 🔵 Backlog |
 | [#34](https://github.com/jball348-svg/Bloop/issues/34) | V4 Visual Polish — Cable Colours & Snapped-Node Glow Theming | 🔵 Backlog |
-| [#35](https://github.com/jball348-svg/Bloop/issues/35) | Node Packing — Compress Locked Groups into Single Macro-Nodes | 🔵 Backlog |
+| [#35](https://github.com/jball348-svg/Bloop/issues/35) | Node Packing — Compress Locked Groups into Single Macro-Nodes | ✅ Closed |
 | [#36](https://github.com/jball348-svg/Bloop/issues/36) | Vercel Pipeline Setup & Prototype Deployment | 🔵 Backlog |
 | [#37](https://github.com/jball348-svg/Bloop/issues/37) | Auto-Resizing Canvas Bounds & Infinite Pan | 🔵 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 Do not action yet |
@@ -32,7 +32,7 @@ Bloop v3 shipped:
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — ADSR Controller Input Handle | 🔵 Do not action yet |
 
 ### v4 Highlights
-- **Node Packing (#35):** The flagship v4 feature. Users build a patch, lock it, then "Pack" it into a single fuchsia-coloured Macro Node with an editable name. Unpacking restores the full locked cluster. Audio routing is preserved throughout.
+- **Node Packing (#35):** ✅ Complete. Users build a patch, lock it, then "Pack" it into a single fuchsia-coloured Macro Node with an editable name. Unpacking restores the full locked cluster. Audio routing is preserved throughout.
 - **Bug Omnibus (#33):** A comprehensive fix pass for known snapping, audio engine, and UX issues.
 - **Vercel Deployment (#36):** Live URL for testing and sharing.
 - **Infinite Canvas (#37):** Remove hard viewport bounds so large patches feel unrestricted.
@@ -134,7 +134,7 @@ Bloop v3 shipped:
 ## Dependency Graph (v4 → v10)
 
 ```
-v4: #33 (bugs) → #34 (polish) → #35 (packing) → #36 (deploy) → #37 (canvas)
+v4: #33 (bugs) → #34 (polish) → ~~#35 (packing)~~ ✅ → #36 (deploy) → #37 (canvas)
        ↓
 v5: #38 (Pulse) → #39 (Sequencer) → #40 (Signal Flow Vis)
        ↓
