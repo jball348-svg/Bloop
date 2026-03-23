@@ -81,6 +81,10 @@ Note: `MediaRecorder` natively produces WebM/Opus on most browsers, not WAV. Thi
 
 Add recording state to the store: `isRecording: boolean`, `startRecording(): void`, `stopRecording(): void`.
 
+### Milestone 4 — Review missed tickets from V4 (#23/26/29/31)
+
+It appears a number of tickets and features were missed in the v4 implementation. Review the v4 tickets and implement any missing functionality.
+
 ## Concrete Steps
 
     npm run dev
