@@ -43,15 +43,64 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | ✅ Closed |
 | [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | ✅ Closed |
 
-### V4 — Backlog
+### V4 — Backlog 🔵
 
 | # | Title | Status |
 |---|---|---|
 | [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection, N→S gaps | 🔵 V4 Backlog |
 | [#34](https://github.com/jball348-svg/Bloop/issues/34) | V4 Visual Polish — Cable Colours & Snapped-Node Glow Theming | 🔵 V4 Backlog |
+| [#35](https://github.com/jball348-svg/Bloop/issues/35) | Node Packing — Compress Locked Groups into Single Macro-Nodes | 🔵 V4 Backlog |
+| [#36](https://github.com/jball348-svg/Bloop/issues/36) | Vercel Pipeline Setup & Prototype Deployment | 🔵 V4 Backlog |
+| [#37](https://github.com/jball348-svg/Bloop/issues/37) | Auto-Resizing Canvas Bounds & Infinite Pan | 🔵 V4 Backlog |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
+
+### V5 — Roadmap (do not action until v4 complete)
+
+| # | Title | Status |
+|---|---|---|
+| [#38](https://github.com/jball348-svg/Bloop/issues/38) | The "Bloop" Pulse Node — Discrete Event Trigger (Bang-style) | 🟣 V5 Roadmap |
+| [#39](https://github.com/jball348-svg/Bloop/issues/39) | Moog-Style Modular Step Sequencer | 🟣 V5 Roadmap |
+| [#40](https://github.com/jball348-svg/Bloop/issues/40) | Signal Flow Visualization — Animated Cable Pulses | 🟣 V5 Roadmap |
+
+### V6 — Roadmap
+
+| # | Title | Status |
+|---|---|---|
+| [#41](https://github.com/jball348-svg/Bloop/issues/41) | Music Theory Engine — Quantizer / Scale Enforcer Node | 🟣 V6 Roadmap |
+| [#42](https://github.com/jball348-svg/Bloop/issues/42) | Node Menu Sub-divisions — Generators, Modulators, Controllers, Triggers | 🟣 V6 Roadmap |
+| [#43](https://github.com/jball348-svg/Bloop/issues/43) | XY Mood Pad — Intuitive Non-Musical Controller | 🟣 V6 Roadmap |
+
+### V7 — Roadmap
+
+| # | Title | Status |
+|---|---|---|
+| [#44](https://github.com/jball348-svg/Bloop/issues/44) | Sampler Node — Audio File Import & Playback | 🟣 V7 Roadmap |
+| [#45](https://github.com/jball348-svg/Bloop/issues/45) | Sample Manipulation — Pitch Shift, Time Stretch & Reverse | 🟣 V7 Roadmap |
+| [#46](https://github.com/jball348-svg/Bloop/issues/46) | Advanced Drum Machine — Sample-Backed 16-Step Sequencer | 🟣 V7 Roadmap |
+
+### V8 — Roadmap
+
+| # | Title | Status |
+|---|---|---|
+| [#47](https://github.com/jball348-svg/Bloop/issues/47) | MIDI Input — Connect External Hardware via Web MIDI API | 🟣 V8 Roadmap |
+| [#48](https://github.com/jball348-svg/Bloop/issues/48) | Live Audio Input — Microphone & USB Interface via getUserMedia | 🟣 V8 Roadmap |
+| [#49](https://github.com/jball348-svg/Bloop/issues/49) | Session Export — Audio Recording (WAV) & MIDI File Export | 🟣 V8 Roadmap |
+
+### V9 — Roadmap
+
+| # | Title | Status |
+|---|---|---|
+| [#50](https://github.com/jball348-svg/Bloop/issues/50) | Interactive Onboarding — GIF Tutorial Intro Screen | 🟣 V9 Roadmap |
+| [#51](https://github.com/jball348-svg/Bloop/issues/51) | Theming Engine — Light/Dark/System Mode & User Colour Customisation | 🟣 V9 Roadmap |
+| [#52](https://github.com/jball348-svg/Bloop/issues/52) | Expanded Presets Library & Advanced Visualiser Modes | 🟣 V9 Roadmap |
+
+### V10 — Roadmap
+
+| # | Title | Status |
+|---|---|---|
+| [#53](https://github.com/jball348-svg/Bloop/issues/53) | Campaign Mode — Gamified Synthesis Puzzles with Reward System | 🟣 V10 Roadmap |
 
 ### Superseded / Closed
 
@@ -64,44 +113,45 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ---
 
-## V3 Recommended Work Order
+## V4 Recommended Work Order
 
-1. ~~**#27** Undo/Redo~~ ✅ Done
-2. ~~**#22** ADSR~~ ✅ Done
-3. ~~**#24** Noise Generator~~ ✅ Done
-4. ~~**#30** Keys Controller~~ ✅ Done
-5. ~~**#25** Unison & Detune~~ ✅ Done
-6. ~~**#28** Visualiser Node~~ ✅ Done
-7. ~~**#12** Save/Load~~ ✅ Done
-8. ~~**#19** Exclude globals first~~ ✅ Done
-9. ~~**#15** Module Locking (core)~~ ✅ Done
-10. ~~**#16** Handle filter~~ ✅ Done
-11. ~~**#32** Control/Audio domain separation~~ ✅ Done
-12. ~~**#17**, **#18** Directional snapping~~ ✅ Done
+1. **#33** Bug Omnibus (stable base first)
+2. **#34** Visual Polish (cable colours & glow)
+3. **#35** Node Packing (flagship v4 feature)
+4. **#36** Vercel Deployment
+5. **#37** Auto-Resizing Canvas
+6. **#23**, **#29**, **#31** — hold until v4 core complete
 
 ---
 
 ## Dependency Graph
 
 ```
-── V2 Complete ──
+── V2 Complete ── V3 Complete ──
 
-V3 Synth (complete):
-#22 ✅ · #24 ✅ · #25 ✅ · #27 ✅ · #28 ✅ · #30 ✅
-#12 (Save/Load) ✅
+V4 Core:
+#33 (bugs) → #34 (polish) → #35 (packing) → #36 (deploy) → #37 (canvas)
 
-V3 Canvas Structure (complete):
-#19 ✅ · #15 ✅ · #16 ✅ · #32 ✅ · #17 ✅ · #18 ✅
-
-V4 Bug Fixes:
-#33 (Bug Omnibus — snap to controller/keys, noise switch, drum ADSR,
-      system audio conflict, text selection bleed, N→S gap & missed snap)
-
-V4 Polish:
-#34 (Cable colours: control→neon green; glow ring follows domain colour)
-
-V4 Features (do not action):
+V4 Deferred Features:
 #23 (Filter) · #29 (Mixer) · #31 (Drum Input)
+
+V5 (requires v4 complete):
+#38 (Pulse) → #39 (Sequencer) → #40 (Signal Flow Vis)
+
+V6 (requires v5 complete):
+#41 (Quantizer) → #42 (Sub-menus) → #43 (Mood Pad)
+
+V7 (requires v6 complete):
+#44 (Sampler) → #45 (Sample Manip) → #46 (Drum Machine Rebuild)
+
+V8 (requires v7 complete):
+#47 (MIDI In) → #48 (Audio In) → #49 (Session Export)
+
+V9 (requires v8 complete):
+#50 (Onboarding) → #51 (Theming) → #52 (Presets + Visualiser)
+
+V10 (requires v9 complete):
+#53 (Campaign Mode)
 ```
 
 ---
@@ -109,7 +159,7 @@ V4 Features (do not action):
 ## How to Update This File
 
 When you close a ticket:
-1. Change its status in the table from `🔵 V4 Backlog` / `🟡 Backlog` to `✅ Closed`
+1. Change its status in the table from `🔵 V4 Backlog` / `🟣 Vx Roadmap` to `✅ Closed`
 2. Strike through its entry in the Work Order section using `~~text~~`
 3. Commit this file in the same PR as the work
 
