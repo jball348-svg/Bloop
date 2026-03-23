@@ -14,6 +14,7 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 |---|---|---|---|---|---|
 | Arpeggiator | Controller | `border-yellow-500` | `text-yellow-400` | `bg-yellow-400` | `yellow` |
 | Keys | Controller | `border-white` | `text-white` | `bg-white` | `white` |
+| MIDI In | Controller | `border-neutral-300` | `text-neutral-200` | `bg-neutral-300` | `neutral` |
 | ADSR | Controller | `border-amber-700` | `text-amber-600` | `bg-amber-600` | `amber-700` (dark amber, distinct from yellow) |
 | Chord | Controller | `border-sky-500` | `text-sky-300` | `bg-sky-400` | `sky` |
 | Pulse | Controller | `border-lime-500` | `text-lime-400` | `bg-lime-500` | `lime` |
@@ -21,6 +22,7 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Mood Pad | Controller | `border-rose-500` | `text-rose-300` | `bg-rose-500` | `rose` |
 | Generator | Signal | `border-red-500` | `text-red-400` | `bg-red-500` | `red` |
 | Sampler | Signal | `border-stone-400` | `text-stone-200` | `bg-stone-400` | `stone` |
+| Audio In | Signal | `border-slate-400` | `text-slate-300` | `bg-slate-400` | `slate` |
 | Drum | Signal | `border-orange-500` | `text-orange-400` | `bg-orange-500` | `orange` |
 | Advanced Drums | Signal | `border-green-500` | `text-green-300` | `bg-green-500` | `green` |
 | Effect | Signal | `border-fuchsia-500` | `text-fuchsia-400` | `bg-fuchsia-500` | `fuchsia` |
@@ -56,13 +58,27 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 
 ### Node Container
 ```tsx
-<div className={`bg-slate-800 border-2 border-[COLOUR] rounded-2xl p-3 shadow-2xl text-white w-[WIDTH] flex flex-col transition-all hover:shadow-[COLOUR]/20 group relative${
+<div data-node-accent style={accentStyle} className={`themed-node bg-slate-800 border-2 border-[COLOUR] rounded-2xl p-3 shadow-2xl text-white w-[WIDTH] flex flex-col transition-all hover:shadow-[COLOUR]/20 group relative${
     isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
 }`}>
 ```
 - Background is always `bg-slate-800`
+- Every shippable node should opt into the shared accent override system via `data-node-accent`, `themed-node`, and `useNodeAccentStyle(type)`.
 - Adjacency glow for audio-domain nodes is `ring-cyan-400`
 - Adjacency glow for control-domain nodes is neon green (see Canvas Accent Language)
+
+### Theme & Accent Variables (v9)
+- Canvas, menus, and chrome now resolve through CSS variables in `app/globals.css` rather than hardcoded dark-only slate values.
+- Preferred shell variables:
+  - `--background`
+  - `--surface-primary`
+  - `--surface-secondary`
+  - `--border-primary`
+  - `--text-primary`
+  - `--text-muted`
+  - `--control-panel`
+  - `--control-panel-border`
+- Node accent overrides are limited to the approved palette in `lib/nodePalette.ts`. Campaign rewards add extra swatches, not arbitrary free-pick colours.
 
 ### Locking System (v3)
 Nodes within a snapped group can be locked to move logically as one object.
@@ -109,6 +125,9 @@ Always in the top-left of every node. Hover state uses the node accent colour.
 | Advanced Drums | `w-[27rem]` (432px) |
 | Generator | `w-60` (240px) |
 | Quantizer | `w-60` (240px) |
+| MIDI In | `w-64` (256px) |
+| Audio In | `w-64` (256px) |
+| Visualiser | `w-72` (288px) |
 | Effect / Chord / ADSR / Speaker | `w-56` (224px) |
 | Tempo | `w-64` (256px) |
 | Packed Node (Macro) | `w-56` (224px) — same as standard node |
@@ -118,9 +137,9 @@ Always in the top-left of every node. Hover state uses the node accent colour.
 ## Menu Colour Coordination
 
 - **Controllers menu** (left): yellow, white, lime, blue, amber, sky, rose
-- **Signals menu** (top): red, stone, orange, green, fuchsia, violet, teal, pink, purple
+- **Signals menu** (top): red, stone, slate, orange, green, fuchsia, violet, teal, pink, purple
 - **Global menu** (right): indigo, emerald
-- **System menu** (bottom): neutral/slate (New, Save, Load, Presets, Undo, Redo)
+- **System menu** (bottom): neutral/slate chrome plus cyan action states for Presets / Appearance / Campaign / Intro / Record
 
 ---
 

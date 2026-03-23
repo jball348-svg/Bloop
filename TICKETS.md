@@ -80,27 +80,27 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#45](https://github.com/jball348-svg/Bloop/issues/45) | Sample Manipulation — Pitch Shift, Time Stretch & Reverse | ✅ Closed |
 | [#46](https://github.com/jball348-svg/Bloop/issues/46) | Advanced Drum Machine — Sample-Backed 16-Step Sequencer | ✅ Closed |
 
-### V8 — Roadmap
+### V8 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#47](https://github.com/jball348-svg/Bloop/issues/47) | MIDI Input — Connect External Hardware via Web MIDI API | 🟣 V8 Roadmap |
-| [#48](https://github.com/jball348-svg/Bloop/issues/48) | Live Audio Input — Microphone & USB Interface via getUserMedia | 🟣 V8 Roadmap |
-| [#49](https://github.com/jball348-svg/Bloop/issues/49) | Session Export — Audio Recording (WAV) & MIDI File Export | 🟣 V8 Roadmap |
+| [#47](https://github.com/jball348-svg/Bloop/issues/47) | MIDI Input — Connect External Hardware via Web MIDI API | ✅ Closed |
+| [#48](https://github.com/jball348-svg/Bloop/issues/48) | Live Audio Input — Microphone & USB Interface via getUserMedia | ✅ Closed |
+| [#49](https://github.com/jball348-svg/Bloop/issues/49) | Session Export — Audio Recording (WAV) & MIDI File Export | ✅ Closed |
 
-### V9 — Roadmap
-
-| # | Title | Status |
-|---|---|---|
-| [#50](https://github.com/jball348-svg/Bloop/issues/50) | Interactive Onboarding — GIF Tutorial Intro Screen | 🟣 V9 Roadmap |
-| [#51](https://github.com/jball348-svg/Bloop/issues/51) | Theming Engine — Light/Dark/System Mode & User Colour Customisation | 🟣 V9 Roadmap |
-| [#52](https://github.com/jball348-svg/Bloop/issues/52) | Expanded Presets Library & Advanced Visualiser Modes | 🟣 V9 Roadmap |
-
-### V10 — Roadmap
+### V9 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#53](https://github.com/jball348-svg/Bloop/issues/53) | Campaign Mode — Gamified Synthesis Puzzles with Reward System | 🟣 V10 Roadmap |
+| [#50](https://github.com/jball348-svg/Bloop/issues/50) | Interactive Onboarding — GIF Tutorial Intro Screen | ✅ Closed |
+| [#51](https://github.com/jball348-svg/Bloop/issues/51) | Theming Engine — Light/Dark/System Mode & User Colour Customisation | ✅ Closed |
+| [#52](https://github.com/jball348-svg/Bloop/issues/52) | Expanded Presets Library & Advanced Visualiser Modes | ✅ Closed |
+
+### V10 — Complete ✅
+
+| # | Title | Status |
+|---|---|---|
+| [#53](https://github.com/jball348-svg/Bloop/issues/53) | Campaign Mode — Gamified Synthesis Puzzles with Reward System | ✅ Closed |
 
 ### Superseded / Closed
 
@@ -145,13 +145,13 @@ V7 (requires v6 complete):
 ~~#44 (Sampler)~~ ✅ → ~~#45 (Sample Manip)~~ ✅ → ~~#46 (Drum Machine Rebuild)~~ ✅
 
 V8 (requires v7 complete):
-#47 (MIDI In) → #48 (Audio In) → #49 (Session Export)
+~~#47 (MIDI In)~~ ✅ → ~~#48 (Audio In)~~ ✅ → ~~#49 (Session Export)~~ ✅
 
 V9 (requires v8 complete):
-#50 (Onboarding) → #51 (Theming) → #52 (Presets + Visualiser)
+~~#50 (Onboarding)~~ ✅ → ~~#51 (Theming)~~ ✅ → ~~#52 (Presets + Visualiser)~~ ✅
 
 V10 (requires v9 complete):
-#53 (Campaign Mode)
+~~#53 (Campaign Mode)~~ ✅
 ```
 
 ---

@@ -13,6 +13,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -53,6 +54,7 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
     const swing = nodeData?.swing ?? 0;
     const currentStep = nodeData?.currentStep ?? -1;
     const isPlaying = nodeData?.isPlaying ?? false;
+    const accentStyle = useNodeAccentStyle('advanceddrum');
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -60,7 +62,9 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
 
     return (
         <div
-            className={`bg-slate-800 border-2 border-green-500 rounded-2xl p-3 shadow-2xl text-white w-[27rem] flex flex-col transition-all hover:shadow-green-500/20 group relative select-none${
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-green-500 rounded-2xl p-3 shadow-2xl text-white w-[27rem] flex flex-col transition-all hover:shadow-green-500/20 group relative select-none${
                 isAdjacent ? getAdjacencyGlowClasses('advanceddrum') : ''
             }`}
         >

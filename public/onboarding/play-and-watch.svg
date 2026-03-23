@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" fill="none">
+  <rect width="640" height="360" rx="28" fill="#020617"/>
+  <rect x="84" y="94" width="188" height="172" rx="28" fill="#0f172a" stroke="#f8fafc" stroke-width="3"/>
+  <rect x="316" y="84" width="240" height="192" rx="28" fill="#0f172a" stroke="#ec4899" stroke-width="3"/>
+  <text x="150" y="130" fill="#f8fafc" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="800">Keys</text>
+  <text x="394" y="120" fill="#ec4899" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="800">Visualiser</text>
+  <g transform="translate(116 154)">
+    <rect width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="24" width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="48" width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="72" width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="96" width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="120" width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="144" width="20" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="48" y="-8" width="20" height="44" rx="8" fill="#111827"/>
+    <rect x="96" y="-8" width="20" height="44" rx="8" fill="#111827"/>
+    <rect x="24" y="0" width="20" height="80" rx="8" fill="#22d3ee" opacity=".28">
+      <animate attributeName="opacity" values=".18;.78;.18" dur="1.2s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="72" y="0" width="20" height="80" rx="8" fill="#22d3ee" opacity=".28">
+      <animate attributeName="opacity" values=".18;.78;.18" dur="1.2s" begin=".18s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="120" y="0" width="20" height="80" rx="8" fill="#22d3ee" opacity=".28">
+      <animate attributeName="opacity" values=".18;.78;.18" dur="1.2s" begin=".34s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+  <g transform="translate(344 146)">
+    <path d="M0 44C18 44 18 8 36 8C54 8 54 76 72 76C90 76 90 20 108 20C126 20 126 58 144 58C162 58 162 26 180 26" stroke="#ec4899" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <animate attributeName="d" values="M0 44C18 44 18 8 36 8C54 8 54 76 72 76C90 76 90 20 108 20C126 20 126 58 144 58C162 58 162 26 180 26;M0 52C18 52 18 16 36 16C54 16 54 64 72 64C90 64 90 10 108 10C126 10 126 74 144 74C162 74 162 34 180 34;M0 44C18 44 18 8 36 8C54 8 54 76 72 76C90 76 90 20 108 20C126 20 126 58 144 58C162 58 162 26 180 26" dur="1.8s" repeatCount="indefinite"/>
+    </path>
+  </g>
+</svg>

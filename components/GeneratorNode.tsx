@@ -9,6 +9,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -28,6 +29,7 @@ export default function GeneratorNode({ id }: { id: string }) {
 
     const waveShape = nodeData?.waveShape || 'sine';
     const [mix, setMix] = useState(80);
+    const accentStyle = useNodeAccentStyle('generator');
 
     const handleWaveShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         updateNodeValue(id, { waveShape: e.target.value as WaveShape });
@@ -48,9 +50,13 @@ export default function GeneratorNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-60 flex flex-col transition-all hover:shadow-red-500/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-60 flex flex-col transition-all hover:shadow-red-500/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('generator') : ''
-        }`}>
+        }`}
+        >
 
             {/* Input handle for MIDI data from Controller */}
             {(!nodeData?.isLocked || nodeData?.isEntry) && (

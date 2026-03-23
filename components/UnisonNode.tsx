@@ -7,6 +7,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -24,6 +25,7 @@ export default function UnisonNode({ id }: { id: string }) {
     const [speed, setSpeed] = useState(30);
     const [mix, setMix] = useState(50);
     const [isBypassed, setIsBypassed] = useState(false);
+    const accentStyle = useNodeAccentStyle('unison');
 
     useEffect(() => {
         updateNodeValue(id, {
@@ -57,9 +59,13 @@ export default function UnisonNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-slate-800 border-2 border-violet-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-violet-500/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-violet-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-violet-500/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('unison') : ''
-        }`}>
+        }`}
+        >
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">

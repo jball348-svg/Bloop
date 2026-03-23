@@ -12,24 +12,43 @@ GitHub issues: #47 (MIDI Input), #48 (Live Audio Input), #49 (Session Export).
 
 ## Progress
 
-- [ ] Read GitHub issues #47, #48, #49 in full
-- [ ] Milestone 1 — MIDI Input (#47): Web MIDI API, device selector, note velocity, graceful degradation
-- [ ] Milestone 2 — Live Audio Input (#48): getUserMedia, Tone.UserMedia, input gain, VU meter
-- [ ] Milestone 3 — Session Export (#49): MediaRecorder WAV capture, download trigger, recording indicator
-- [ ] npm run build and npm run lint pass
-- [ ] Update TICKETS.md, close GitHub issues #47, #48, #49
+- [x] (2026-03-23) Read GitHub issues #47, #48, and #49 and scoped the v8 pass to core acceptance only.
+- [x] (2026-03-23) Milestone 1 — MIDI Input (#47): added `midiin`, Web MIDI access, device hot-plug updates, and note velocity support through generator dispatch.
+- [x] (2026-03-23) Milestone 2 — Live Audio Input (#48): added singleton `audioin`, `Tone.UserMedia` lifecycle, gain staging, and live meter UI.
+- [x] (2026-03-23) Milestone 3 — Session Export (#49): added System menu recording controls, timer/error states, and browser download export.
+- [x] (2026-03-23) `npm run build` and `npm run lint` pass on the integrated v8/v9/v10 branch state.
+- [x] (2026-03-23) Vercel alias status re-verified as healthy; no v4 deployment repair was required during v8.
+- [ ] (2026-03-23) Update `TICKETS.md`, close GitHub issues #47, #48, and #49, and land the milestone commit.
 
 ## Surprises & Discoveries
 
-[To be filled. Web MIDI API browser support varies significantly — document findings here.]
+- Observation: `MediaRecorder` in the current browser stack produces WebM/Opus, not WAV, without adding a client-side encoder dependency.
+  Evidence: The implemented recorder path uses supported `audio/webm` / `video/webm` MIME checks and exports `.webm`.
+- Observation: keeping live input and recording state out of snapshots/load payloads mattered more than expected because undo/redo and `.bloop` patch loads otherwise resurrected dead microphone/recorder state.
+  Evidence: `audioInputChains`, recording controller state, and browser permissions now live outside the saved canvas graph.
+- Observation: the previously reported Vercel failure was stale by March 23, 2026.
+  Evidence: `npx vercel inspect bloop-ivory-rho.vercel.app` reported the production alias as `Ready`.
 
 ## Decision Log
 
-[To be filled.]
+- Decision: Export browser-native WebM recordings instead of forcing WAV in v8.
+  Rationale: Core acceptance was downloadable audio recording; adding client-side WAV encoding would have expanded scope and dependency surface.
+  Date: 2026-03-23.
+- Decision: Treat `audioin` as a singleton source node whose permission/open lifecycle is controlled entirely from the node UI.
+  Rationale: It matches the microphone permission model and avoids surprising background capture on drop/load.
+  Date: 2026-03-23.
+- Decision: Thread note velocity through both `triggerNoteOn` and `fireNoteOn`.
+  Rationale: MIDI velocity needed to survive controller routing and land at `Tone.PolySynth.triggerAttack`.
+  Date: 2026-03-23.
+- Decision: Keep deferred v4 tickets `#23`, `#29`, and `#31` deferred during v8.
+  Rationale: The user explicitly asked to keep the missed-v4 backlog out of scope unless a blocker appeared.
+  Date: 2026-03-23.
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V8 now connects Bloop to external input and output workflows without polluting the saved patch format. A user can add a MIDI In node, select a hardware device, and play generators with velocity-sensitive notes. A user can add Audio In, enable a microphone/interface, hear the signal through downstream effects, and watch a live meter. The System menu can record the master output and download a playable audio file.
+
+The implementation stayed aligned with the store-first audio architecture: live input uses `Tone.UserMedia` plus gain/meter nodes owned by `store/useStore.ts`, recording taps the master output through a `MediaStreamDestination`, and cleanup/undo/load paths dispose everything correctly.
 
 ## Context and Orientation
 

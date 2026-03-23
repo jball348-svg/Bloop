@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
@@ -8,6 +8,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import { Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
@@ -17,6 +18,7 @@ export default function ControllerNode({ id }: { id: string }) {
     const fireNoteOn = useStore((state) => state.fireNoteOn);
     const fireNoteOff = useStore((state) => state.fireNoteOff);
     const updateArpScale = useStore((state) => state.updateArpScale);
+    const updateNodeData = useStore((state) => state.updateNodeData);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
@@ -26,8 +28,8 @@ export default function ControllerNode({ id }: { id: string }) {
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const rootNote = nodeData?.rootNote || 'C';
     const scaleType = nodeData?.scaleType || 'major pentatonic';
-
-    const [isPlaying, setIsPlaying] = useState(false);
+    const isPlaying = nodeData?.isPlaying ?? false;
+    const accentStyle = useNodeAccentStyle('controller');
     const seqRef = useRef<Tone.Sequence | null>(null);
 
 
@@ -76,9 +78,13 @@ export default function ControllerNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-yellow-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-yellow-500/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-yellow-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-yellow-500/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('controller') : ''
-        }`}>
+        }`}
+        >
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
@@ -125,7 +131,7 @@ export default function ControllerNode({ id }: { id: string }) {
                             <button
                                 onClick={async () => {
                                     await Tone.start();
-                                    setIsPlaying(!isPlaying);
+                                    updateNodeData(id, { isPlaying: !isPlaying });
                                 }}
                                 className={`w-full py-2.5 rounded-xl font-bold transition-all transform active:scale-95 flex items-center justify-center gap-2 ${
                                     isPlaying

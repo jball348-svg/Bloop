@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" fill="none">
+  <rect width="640" height="360" rx="28" fill="#020617"/>
+  <rect x="96" y="54" width="210" height="252" rx="28" fill="#0f172a" stroke="#d97706" stroke-width="3"/>
+  <rect x="336" y="54" width="210" height="252" rx="28" fill="#0f172a" stroke="#d946ef" stroke-width="3"/>
+  <text x="176" y="94" fill="#d97706" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="800">ADSR</text>
+  <text x="420" y="94" fill="#d946ef" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="800">Effect</text>
+  <g>
+    <rect x="128" y="126" width="146" height="8" rx="4" fill="#334155"/>
+    <circle cx="178" cy="130" r="11" fill="#f59e0b">
+      <animate attributeName="cx" values="148;246;178" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="128" y="170" width="146" height="8" rx="4" fill="#334155"/>
+    <circle cx="216" cy="174" r="11" fill="#f59e0b">
+      <animate attributeName="cx" values="236;156;216" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <polyline points="126,250 166,120 208,172 242,172 274,252" stroke="#f59e0b" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g>
+    <rect x="368" y="126" width="146" height="8" rx="4" fill="#334155"/>
+    <circle cx="402" cy="130" r="11" fill="#d946ef">
+      <animate attributeName="cx" values="386;500;452" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="368" y="170" width="146" height="8" rx="4" fill="#334155"/>
+    <circle cx="476" cy="174" r="11" fill="#d946ef">
+      <animate attributeName="cx" values="448;402;476" dur="2.1s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="382" y="216" width="118" height="44" rx="18" fill="#d946ef" opacity=".16"/>
+    <text x="414" y="243" fill="#f5d0fe" font-family="Avenir Next, Segoe UI, sans-serif" font-size="14" font-weight="800">Wet / Depth</text>
+  </g>
+</svg>

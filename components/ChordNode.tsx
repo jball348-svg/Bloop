@@ -8,6 +8,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -22,15 +23,20 @@ export default function ChordNode({ id }: { id: string }) {
     });
 
     const quality = nodeData?.subType || DEFAULT_CHORD_QUALITY;
+    const accentStyle = useNodeAccentStyle('chord');
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('chord') : ''
-        }`}>
+        }`}
+        >
 
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle

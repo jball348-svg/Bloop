@@ -6,6 +6,7 @@ import {
     MIN_TEMPO_BPM,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 
 const clampTempoBpm = (bpm: number) =>
     Math.min(MAX_TEMPO_BPM, Math.max(MIN_TEMPO_BPM, Math.round(bpm)));
@@ -16,6 +17,7 @@ export default function TempoNode({ id }: { id: string }) {
     const bpm = useStore((state) =>
         state.nodes.find((node) => node.id === id)?.data.bpm ?? DEFAULT_TRANSPORT_BPM
     );
+    const accentStyle = useNodeAccentStyle('tempo');
 
     const [inputValue, setInputValue] = useState(String(bpm));
     const [isBeatActive, setIsBeatActive] = useState(false);
@@ -87,7 +89,11 @@ export default function TempoNode({ id }: { id: string }) {
     };
 
     return (
-        <div className="bg-slate-800 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative select-none">
+        <div
+            data-node-accent
+            style={accentStyle}
+            className="themed-node bg-slate-800 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative select-none"
+        >
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-4 mb-3">

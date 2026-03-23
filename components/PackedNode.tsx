@@ -29,6 +29,7 @@ export default function PackedNode({ id }: PackedNodeProps) {
         tempo: -1,
         controller: 0,
         keys: 0,
+        midiin: 0,
         moodpad: 0,
         pulse: 0,
         stepsequencer: 0.25,
@@ -37,6 +38,7 @@ export default function PackedNode({ id }: PackedNodeProps) {
         adsr: 0.75,
         generator: 1,
         sampler: 1,
+        audioin: 1,
         drum: 1,
         advanceddrum: 1,
         unison: 1.5,
@@ -63,8 +65,8 @@ export default function PackedNode({ id }: PackedNodeProps) {
 
     const hasControlIn = ['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'sampler', 'drum', 'advanceddrum'].includes(entryNode.type);
     const hasAudioIn = ['effect', 'unison', 'detune', 'visualiser', 'speaker'].includes(entryNode.type);
-    const hasControlOut = ['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr'].includes(exitNode.type);
-    const hasAudioOut = ['generator', 'sampler', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser'].includes(exitNode.type);
+    const hasControlOut = ['controller', 'keys', 'midiin', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr'].includes(exitNode.type);
+    const hasAudioOut = ['generator', 'sampler', 'audioin', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser'].includes(exitNode.type);
 
     const handleBlur = () => {
         setIsEditing(false);

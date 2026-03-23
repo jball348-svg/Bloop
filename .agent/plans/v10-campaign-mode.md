@@ -12,27 +12,43 @@ GitHub issues: #53 (Campaign Mode).
 
 ## Progress
 
-- [ ] Read GitHub issue #53 in full
-- [ ] Milestone 1 — Campaign architecture: mode toggle, level state, split-pane layout
-- [ ] Milestone 2 — Verification engine: detect when a target patch configuration is achieved
-- [ ] Milestone 3 — Level content: author minimum 5 beginner levels
-- [ ] Milestone 4 — Reward system: unlock skins and presets on level completion
-- [ ] npm run build and npm run lint pass
-- [ ] Update TICKETS.md, close GitHub issue #53
+- [x] (2026-03-23) Read GitHub issue #53 and kept the implementation scoped to the beginner-tier campaign architecture in the plan.
+- [x] (2026-03-23) Milestone 1 — Campaign architecture: added separate campaign store, mode toggle, and split-pane layout with a left-side panel.
+- [x] (2026-03-23) Milestone 2 — Verification engine: added pure campaign condition helpers and level evaluation utilities.
+- [x] (2026-03-23) Milestone 3 — Level content: authored five beginner levels covering generator, reverb, keys, arp playback, and full chain building.
+- [x] (2026-03-23) Milestone 4 — Reward system: wired level completion to preset/skin unlock persistence and the v9 appearance/preset surfaces.
+- [x] (2026-03-23) `npm run build` and `npm run lint` pass on the integrated v8/v9/v10 branch state.
+- [ ] (2026-03-23) Update `TICKETS.md`, close GitHub issue #53, and land the milestone commit.
 
 ## Surprises & Discoveries
 
-[To be filled. The verification engine — detecting when a user's patch matches a target — is the hardest engineering problem in this plan. Explore graph matching approaches here.]
+- Observation: the beginner-tier campaign did not need full graph isomorphism; a small library of reusable node-existence and path-existence predicates was enough.
+  Evidence: `lib/campaignVerifier.ts` now verifies levels with `hasNodeOfType`, `hasNodeMatching`, and `pathExists`.
+- Observation: reward persistence belongs in two places: campaign history and the appearance/preset preference store.
+  Evidence: `store/campaign.ts` tracks progress/unlocked reward ids while `usePreferencesStore` owns the actual unlocked skin/preset surfaces.
+- Observation: the Arpeggiator's play state had to move into node data for campaign verification to see it.
+  Evidence: `ControllerNode.tsx` now toggles `node.data.isPlaying` through store state instead of holding play state only in local component state.
 
 ## Decision Log
 
 - Decision: Use reward unlocks (cosmetics/presets) rather than node locks.
   Rationale: Bloop's identity is a sandbox built for intuition. Locking functionality behind levels creates friction and contradicts the product philosophy. Rewards motivate without restricting.
   Date: See ROADMAP.md.
+- Decision: Keep campaign mode in a separate persisted store rather than adding more flags to `store/useStore.ts`.
+  Rationale: Campaign progress is durable product state, while `useStore.ts` remains focused on canvas/audio graph state.
+  Date: 2026-03-23.
+- Decision: Let campaign mode preserve the current patch when entering or exiting.
+  Rationale: The feature is meant to guide sandbox use, not replace it, and the user explicitly requested patch preservation.
+  Date: 2026-03-23.
+- Decision: Apply rewards immediately on first successful completion.
+  Rationale: Reward feedback feels instant and keeps the preferences surfaces in sync with campaign success without a second claim flow.
+  Date: 2026-03-23.
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V10 adds an optional learning layer without taking sandbox freedom away. Campaign mode now opens as a side panel beside the same live canvas, tracks five beginner objectives, verifies progress with pure reusable helpers, and keeps the user’s patch intact when they enter or leave the mode.
+
+Reward unlocks flow straight into the v9 systems that already own them: preset rewards appear in the grouped preset library, and skin rewards extend the appearance palette. Progress persists in local storage independently of canvas resets or patch files.
 
 ## Context and Orientation
 

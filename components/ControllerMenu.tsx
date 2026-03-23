@@ -8,6 +8,7 @@ const CONTROLLER_SECTIONS = [
         label: 'Performance',
         tools: [
             { type: 'keys', label: 'Keys', color: 'bg-black border border-white' },
+            { type: 'midiin', label: 'MIDI In', color: 'bg-neutral-300 text-slate-950' },
             { type: 'controller', label: 'Arpeggiator', color: 'bg-yellow-500 text-slate-950' },
             { type: 'chord', label: 'Chord', color: 'bg-sky-500' },
         ],
@@ -39,8 +40,14 @@ const ControllerMenu = () => {
 
     return (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 select-none">
-            <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-2xl px-3 py-4 flex flex-col gap-3 shadow-xl min-w-[12rem]">
-                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest text-center">
+            <div
+                className="backdrop-blur border rounded-2xl px-3 py-4 flex flex-col gap-3 shadow-xl min-w-[12rem]"
+                style={{
+                    backgroundColor: 'var(--control-panel)',
+                    borderColor: 'var(--control-panel-border)',
+                }}
+            >
+                <span className="text-[9px] font-black uppercase tracking-widest text-center" style={{ color: 'var(--text-muted)' }}>
                     Controllers
                 </span>
 

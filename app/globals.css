@@ -1,8 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0f172a;
+  --background: #020617;
   --foreground: #f8fafc;
+  --surface-primary: #1e293b;
+  --surface-secondary: #0f172a;
+  --surface-tertiary: #334155;
+  --surface-raised: #475569;
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  --text-primary: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --canvas-dot: #1e293b;
+  --control-panel: rgba(15, 23, 42, 0.9);
+  --control-panel-border: rgba(51, 65, 85, 0.9);
+  --handle-border: #020617;
+}
+
+html.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface-primary: #ffffff;
+  --surface-secondary: #e2e8f0;
+  --surface-tertiary: #cbd5e1;
+  --surface-raised: #94a3b8;
+  --border-primary: #cbd5e1;
+  --border-secondary: #94a3b8;
+  --text-primary: #0f172a;
+  --text-muted: #475569;
+  --text-subtle: #64748b;
+  --canvas-dot: #cbd5e1;
+  --control-panel: rgba(255, 255, 255, 0.92);
+  --control-panel-border: rgba(203, 213, 225, 0.95);
+  --handle-border: #e2e8f0;
 }
 
 @theme inline {
@@ -12,7 +43,7 @@
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--text-primary);
   font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
   overflow: hidden;
   height: 100vh;
@@ -24,7 +55,7 @@ body {
 .react-flow__handle {
   width: 12px;
   height: 12px;
-  border: 4px solid #020617;
+  border: 4px solid var(--handle-border);
 }
 
 .react-flow__connection-path {
@@ -38,12 +69,12 @@ body {
 }
 
 .react-flow__background {
-  background-color: #0f172a;
+  background-color: var(--background);
 }
 
 .react-flow__controls {
-  background: #0f172a !important;
-  border: 1px solid #1e293b !important;
+  background: var(--surface-secondary) !important;
+  border: 1px solid var(--border-primary) !important;
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1) !important;
   border-radius: 12px !important;
   padding: 4px !important;
@@ -57,11 +88,158 @@ body {
 }
 
 .react-flow__controls-button:hover {
-  background: #1e293b !important;
+  background: var(--surface-primary) !important;
 }
 
 .react-flow__node {
   user-select: none;
+}
+
+[class*="bg-slate-950"] {
+  background-color: var(--background) !important;
+}
+
+[class*="bg-slate-900"] {
+  background-color: var(--surface-secondary) !important;
+}
+
+[class*="bg-slate-800"] {
+  background-color: var(--surface-primary) !important;
+}
+
+[class*="bg-slate-700"] {
+  background-color: var(--surface-tertiary) !important;
+}
+
+[class*="bg-slate-600"] {
+  background-color: var(--surface-raised) !important;
+}
+
+[class*="border-slate-900"] {
+  border-color: var(--handle-border) !important;
+}
+
+[class*="border-slate-700"],
+[class*="border-slate-600"] {
+  border-color: var(--border-primary) !important;
+}
+
+[class*="text-slate-500"] {
+  color: var(--text-subtle) !important;
+}
+
+[class*="text-slate-400"] {
+  color: var(--text-muted) !important;
+}
+
+[class*="text-slate-300"] {
+  color: var(--text-primary) !important;
+}
+
+[class*="text-white"] {
+  color: var(--text-primary) !important;
+}
+
+[class*="bg-black"] {
+  background-color: var(--surface-secondary) !important;
+}
+
+[class*="text-black"] {
+  color: var(--foreground) !important;
+}
+
+.themed-node {
+  border-color: var(--node-accent) !important;
+  box-shadow: 0 22px 48px -28px var(--node-accent-soft);
+}
+
+[data-node-accent] .react-flow__handle {
+  background-color: var(--node-accent) !important;
+}
+
+[data-node-accent] [class*="text-yellow-"],
+[data-node-accent] [class*="text-amber-"],
+[data-node-accent] [class*="text-sky-"],
+[data-node-accent] [class*="text-lime-"],
+[data-node-accent] [class*="text-blue-"],
+[data-node-accent] [class*="text-rose-"],
+[data-node-accent] [class*="text-red-"],
+[data-node-accent] [class*="text-stone-"],
+[data-node-accent] [class*="text-orange-"],
+[data-node-accent] [class*="text-green-"],
+[data-node-accent] [class*="text-fuchsia-"],
+[data-node-accent] [class*="text-violet-"],
+[data-node-accent] [class*="text-teal-"],
+[data-node-accent] [class*="text-pink-"],
+[data-node-accent] [class*="text-purple-"],
+[data-node-accent] [class*="text-indigo-"],
+[data-node-accent] [class*="text-emerald-"],
+[data-node-accent] [class*="text-neutral-"] {
+  color: var(--node-accent-text) !important;
+}
+
+[data-node-accent] [class*="border-yellow-"],
+[data-node-accent] [class*="border-amber-"],
+[data-node-accent] [class*="border-sky-"],
+[data-node-accent] [class*="border-lime-"],
+[data-node-accent] [class*="border-blue-"],
+[data-node-accent] [class*="border-rose-"],
+[data-node-accent] [class*="border-red-"],
+[data-node-accent] [class*="border-stone-"],
+[data-node-accent] [class*="border-orange-"],
+[data-node-accent] [class*="border-green-"],
+[data-node-accent] [class*="border-fuchsia-"],
+[data-node-accent] [class*="border-violet-"],
+[data-node-accent] [class*="border-teal-"],
+[data-node-accent] [class*="border-pink-"],
+[data-node-accent] [class*="border-purple-"],
+[data-node-accent] [class*="border-indigo-"],
+[data-node-accent] [class*="border-emerald-"],
+[data-node-accent] [class*="border-neutral-"] {
+  border-color: var(--node-accent-border) !important;
+}
+
+[data-node-accent] [class*="bg-yellow-"],
+[data-node-accent] [class*="bg-amber-"],
+[data-node-accent] [class*="bg-sky-"],
+[data-node-accent] [class*="bg-lime-"],
+[data-node-accent] [class*="bg-blue-"],
+[data-node-accent] [class*="bg-rose-"],
+[data-node-accent] [class*="bg-red-"],
+[data-node-accent] [class*="bg-stone-"],
+[data-node-accent] [class*="bg-orange-"],
+[data-node-accent] [class*="bg-green-"],
+[data-node-accent] [class*="bg-fuchsia-"],
+[data-node-accent] [class*="bg-violet-"],
+[data-node-accent] [class*="bg-teal-"],
+[data-node-accent] [class*="bg-pink-"],
+[data-node-accent] [class*="bg-purple-"],
+[data-node-accent] [class*="bg-indigo-"],
+[data-node-accent] [class*="bg-emerald-"],
+[data-node-accent] [class*="bg-neutral-"] {
+  background-color: var(--node-accent) !important;
+  color: var(--node-accent-contrast) !important;
+}
+
+[data-node-accent] [class*="accent-yellow-"],
+[data-node-accent] [class*="accent-amber-"],
+[data-node-accent] [class*="accent-sky-"],
+[data-node-accent] [class*="accent-lime-"],
+[data-node-accent] [class*="accent-blue-"],
+[data-node-accent] [class*="accent-rose-"],
+[data-node-accent] [class*="accent-red-"],
+[data-node-accent] [class*="accent-stone-"],
+[data-node-accent] [class*="accent-orange-"],
+[data-node-accent] [class*="accent-green-"],
+[data-node-accent] [class*="accent-fuchsia-"],
+[data-node-accent] [class*="accent-violet-"],
+[data-node-accent] [class*="accent-teal-"],
+[data-node-accent] [class*="accent-pink-"],
+[data-node-accent] [class*="accent-purple-"],
+[data-node-accent] [class*="accent-indigo-"],
+[data-node-accent] [class*="accent-emerald-"],
+[data-node-accent] [class*="accent-neutral-"] {
+  accent-color: var(--node-accent) !important;
 }
 
 /* Hide React Flow attribution */

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" fill="none">
+  <rect width="640" height="360" rx="28" fill="#020617"/>
+  <rect x="78" y="86" width="118" height="76" rx="22" fill="#0f172a" stroke="#38bdf8" stroke-width="3">
+    <animate attributeName="x" values="78;148;148" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="86;138;138" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="226" y="86" width="118" height="76" rx="22" fill="#0f172a" stroke="#ef4444" stroke-width="3">
+    <animate attributeName="x" values="226;256;256" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="86;138;138" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="374" y="86" width="118" height="76" rx="22" fill="#0f172a" stroke="#d946ef" stroke-width="3">
+    <animate attributeName="x" values="374;364;364" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="y" values="86;138;138" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="214" y="210" width="212" height="94" rx="26" fill="#0f172a" stroke="#fb923c" stroke-width="3" opacity=".18">
+    <animate attributeName="opacity" values=".18;1;1" dur="3s" repeatCount="indefinite"/>
+  </rect>
+  <text x="236" y="264" fill="#fb923c" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="800">
+    Packed Patch
+    <animate attributeName="opacity" values="0;1;1" dur="3s" repeatCount="indefinite"/>
+  </text>
+  <rect x="132" y="316" width="376" height="24" rx="12" fill="#0f172a" stroke="#334155"/>
+  <rect x="164" y="320" width="84" height="16" rx="8" fill="#22d3ee"/>
+  <rect x="268" y="320" width="84" height="16" rx="8" fill="#f8fafc"/>
+  <rect x="372" y="320" width="84" height="16" rx="8" fill="#ef4444"/>
+  <circle cx="476" cy="328" r="8" fill="#ef4444">
+    <animate attributeName="opacity" values="1;.2;1" dur="1s" repeatCount="indefinite"/>
+  </circle>
+  <path d="M536 316v18m0 0-6-6m6 6 6-6" stroke="#22d3ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

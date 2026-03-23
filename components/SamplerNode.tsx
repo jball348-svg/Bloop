@@ -11,6 +11,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -58,6 +59,7 @@ export default function SamplerNode({ id }: { id: string }) {
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const accentStyle = useNodeAccentStyle('sampler');
     const [showAdvanced, setShowAdvanced] = useState(false);
 
     const hasSample = nodeData?.hasSample ?? false;
@@ -117,7 +119,9 @@ export default function SamplerNode({ id }: { id: string }) {
 
     return (
         <div
-            className={`bg-slate-800 border-2 border-stone-400 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-stone-400/20 group relative select-none${
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-stone-400 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-stone-400/20 group relative select-none${
                 isAdjacent ? getAdjacencyGlowClasses('sampler') : ''
             }`}
         >

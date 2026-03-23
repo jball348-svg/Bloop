@@ -10,6 +10,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -58,6 +59,7 @@ export default function MoodPadNode({ id }: { id: string }) {
     const moodX = clamp01(nodeData?.moodX ?? 0.35);
     const moodY = clamp01(nodeData?.moodY ?? 0.55);
     const padRef = useRef<HTMLDivElement | null>(null);
+    const accentStyle = useNodeAccentStyle('moodpad');
     const activeNotesRef = useRef<string[]>([]);
     const releaseTimeoutRef = useRef<number | null>(null);
     const pointerIdRef = useRef<number | null>(null);
@@ -185,7 +187,9 @@ export default function MoodPadNode({ id }: { id: string }) {
 
     return (
         <div
-            className={`bg-slate-800 border-2 border-rose-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-rose-500/20 group relative select-none${
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-rose-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-rose-500/20 group relative select-none${
                 isAdjacent ? getAdjacencyGlowClasses('moodpad') : ''
             }`}
         >

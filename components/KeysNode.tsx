@@ -6,6 +6,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
@@ -43,6 +44,7 @@ export default function KeysNode({ id }: { id: string }) {
     const keyMap = buildKeyMap(octave);
     const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
     const heldKeys = useRef<Set<string>>(new Set());
+    const accentStyle = useNodeAccentStyle('keys');
 
     useEffect(() => {
         const currentKeyMap = buildKeyMap(octave);
@@ -109,9 +111,13 @@ export default function KeysNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('keys') : ''
-        }`}>
+        }`}
+        >
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import * as Tone from 'tone';
 import { useStore } from '@/store/useStore';
+import { usePreferencesStore } from '@/store/usePreferencesStore';
 
 export default function EngineControl() {
     const [isStarted, setIsStarted] = useState(false);
@@ -10,6 +11,8 @@ export default function EngineControl() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const initializeDefaultNodes = useStore((state) => state.initializeDefaultNodes);
+    const onboardingSeen = usePreferencesStore((state) => state.onboardingSeen);
+    const openOnboarding = usePreferencesStore((state) => state.openOnboarding);
     
     const startEngine = async () => {
         setIsStarting(true);
@@ -39,6 +42,9 @@ export default function EngineControl() {
 
             initializeDefaultNodes();
             setIsStarted(true);
+            if (!onboardingSeen) {
+                openOnboarding();
+            }
         } catch (error) {
             console.error('Failed to start audio engine:', error);
             setErrorMessage('Audio is busy or blocked right now. Pause other audio and try again.');

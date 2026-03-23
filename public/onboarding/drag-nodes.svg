@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" fill="none">
+  <rect width="640" height="360" rx="28" fill="#020617"/>
+  <rect x="32" y="28" width="154" height="304" rx="22" fill="#0f172a" stroke="#334155"/>
+  <text x="56" y="70" fill="#94a3b8" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="700">Controllers</text>
+  <rect x="54" y="102" width="110" height="34" rx="17" fill="#eab308"/>
+  <rect x="54" y="150" width="110" height="34" rx="17" fill="#38bdf8"/>
+  <rect x="54" y="198" width="110" height="34" rx="17" fill="#ef4444"/>
+  <rect x="54" y="246" width="110" height="34" rx="17" fill="#d946ef"/>
+  <text x="89" y="124" fill="#0f172a" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" font-weight="800">Keys</text>
+  <text x="82" y="172" fill="#fff" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" font-weight="800">Chord</text>
+  <text x="74" y="220" fill="#fff" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" font-weight="800">Generator</text>
+  <text x="93" y="268" fill="#fff" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" font-weight="800">FX</text>
+  <rect x="230" y="38" width="378" height="284" rx="24" fill="#111827" stroke="#1e293b" stroke-dasharray="4 8"/>
+  <text x="258" y="72" fill="#64748b" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" font-weight="700">Canvas</text>
+  <g>
+    <rect x="74" y="94" width="120" height="76" rx="22" fill="#0f172a" stroke="#38bdf8" stroke-width="3">
+      <animate attributeName="x" values="74;286;286" dur="3.2s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="94;110;110" dur="3.2s" repeatCount="indefinite"/>
+    </rect>
+    <text x="118" y="136" fill="#38bdf8" font-family="Avenir Next, Segoe UI, sans-serif" font-size="16" font-weight="800">
+      Keys
+      <animate attributeName="x" values="118;330;330" dur="3.2s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="136;152;152" dur="3.2s" repeatCount="indefinite"/>
+    </text>
+  </g>
+  <circle cx="132" cy="128" r="10" fill="#fff">
+    <animate attributeName="cx" values="132;344;344" dur="3.2s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="128;144;144" dur="3.2s" repeatCount="indefinite"/>
+  </circle>
+  <rect x="286" y="110" width="120" height="76" rx="22" fill="#0f172a" stroke="#38bdf8" stroke-width="3" opacity="0.24"/>
+  <rect x="438" y="178" width="126" height="82" rx="22" fill="#0f172a" stroke="#ef4444" stroke-width="3"/>
+  <text x="469" y="224" fill="#ef4444" font-family="Avenir Next, Segoe UI, sans-serif" font-size="16" font-weight="800">Generator</text>
+</svg>

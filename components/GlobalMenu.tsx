@@ -24,8 +24,14 @@ const GlobalMenu = () => {
 
     return (
         <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 select-none">
-            <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-2xl px-2 py-4 flex flex-col gap-3 shadow-xl">
-                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest text-center pb-1">GLOBAL</span>
+            <div
+                className="backdrop-blur border rounded-2xl px-2 py-4 flex flex-col gap-3 shadow-xl"
+                style={{
+                    backgroundColor: 'var(--control-panel)',
+                    borderColor: 'var(--control-panel-border)',
+                }}
+            >
+                <span className="text-[9px] font-black uppercase tracking-widest text-center pb-1" style={{ color: 'var(--text-muted)' }}>GLOBAL</span>
                 {globalTools.map((tool) => (
                     <div
                         key={tool.type}

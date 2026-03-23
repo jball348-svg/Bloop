@@ -7,6 +7,7 @@ import {
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -21,6 +22,7 @@ export default function EffectNode({ id }: { id: string }) {
         return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
     const subType = nodeData?.subType || 'none';
+    const accentStyle = useNodeAccentStyle('effect');
 
     const [mix, setMix] = useState(50);
     const [depth, setDepth] = useState(50);
@@ -55,9 +57,13 @@ export default function EffectNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-slate-800 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('effect') : ''
-        }`}>
+        }`}
+        >
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">

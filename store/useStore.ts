@@ -23,6 +23,7 @@ export const DEFAULT_MASTER_VOLUME = 50;
 export const MIN_TEMPO_BPM = 40;
 export const MAX_TEMPO_BPM = 200;
 export const AUDIO_INPUT_HANDLE_ID = 'audio-in';
+export const AUDIO_INPUT_SECONDARY_HANDLE_ID = 'audio-in-secondary';
 export const AUDIO_OUTPUT_HANDLE_ID = 'audio-out';
 export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
@@ -70,9 +71,11 @@ export type TransportRate = (typeof TRANSPORT_RATE_OPTIONS)[number]['value'];
 export type AudioNodeType =
     | 'generator'
     | 'sampler'
+    | 'audioin'
     | 'effect'
     | 'speaker'
     | 'controller'
+    | 'midiin'
     | 'tempo'
     | 'drum'
     | 'advanceddrum'
@@ -127,6 +130,11 @@ type SamplerChain = {
     pitchShift: Tone.PitchShift;
     previewTimeout: ReturnType<typeof setTimeout> | null;
 };
+type AudioInputChain = {
+    input: Tone.UserMedia;
+    gain: Tone.Volume;
+    meter: Tone.Meter;
+};
 type AdvancedDrumRack = {
     output: Tone.Gain;
     kick: Tone.MembraneSynth;
@@ -148,6 +156,7 @@ type ActiveQuantizedNote = {
 type NodeValueUpdate = {
     waveShape?: WaveShape;
     volume?: number;
+    inputGain?: number;
     mix?: number;
     mute?: boolean;
     roomSize?: number;
@@ -180,6 +189,11 @@ export type AppNode = Node & {
     data: {
         label: string;
         subType?: string;
+        midiDeviceId?: string;
+        midiDeviceName?: string;
+        midiSupported?: boolean;
+        audioInStatus?: 'idle' | 'requesting' | 'active' | 'denied' | 'unsupported' | 'error';
+        inputGain?: number;
         isPlaying?: boolean;
         drumMode?: DrumMode;
         drumPattern?: DrumPattern;
@@ -222,6 +236,7 @@ export type AppNode = Node & {
         pitchShift?: number;
         advancedDrumTracks?: AdvancedDrumTrackData[];
         swing?: number;
+        visualiserMode?: 'waveform' | 'spectrum' | 'vu' | 'lissajous';
     };
     type: AudioNodeType;
 };
@@ -229,6 +244,15 @@ export type AppNode = Node & {
 type NoteDispatch = {
     generatorId: string;
     note: string;
+};
+
+type RecordingController = {
+    recorder: MediaRecorder;
+    destination: MediaStreamAudioDestinationNode;
+    startedAt: number;
+    mimeType: string;
+    chunks: BlobPart[];
+    timerId: number | ReturnType<typeof setInterval> | null;
 };
 
 const CHORD_INTERVALS: Record<ChordQuality, string[]> = {
@@ -645,6 +669,7 @@ const applyAdsrToDownstreamGenerators = (
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys: { w: 288, h: 320 },
+    midiin: { w: 256, h: 240 },
     moodpad: { w: 320, h: 416 },
     pulse: { w: 288, h: 280 },
     stepsequencer: { w: 352, h: 420 },
@@ -653,12 +678,13 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     adsr: { w: 224, h: 340 },
     generator: { w: 240, h: 220 },
     sampler: { w: 320, h: 432 },
+    audioin: { w: 256, h: 272 },
     drum: { w: 320, h: 360 },
     advanceddrum: { w: 432, h: 420 },
     effect: { w: 224, h: 260 },
     unison: { w: 224, h: 220 },
     detune: { w: 224, h: 200 },
-    visualiser: { w: 224, h: 220 },
+    visualiser: { w: 288, h: 320 },
     speaker: { w: 224, h: 200 },
     tempo: { w: 256, h: 240 },
 };
@@ -760,11 +786,15 @@ const AUTO_EDGE_PREFIX = 'auto-';
 const DRUM_PAD_HIGHLIGHT_MS = 120;
 const drumPadTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 const signalFlowTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+let recordingController: RecordingController | null = null;
+let onboardingIntroSynth: Tone.PolySynth | null = null;
+let onboardingIntroTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
     keys: 0,
+    midiin: 0,
     moodpad: 0,
     pulse: 0,
     stepsequencer: 0.25,
@@ -773,6 +803,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     adsr: 0.75,
     generator: 1,
     sampler: 1,
+    audioin: 1,
     drum: 1,
     advanceddrum: 1,
     unison: 1.5,
@@ -782,7 +813,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     speaker: 3,
 };
 
-const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
+const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'midiin', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
 
 export const isControlDomainNodeType = (type?: AudioNodeType | string | null) =>
     Boolean(type) && CONTROL_DOMAIN_TYPES.has(type as AudioNodeType);
@@ -793,9 +824,9 @@ export const getAdjacencyGlowClasses = (type?: AudioNodeType | string | null) =>
         : ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]';
 
 const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'sampler', 'drum', 'advanceddrum']);
-const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
+const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'midiin', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
 const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'unison', 'detune', 'visualiser', 'speaker']);
-const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'sampler', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser']);
+const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'sampler', 'audioin', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser']);
 
 const getClusterSignalEntry = (clusterIds: Set<string>, nodes: AppNode[], kind: ConnectionKind): string | null => {
     const clusterNodes = nodes.filter(n => clusterIds.has(n.id));
@@ -816,6 +847,8 @@ const getClusterSignalExit = (clusterIds: Set<string>, nodes: AppNode[], kind: C
 export const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->quantizer',
     'controller->sampler',
+    'midiin->quantizer',
+    'midiin->sampler',
     'keys->quantizer',
     'keys->sampler',
     'moodpad->quantizer',
@@ -833,10 +866,14 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->chord',
     'controller->adsr',
     'controller->generator',
+    'midiin->chord',
+    'midiin->adsr',
+    'midiin->generator',
     'keys->chord',
     'keys->adsr',
     'keys->generator',
     'keys->drum',
+    'midiin->drum',
     'chord->sampler',
     'quantizer->chord',
     'quantizer->adsr',
@@ -853,6 +890,10 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'stepsequencer->adsr',
     'stepsequencer->generator',
     'stepsequencer->sampler',
+    'audioin->unison',
+    'audioin->detune',
+    'audioin->effect',
+    'audioin->visualiser',
     'generator->unison',
     'sampler->unison',
     'generator->detune',
@@ -890,6 +931,8 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
 export const CONTROL_WIRE_PAIRS = new Set([
     'controller->quantizer',
     'controller->sampler',
+    'midiin->quantizer',
+    'midiin->sampler',
     'keys->quantizer',
     'keys->sampler',
     'moodpad->quantizer',
@@ -907,10 +950,14 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'controller->chord',
     'controller->adsr',
     'controller->generator',
+    'midiin->chord',
+    'midiin->adsr',
+    'midiin->generator',
     'keys->chord',
     'keys->adsr',
     'keys->generator',
     'keys->drum',
+    'midiin->drum',
     'chord->sampler',
     'quantizer->chord',
     'quantizer->adsr',
@@ -1149,7 +1196,10 @@ const isValidGraphConnection = (
 
     // Strict domain matching — control-out MUST connect to control-in, audio-out MUST connect to audio-in
     const isControlConn = connection.sourceHandle === CONTROL_OUTPUT_HANDLE_ID && connection.targetHandle === CONTROL_INPUT_HANDLE_ID;
-    const isAudioConn = connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID && connection.targetHandle === AUDIO_INPUT_HANDLE_ID;
+    const isAudioConn =
+        connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID &&
+        (connection.targetHandle === AUDIO_INPUT_HANDLE_ID ||
+            connection.targetHandle === AUDIO_INPUT_SECONDARY_HANDLE_ID);
 
     if (!isControlConn && !isAudioConn) {
         return false; // Cross-domain attempt: reject
@@ -1248,6 +1298,7 @@ type AppState = {
     audioNodes: Map<string, Tone.ToneAudioNode>;
     masterOutput: Tone.Volume | null;
     masterVolume: number;
+    audioInputChains: Map<string, AudioInputChain>;
     drumRacks: Map<string, DrumRack>;
     samplerChains: Map<string, SamplerChain>;
     advancedDrumRacks: Map<string, AdvancedDrumRack>;
@@ -1261,6 +1312,10 @@ type AppState = {
     autoEdgeIds: Set<string>;
     signalFlowVisible: boolean;
     signalFlowEvents: SignalFlowEvent[];
+    isRecording: boolean;
+    recordingElapsedMs: number;
+    recordingMimeType: string | null;
+    recordingError: string | null;
     past: Array<{ nodes: AppNode[]; edges: Edge[] }>;
     future: Array<{ nodes: AppNode[]; edges: Edge[] }>;
     canUndo: boolean;
@@ -1275,6 +1330,8 @@ type AppState = {
     setMasterVolume: (volume: number) => void;
     resetMasterVolume: () => void;
     initAudioNode: (id: string, type: AudioNodeType, subType?: string) => void;
+    openAudioInput: (id: string) => Promise<void>;
+    closeAudioInput: (id: string) => void;
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: NodeValueUpdate) => void;
@@ -1301,7 +1358,7 @@ type AppState = {
     setDrumMode: (id: string, mode: DrumMode) => void;
     toggleDrumStep: (id: string, part: DrumPart, step: number) => void;
     triggerDrumHit: (id: string, part: DrumPart, time?: number | string) => void;
-    triggerNoteOn: (id: string, note: string) => void;
+    triggerNoteOn: (id: string, note: string, velocity?: number) => void;
     triggerNoteOff: (id: string, note: string) => void;
     firePulse: (pulseId: string, intervalMs?: number) => void;
     advanceSequencerStep: (id: string, intervalMs?: number) => void;
@@ -1310,7 +1367,11 @@ type AppState = {
     setSignalFlowVisible: (visible: boolean) => void;
     emitSignalFlow: (sourceId: string, kind: ConnectionKind, color?: string) => void;
     clearSignalFlowEvent: (eventId: string) => void;
-    fireNoteOn: (controllerId: string, note: string) => void;
+    startRecording: () => Promise<void>;
+    stopRecording: () => Promise<void>;
+    playOnboardingIntro: () => void;
+    stopOnboardingIntro: () => void;
+    fireNoteOn: (controllerId: string, note: string, velocity?: number) => void;
     fireNoteOff: (controllerId: string, note: string) => void;
     packGroup: (id: string) => void;
     unpackGroup: (id: string) => void;
@@ -1337,6 +1398,7 @@ export const useStore = create<AppState>((set, get) => ({
     audioNodes: new Map(),
     masterOutput: null,
     masterVolume: DEFAULT_MASTER_VOLUME,
+    audioInputChains: new Map(),
     drumRacks: new Map(),
     samplerChains: new Map(),
     advancedDrumRacks: new Map(),
@@ -1350,6 +1412,10 @@ export const useStore = create<AppState>((set, get) => ({
     autoEdgeIds: new Set(),
     signalFlowVisible: false,
     signalFlowEvents: [],
+    isRecording: false,
+    recordingElapsedMs: 0,
+    recordingMimeType: null,
+    recordingError: null,
     past: [],
     future: [],
     canUndo: false,
@@ -1591,6 +1657,23 @@ export const useStore = create<AppState>((set, get) => ({
             });
             set({ samplerChains: nextSamplerChains });
             node = pitchShift;
+        } else if (type === 'audioin') {
+            const input = new Tone.UserMedia();
+            const gain = new Tone.Volume(
+                volumePercentToDb(get().nodes.find((entry: AppNode) => entry.id === id)?.data.inputGain ?? 75)
+            );
+            const meter = new Tone.Meter({ normalRange: true, smoothing: 0.82 });
+            input.connect(gain);
+            gain.connect(meter);
+
+            const nextAudioInputChains = new Map(get().audioInputChains);
+            nextAudioInputChains.set(id, {
+                input,
+                gain,
+                meter,
+            });
+            set({ audioInputChains: nextAudioInputChains });
+            node = gain;
         } else if (type === 'drum') {
             const rack = createDrumRack();
             const nextDrumRacks = new Map(get().drumRacks);
@@ -1626,6 +1709,7 @@ export const useStore = create<AppState>((set, get) => ({
             node = new Tone.Gain(1); // passthrough — analysers are attached in the component
         } else if (
             type === 'controller' ||
+            type === 'midiin' ||
             type === 'tempo' ||
             type === 'speaker' ||
             type === 'chord' ||
@@ -1644,6 +1728,54 @@ export const useStore = create<AppState>((set, get) => ({
             newMap.set(id, node);
             set({ audioNodes: newMap });
         }
+    },
+
+    openAudioInput: async (id: string) => {
+        const node = get().nodes.find((entry: AppNode) => entry.id === id && entry.type === 'audioin');
+        const chain = get().audioInputChains.get(id);
+        if (!node || !chain) {
+            return;
+        }
+
+        if (!navigator.mediaDevices?.getUserMedia) {
+            get().updateNodeData(id, { audioInStatus: 'unsupported' });
+            return;
+        }
+
+        if (node.data.audioInStatus === 'active') {
+            return;
+        }
+
+        get().updateNodeData(id, { audioInStatus: 'requesting' });
+
+        try {
+            await Tone.start();
+            await chain.input.open();
+            chain.gain.volume.rampTo(volumePercentToDb(node.data.inputGain ?? 75), 0.1);
+            get().updateNodeData(id, { audioInStatus: 'active' });
+        } catch (error) {
+            const nextStatus =
+                error instanceof DOMException && error.name === 'NotAllowedError'
+                    ? 'denied'
+                    : 'error';
+            console.error('Failed to open audio input', error);
+            get().updateNodeData(id, { audioInStatus: nextStatus });
+        }
+    },
+
+    closeAudioInput: (id: string) => {
+        const chain = get().audioInputChains.get(id);
+        if (!chain) {
+            return;
+        }
+
+        try {
+            chain.input.close();
+        } catch (error) {
+            console.error('Failed to close audio input', error);
+        }
+
+        get().updateNodeData(id, { audioInStatus: 'idle' });
     },
 
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
@@ -1731,6 +1863,7 @@ export const useStore = create<AppState>((set, get) => ({
     removeAudioNode: (id: string) => {
         const {
             audioNodes,
+            audioInputChains,
             drumRacks,
             samplerChains,
             advancedDrumRacks,
@@ -1795,6 +1928,23 @@ export const useStore = create<AppState>((set, get) => ({
             const nextSamplerChains = new Map(samplerChains);
             nextSamplerChains.delete(id);
             set({ samplerChains: nextSamplerChains });
+        }
+
+        const audioInputChain = audioInputChains.get(id);
+        if (audioInputChain) {
+            try {
+                audioInputChain.input.close();
+            } catch {
+                // Ignore close failures during node removal.
+            }
+            audioInputChain.input.disconnect();
+            audioInputChain.input.dispose();
+            audioInputChain.meter.disconnect();
+            audioInputChain.meter.dispose();
+
+            const nextAudioInputChains = new Map(audioInputChains);
+            nextAudioInputChains.delete(id);
+            set({ audioInputChains: nextAudioInputChains });
         }
 
         const advancedRack = advancedDrumRacks.get(id);
@@ -1864,6 +2014,22 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (targetNode?.type === 'speaker' && typeof value.volume === 'number') {
             get().setMasterVolume(value.volume);
+            return;
+        }
+
+        if (targetNode?.type === 'audioin' && typeof value.inputGain === 'number') {
+            const nextInputGain = clampVolumePercent(value.inputGain);
+            const inputNode = get().audioNodes.get(id);
+            if (inputNode instanceof Tone.Volume) {
+                inputNode.volume.rampTo(volumePercentToDb(nextInputGain), 0.1);
+            }
+            set({
+                nodes: get().nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? { ...node, data: { ...node.data, inputGain: nextInputGain } }
+                        : node
+                ),
+            });
             return;
         }
 
@@ -2287,7 +2453,7 @@ export const useStore = create<AppState>((set, get) => ({
         );
     },
 
-    triggerNoteOn: (id: string, note: string) => {
+    triggerNoteOn: (id: string, note: string, velocity = 1) => {
         const samplerChain = get().samplerChains.get(id);
         if (samplerChain?.player.loaded) {
             try {
@@ -2305,7 +2471,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
-            node.triggerAttack(note);
+            node.triggerAttack(note, undefined, Math.max(0.001, Math.min(1, velocity)));
             const nextGeneratorNoteCounts = incrementGeneratorNoteCount(
                 get().generatorNoteCounts,
                 id,
@@ -2424,6 +2590,176 @@ export const useStore = create<AppState>((set, get) => ({
         set({
             signalFlowEvents: [...get().signalFlowEvents, ...nextEvents],
         });
+    },
+
+    startRecording: async () => {
+        if (get().isRecording) {
+            return;
+        }
+
+        if (typeof window === 'undefined' || typeof MediaRecorder === 'undefined') {
+            set({
+                recordingError: 'Recording is not supported in this browser.',
+                recordingMimeType: null,
+            });
+            return;
+        }
+
+        const preferredMimeTypes = [
+            'audio/webm;codecs=opus',
+            'audio/webm',
+            'video/webm;codecs=opus',
+            'video/webm',
+        ];
+        const mimeType =
+            preferredMimeTypes.find((candidate) => MediaRecorder.isTypeSupported(candidate)) ?? '';
+
+        try {
+            await Tone.start();
+            const masterOutput = get().ensureMasterOutput();
+            const rawContext = Tone.getContext().rawContext as AudioContext;
+            const destination = rawContext.createMediaStreamDestination();
+            masterOutput.connect(destination);
+
+            const recorder = mimeType
+                ? new MediaRecorder(destination.stream, { mimeType })
+                : new MediaRecorder(destination.stream);
+            const chunks: BlobPart[] = [];
+            const startedAt = performance.now();
+            const timerId = window.setInterval(() => {
+                set({ recordingElapsedMs: performance.now() - startedAt });
+            }, 200);
+
+            recorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    chunks.push(event.data);
+                }
+            };
+
+            recorder.onstop = () => {
+                if (recordingController?.timerId) {
+                    window.clearInterval(recordingController.timerId);
+                }
+
+                const finishedController = recordingController;
+                recordingController = null;
+
+                const recordingBlob = new Blob(
+                    chunks,
+                    {
+                        type:
+                            finishedController?.mimeType ||
+                            recorder.mimeType ||
+                            'audio/webm',
+                    }
+                );
+                const extension = (finishedController?.mimeType || recorder.mimeType).includes('mp4')
+                    ? 'm4a'
+                    : 'webm';
+                const url = URL.createObjectURL(recordingBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `bloop-recording-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.${extension}`;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                set({
+                    isRecording: false,
+                    recordingElapsedMs: 0,
+                    recordingMimeType: null,
+                    recordingError: null,
+                });
+                get().rebuildAudioGraph();
+            };
+
+            recorder.start();
+            recordingController = {
+                recorder,
+                destination,
+                startedAt,
+                mimeType: mimeType || recorder.mimeType || 'audio/webm',
+                chunks,
+                timerId,
+            };
+            set({
+                isRecording: true,
+                recordingElapsedMs: 0,
+                recordingMimeType: mimeType || recorder.mimeType || 'audio/webm',
+                recordingError: null,
+            });
+        } catch (error) {
+            console.error('Failed to start recording', error);
+            set({
+                isRecording: false,
+                recordingElapsedMs: 0,
+                recordingMimeType: null,
+                recordingError: 'Could not start recording.',
+            });
+        }
+    },
+
+    stopRecording: async () => {
+        if (!recordingController) {
+            return;
+        }
+
+        if (recordingController.timerId) {
+            window.clearInterval(recordingController.timerId);
+            recordingController.timerId = null;
+        }
+
+        set({
+            recordingElapsedMs: performance.now() - recordingController.startedAt,
+        });
+
+        if (recordingController.recorder.state !== 'inactive') {
+            recordingController.recorder.stop();
+        }
+    },
+
+    playOnboardingIntro: () => {
+        get().stopOnboardingIntro();
+
+        const synth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: {
+                attack: 0.02,
+                decay: 0.2,
+                sustain: 0.35,
+                release: 0.8,
+            },
+            volume: -14,
+        }).connect(get().ensureMasterOutput());
+        const now = Tone.now() + 0.05;
+        const notes = [
+            { note: 'C4', offset: 0, duration: '8n', velocity: 0.38 },
+            { note: 'E4', offset: 0.22, duration: '8n', velocity: 0.32 },
+            { note: 'G4', offset: 0.48, duration: '8n', velocity: 0.34 },
+            { note: 'A4', offset: 0.78, duration: '4n', velocity: 0.3 },
+            { note: 'G4', offset: 1.25, duration: '8n', velocity: 0.24 },
+            { note: 'E4', offset: 1.52, duration: '4n', velocity: 0.2 },
+        ];
+
+        notes.forEach(({ note, offset, duration, velocity }) => {
+            synth.triggerAttackRelease(note, duration, now + offset, velocity);
+        });
+
+        onboardingIntroSynth = synth;
+        onboardingIntroTimeout = setTimeout(() => {
+            get().stopOnboardingIntro();
+        }, 3200);
+    },
+
+    stopOnboardingIntro: () => {
+        if (onboardingIntroTimeout) {
+            clearTimeout(onboardingIntroTimeout);
+            onboardingIntroTimeout = null;
+        }
+
+        if (onboardingIntroSynth) {
+            onboardingIntroSynth.disconnect().dispose();
+            onboardingIntroSynth = null;
+        }
     },
 
     firePulse: (pulseId: string, intervalMs = 125) => {
@@ -2572,7 +2908,7 @@ export const useStore = create<AppState>((set, get) => ({
         }, gateDuration);
     },
 
-    fireNoteOn: (controllerId: string, note: string) => {
+    fireNoteOn: (controllerId: string, note: string, velocity = 1) => {
         const { edges, nodes, audioNodes, activeChordVoicings, activeQuantizedNotes, generatorNoteCounts, activeGenerators } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
@@ -2613,7 +2949,7 @@ export const useStore = create<AppState>((set, get) => ({
 
             const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
-                targetNode.triggerAttack(voicedNote);
+                targetNode.triggerAttack(voicedNote, undefined, Math.max(0.001, Math.min(1, velocity)));
                 nextGeneratorNoteCounts = incrementGeneratorNoteCount(
                     nextGeneratorNoteCounts,
                     generatorId,
@@ -2937,7 +3273,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         if (
             (node.type === 'tempo' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'tempo')) ||
-            (node.type === 'speaker' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'speaker'))
+            (node.type === 'speaker' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'speaker')) ||
+            (node.type === 'audioin' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'audioin'))
         ) {
             return;
         }
@@ -2951,15 +3288,53 @@ export const useStore = create<AppState>((set, get) => ({
                         label: node.data.label || 'Tempo',
                         bpm: clampTempoBpm(node.data.bpm ?? DEFAULT_TRANSPORT_BPM),
                     },
-                }
-                : node.type === 'speaker'
+                    }
+                    : node.type === 'speaker'
                     ? {
                         ...node,
                         data: {
                             ...node.data,
                             label: node.data.label || 'Master Out',
                         },
-                    }
+                        }
+                        : node.type === 'controller'
+                            ? {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    label: node.data.label || 'Arpeggiator',
+                                    rootNote: node.data.rootNote ?? 'C',
+                                    scaleType: node.data.scaleType ?? 'major pentatonic',
+                                    isPlaying: node.data.isPlaying ?? false,
+                                },
+                            }
+                        : node.type === 'midiin'
+                            ? {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    label: node.data.label || 'MIDI In',
+                                    midiSupported:
+                                        node.data.midiSupported ??
+                                        (typeof navigator !== 'undefined' &&
+                                            typeof navigator.requestMIDIAccess === 'function'),
+                                },
+                            }
+                            : node.type === 'audioin'
+                                ? {
+                                    ...node,
+                                    data: {
+                                        ...node.data,
+                                        label: node.data.label || 'Audio In',
+                                        audioInStatus:
+                                            node.data.audioInStatus ??
+                                            (typeof navigator !== 'undefined' &&
+                                            typeof navigator.mediaDevices?.getUserMedia === 'function'
+                                                ? 'idle'
+                                                : 'unsupported'),
+                                        inputGain: node.data.inputGain ?? 75,
+                                    },
+                                }
                     : node.type === 'chord'
                         ? {
                             ...node,
@@ -3068,6 +3443,15 @@ export const useStore = create<AppState>((set, get) => ({
                                                         moodY: node.data.moodY ?? 0.55,
                                                     },
                                                 }
+                                                : node.type === 'visualiser'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Visualiser',
+                                                            visualiserMode: node.data.visualiserMode ?? 'waveform',
+                                                        },
+                                                    }
                                 : node;
 
         set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
@@ -3088,6 +3472,7 @@ export const useStore = create<AppState>((set, get) => ({
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
         } else if (
             nextNode.type === 'sampler' ||
+            nextNode.type === 'audioin' ||
             nextNode.type === 'drum' ||
             nextNode.type === 'advanceddrum' ||
             nextNode.type === 'unison' ||
@@ -3245,7 +3630,7 @@ export const useStore = create<AppState>((set, get) => ({
         isValidGraphConnection(connection, get().nodes, get().edges, ignoredEdgeId),
 
     rebuildAudioGraph: () => {
-        const { audioNodes, edges, nodes } = get() as AppState;
+        const { audioNodes, audioInputChains, edges, nodes } = get() as AppState;
         const masterOutput = get().ensureMasterOutput();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const routedSourceIds = new Set<string>();
@@ -3253,6 +3638,9 @@ export const useStore = create<AppState>((set, get) => ({
         audioNodes.forEach((node: Tone.ToneAudioNode) => node.disconnect());
         masterOutput.disconnect();
         masterOutput.toDestination();
+        if (recordingController) {
+            masterOutput.connect(recordingController.destination);
+        }
 
         edges
             .filter((edge: AppEdge) => isAudioEdge(edge))
@@ -3263,6 +3651,7 @@ export const useStore = create<AppState>((set, get) => ({
                 if (
                     !sourceInfo ||
                     !targetInfo ||
+                    edge.targetHandle === AUDIO_INPUT_SECONDARY_HANDLE_ID ||
                     sourceInfo.type === 'controller' ||
                     sourceInfo.type === 'chord' ||
                     sourceInfo.type === 'tempo' ||
@@ -3305,6 +3694,10 @@ export const useStore = create<AppState>((set, get) => ({
                 audioNode.connect(masterOutput);
             });
         }
+
+        audioInputChains.forEach((chain) => {
+            chain.gain.connect(chain.meter);
+        });
     },
 
     initializeDefaultNodes: () => {
@@ -3316,7 +3709,13 @@ export const useStore = create<AppState>((set, get) => ({
         nodes.forEach((node: AppNode) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
+            } else if (
+                node.type === 'audioin' ||
+                node.type === 'drum' ||
+                node.type === 'unison' ||
+                node.type === 'detune' ||
+                node.type === 'visualiser'
+            ) {
                 get().initAudioNode(node.id, node.type);
             }
         });
@@ -3327,7 +3726,11 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     clearCanvas: () => {
-        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, patterns, masterOutput } = get();
+        const { audioNodes, audioInputChains, drumRacks, samplerChains, advancedDrumRacks, patterns, masterOutput } = get();
+
+        if (get().isRecording) {
+            void get().stopRecording();
+        }
 
         signalFlowTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
         signalFlowTimeouts.clear();
@@ -3374,6 +3777,18 @@ export const useStore = create<AppState>((set, get) => ({
             rack.clap.disconnect().dispose();
         });
 
+        audioInputChains.forEach((chain) => {
+            try {
+                chain.input.close();
+            } catch {
+                // Ignore close failures during full canvas cleanup.
+            }
+            chain.input.disconnect();
+            chain.input.dispose();
+            chain.meter.disconnect();
+            chain.meter.dispose();
+        });
+
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
             node.disconnect().dispose();
@@ -3388,6 +3803,7 @@ export const useStore = create<AppState>((set, get) => ({
             nodes: [],
             edges: [],
             audioNodes: new Map(),
+            audioInputChains: new Map(),
             drumRacks: new Map(),
             samplerChains: new Map(),
             advancedDrumRacks: new Map(),
@@ -3401,6 +3817,10 @@ export const useStore = create<AppState>((set, get) => ({
             autoEdgeIds: new Set(),
             signalFlowEvents: [],
             masterOutput: null,
+            isRecording: false,
+            recordingElapsedMs: 0,
+            recordingMimeType: null,
+            recordingError: null,
         });
     },
 
@@ -3429,6 +3849,7 @@ export const useStore = create<AppState>((set, get) => ({
                 get().initAudioNode(node.id, node.type, node.data.subType);
             } else if (
                 node.type === 'sampler' ||
+                node.type === 'audioin' ||
                 node.type === 'drum' ||
                 node.type === 'advanceddrum' ||
                 node.type === 'unison' ||
@@ -3868,6 +4289,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { past, future, nodes, edges } = get();
         if (past.length === 0) return;
 
+        if (get().isRecording) {
+            void get().stopRecording();
+        }
+
         const currentSnapshot = { nodes: [...nodes], edges: [...edges] };
         const previousSnapshot = past[past.length - 1];
 
@@ -3888,7 +4313,7 @@ export const useStore = create<AppState>((set, get) => ({
         });
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
-        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
+        const { audioNodes, audioInputChains, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
 
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
@@ -3932,6 +4357,18 @@ export const useStore = create<AppState>((set, get) => ({
             rack.clap.disconnect().dispose();
         });
 
+        audioInputChains.forEach((chain) => {
+            try {
+                chain.input.close();
+            } catch {
+                // Ignore close failures during undo re-sync.
+            }
+            chain.input.disconnect();
+            chain.input.dispose();
+            chain.meter.disconnect();
+            chain.meter.dispose();
+        });
+
         // Dispose all patterns
         patterns.forEach((pattern) => {
             pattern.stop().dispose();
@@ -3940,6 +4377,7 @@ export const useStore = create<AppState>((set, get) => ({
         // Clear audio state
         set({
             audioNodes: new Map(),
+            audioInputChains: new Map(),
             drumRacks: new Map(),
             samplerChains: new Map(),
             advancedDrumRacks: new Map(),
@@ -3958,6 +4396,7 @@ export const useStore = create<AppState>((set, get) => ({
                 get().initAudioNode(node.id, node.type, node.data.subType);
             } else if (
                 node.type === 'sampler' ||
+                node.type === 'audioin' ||
                 node.type === 'drum' ||
                 node.type === 'advanceddrum' ||
                 node.type === 'unison' ||
@@ -4012,6 +4451,10 @@ export const useStore = create<AppState>((set, get) => ({
         const { past, future, nodes, edges } = get();
         if (future.length === 0) return;
 
+        if (get().isRecording) {
+            void get().stopRecording();
+        }
+
         const currentSnapshot = { nodes: [...nodes], edges: [...edges] };
         const nextSnapshot = future[future.length - 1];
 
@@ -4032,7 +4475,7 @@ export const useStore = create<AppState>((set, get) => ({
         });
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
-        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
+        const { audioNodes, audioInputChains, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
 
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
@@ -4076,6 +4519,18 @@ export const useStore = create<AppState>((set, get) => ({
             rack.clap.disconnect().dispose();
         });
 
+        audioInputChains.forEach((chain) => {
+            try {
+                chain.input.close();
+            } catch {
+                // Ignore close failures during redo re-sync.
+            }
+            chain.input.disconnect();
+            chain.input.dispose();
+            chain.meter.disconnect();
+            chain.meter.dispose();
+        });
+
         // Dispose all patterns
         patterns.forEach((pattern) => {
             pattern.stop().dispose();
@@ -4084,6 +4539,7 @@ export const useStore = create<AppState>((set, get) => ({
         // Clear audio state
         set({
             audioNodes: new Map(),
+            audioInputChains: new Map(),
             drumRacks: new Map(),
             samplerChains: new Map(),
             advancedDrumRacks: new Map(),
@@ -4102,6 +4558,7 @@ export const useStore = create<AppState>((set, get) => ({
                 get().initAudioNode(node.id, node.type, node.data.subType);
             } else if (
                 node.type === 'sampler' ||
+                node.type === 'audioin' ||
                 node.type === 'drum' ||
                 node.type === 'advanceddrum' ||
                 node.type === 'unison' ||

@@ -1,16 +1,22 @@
 import { useStore } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 
 export default function SpeakerNode({ id }: { id: string }) {
     const masterVolume = useStore((state) => state.masterVolume);
     const setMasterVolume = useStore((state) => state.setMasterVolume);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
+    const accentStyle = useNodeAccentStyle('speaker');
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setMasterVolume(parseFloat(e.target.value));
     };
 
     return (
-        <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative select-none">
+        <div
+            data-node-accent
+            style={accentStyle}
+            className="themed-node bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative select-none"
+        >
             <div className="relative z-10 flex flex-col">
                 <div className="flex items-center mb-3">
                     <button

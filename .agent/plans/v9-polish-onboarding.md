@@ -12,24 +12,42 @@ GitHub issues: #50 (Onboarding), #51 (Theming), #52 (Presets + Visualiser).
 
 ## Progress
 
-- [ ] Read GitHub issues #50, #51, #52 in full
-- [ ] Milestone 1 — Onboarding (#50): multi-step modal with GIF tutorials and intro audio
-- [ ] Milestone 2 — Theming (#51): Light/Dark/System mode + per-node colour overrides
-- [ ] Milestone 3 — Presets & Visualiser (#52): 15+ presets in categories, Visualiser mode selector
-- [ ] npm run build and npm run lint pass
-- [ ] Update TICKETS.md, close GitHub issues #50, #51, #52
+- [x] (2026-03-23) Read GitHub issues #50, #51, and #52 and collapsed the work to onboarding, theming, preset library, and Visualiser core acceptance.
+- [x] (2026-03-23) Milestone 1 — Onboarding (#50): added replayable onboarding modal, intro audio, and five in-repo looping tutorial clips.
+- [x] (2026-03-23) Milestone 2 — Theming (#51): added persisted preferences store, light/dark/system mode, accent override palette, and themed node/menu chrome.
+- [x] (2026-03-23) Milestone 3 — Presets & Visualiser (#52): expanded presets to categorized library with reward-aware locks and rebuilt Visualiser modes with VU + XY input.
+- [x] (2026-03-23) `npm run build` and `npm run lint` pass on the integrated v8/v9/v10 branch state.
+- [ ] (2026-03-23) Update `TICKETS.md`, close GitHub issues #50, #51, and #52, and land the milestone commit.
 
 ## Surprises & Discoveries
 
-[To be filled. GIF asset creation and Light mode CSS are likely the most time-intensive parts.]
+- Observation: the repo-wide hardcoded Tailwind slate classes were easier to migrate with CSS-variable overrides plus opt-in node accent wrappers than by manually rewriting every descendant class.
+  Evidence: `app/globals.css` now maps the shared chrome to variables while nodes opt into `data-node-accent` / `themed-node`.
+- Observation: true screen-captured GIF/WebM assets were awkward in the current session environment, but generated animated SVG clips gave a lightweight in-repo tutorial asset that still ships real motion media.
+  Evidence: `public/onboarding/*.svg` now contains five looping animated tutorial scenes.
+- Observation: dual-input Lissajous support fit the existing architecture best when the second Visualiser input was display-only and ignored by `rebuildAudioGraph`.
+  Evidence: the new secondary handle is validated as audio wiring for UX, but `rebuildAudioGraph` skips routing edges targeting `audio-in-secondary`.
 
 ## Decision Log
 
-[To be filled.]
+- Decision: Store onboarding/theme/accent/reward preferences in a separate persisted Zustand store.
+  Rationale: These settings are user preferences, not patch data, and should survive patch save/load boundaries.
+  Date: 2026-03-23.
+- Decision: Use animated SVG tutorial clips instead of placeholder media or external assets.
+  Rationale: The user requested real in-repo onboarding media; SVG motion clips satisfied that without introducing tooling or binary-asset friction.
+  Date: 2026-03-23.
+- Decision: Keep preset rewards in the same preset catalog with `rewardLocked` gating.
+  Rationale: Campaign unlocks needed to surface naturally in the v9 preset UI without duplicating catalog logic.
+  Date: 2026-03-23.
+- Decision: Persist Visualiser mode in node data instead of component-local state.
+  Rationale: Mode should survive save/load, undo/redo, and preset loading the same way other node settings do.
+  Date: 2026-03-23.
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V9 makes Bloop feel substantially more productized. First-run onboarding now appears after the engine starts, plays the branded intro melody, and shows five looping visual tutorials that can be reopened later from System. Theme mode and node accent overrides persist separately from patches, and reward skins extend the same accent system instead of creating one-off UI paths.
+
+The preset library moved from a flat starter list to a categorized catalog that also supports campaign-locked rewards. The Visualiser now supports waveform, spectrum with peak-hold labels, VU metering, and a dual-input XY mode via a second display-only audio handle.
 
 ## Context and Orientation
 

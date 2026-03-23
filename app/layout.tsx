@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "reactflow/dist/style.css";
 import "./globals.css";
+import ThemeController from "@/components/ThemeController";
 
 
 export const metadata: Metadata = {
@@ -15,8 +16,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
+        <ThemeController />
         {children}
       </body>
     </html>

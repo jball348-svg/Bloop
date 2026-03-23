@@ -6,6 +6,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -98,6 +99,7 @@ export default function AdsrNode({ id }: { id: string }) {
     const decay = nodeData?.decay ?? 0.1;
     const sustain = nodeData?.sustain ?? 0.7;
     const release = nodeData?.release ?? 0.5;
+    const accentStyle = useNodeAccentStyle('adsr');
     
     const handleAttackChange = (value: number) => {
         updateNodeValue(id, { attack: value });
@@ -120,9 +122,13 @@ export default function AdsrNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('adsr') : ''
-        }`}>
+        }`}
+        >
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">

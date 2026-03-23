@@ -11,6 +11,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -35,6 +36,7 @@ export default function PulseNode({ id }: { id: string }) {
     const pulseIntervalMs = nodeData?.pulseIntervalMs ?? 500;
     const pulseNote = nodeData?.pulseNote ?? 'C4';
     const isPlaying = nodeData?.isPlaying ?? false;
+    const accentStyle = useNodeAccentStyle('pulse');
 
     const effectiveIntervalMs = useMemo(
         () => (pulseSync ? Tone.Time(pulseRate).toMilliseconds() : pulseIntervalMs),
@@ -53,7 +55,9 @@ export default function PulseNode({ id }: { id: string }) {
 
     return (
         <div
-            className={`bg-slate-800 border-2 border-lime-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-lime-500/20 group relative select-none${
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-lime-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-lime-500/20 group relative select-none${
                 isAdjacent ? getAdjacencyGlowClasses('pulse') : ''
             }`}
         >

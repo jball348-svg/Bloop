@@ -26,6 +26,7 @@ import {
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
 import KeysNode from '@/components/KeysNode';
+import MidiInNode from '@/components/MidiInNode';
 import ChordNode from '@/components/ChordNode';
 import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
@@ -38,6 +39,7 @@ import SignalFlowOverlay from '@/components/SignalFlowOverlay';
 import QuantizerNode from '@/components/QuantizerNode';
 import MoodPadNode from '@/components/MoodPadNode';
 import SamplerNode from '@/components/SamplerNode';
+import AudioInNode from '@/components/AudioInNode';
 import AdvancedDrumNode from '@/components/AdvancedDrumNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
@@ -47,6 +49,9 @@ import SignalMenu from '@/components/SignalMenu';
 import ControllerMenu from '@/components/ControllerMenu';
 import GlobalMenu from '@/components/GlobalMenu';
 import SystemMenu from '@/components/SystemMenu';
+import OnboardingModal from '@/components/OnboardingModal';
+import CampaignPanel from '@/components/CampaignPanel';
+import { useCampaignStore } from '@/store/campaign';
 
 // Actual rendered widths from Tailwind classes on each component:
 //   ControllerNode → w-72 = 288px
@@ -56,6 +61,7 @@ import SystemMenu from '@/components/SystemMenu';
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys:        { w: 288, h: 320 },
+    midiin:      { w: 256, h: 240 },
     moodpad:     { w: 320, h: 416 },
     pulse:       { w: 288, h: 280 },
     stepsequencer: { w: 352, h: 420 },
@@ -64,12 +70,13 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     adsr:       { w: 224, h: 340 },
     generator:  { w: 240, h: 220 },
     sampler:    { w: 320, h: 432 },
+    audioin:    { w: 256, h: 272 },
     drum:       { w: 320, h: 360 },
     advanceddrum: { w: 432, h: 420 },
     effect:     { w: 224, h: 260 },
     unison:     { w: 224, h: 220 },
     detune:     { w: 224, h: 200 },
-    visualiser: { w: 224, h: 220 },
+    visualiser: { w: 288, h: 320 },
     speaker:    { w: 224, h: 200 },
     tempo:      { w: 256, h: 240 },
 };
@@ -90,6 +97,7 @@ function BloopCanvasInner() {
         addNode,
         removeNodeAndCleanUp,
     } = useStore();
+    const campaignMode = useCampaignStore((state) => state.campaignMode);
     const validateConnection = useStore((state) => state.isValidConnection);
 
     const { screenToFlowPosition } = useReactFlow();
@@ -132,6 +140,7 @@ function BloopCanvasInner() {
         generator: GeneratorNode,
         controller: ControllerNode,
         keys: KeysNode,
+        midiin: MidiInNode,
         chord: ChordNode,
         drum: DrumNode,
         effect: EffectNode,
@@ -141,6 +150,7 @@ function BloopCanvasInner() {
         quantizer: QuantizerNode,
         moodpad: MoodPadNode,
         sampler: SamplerNode,
+        audioin: AudioInNode,
         advanceddrum: AdvancedDrumNode,
         pulse: PulseNode,
         stepsequencer: StepSequencerNode,
@@ -193,6 +203,9 @@ function BloopCanvasInner() {
             subType = 'keys';
             label = 'Keys';
         }
+        if (type === 'midiin') {
+            label = 'MIDI In';
+        }
         if (type === 'moodpad') {
             label = 'Mood Pad';
         }
@@ -217,6 +230,7 @@ function BloopCanvasInner() {
             label = 'Oscillator';
         }
         if (type === 'sampler') label = 'Sampler';
+        if (type === 'audioin') label = 'Audio In';
         if (type === 'drum') label = 'Drums';
         if (type === 'advanceddrum') label = 'Advanced Drums';
         if (type === 'effect') subType = 'reverb';
@@ -243,6 +257,7 @@ function BloopCanvasInner() {
                 bpm,
                 ...(type === 'adsr' ? { attack: 0.01, decay: 0.1, sustain: 0.7, release: 0.5 } : {}),
                 ...(type === 'drum' ? { drumMode: 'hits' as const } : {}),
+                ...(type === 'visualiser' ? { visualiserMode: 'waveform' as const } : {}),
             },
         });
 
@@ -403,60 +418,66 @@ function BloopCanvasInner() {
     }, [removeNodeAndCleanUp]);
 
     return (
-        <main className="w-screen h-screen relative select-none">
-            <SignalMenu />
-            <ControllerMenu />
-            <GlobalMenu />
-            <SystemMenu />
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onEdgeUpdate={onEdgeUpdate}
-                onEdgeUpdateStart={onEdgeUpdateStart}
-                onEdgeUpdateEnd={onEdgeUpdateEnd}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onNodeDragStop={onNodeDragStop}
-                nodeTypes={nodeTypes}
-                defaultEdgeOptions={defaultEdgeOptions}
-                isValidConnection={(connection: Connection) => validateConnection(connection)}
-                connectionLineStyle={{ stroke: '#475569', strokeWidth: 2, strokeDasharray: '5 5' }}
-                fitView
-                fitViewOptions={{ maxZoom: 0.8, padding: 0.2 }}
-                className="bg-slate-950"
-                edgesUpdatable={true}
-                snapToGrid={true}
-                snapGrid={[SNAP_GRID, SNAP_GRID]}
-                minZoom={0.05}
-                translateExtent={[[-100000, -100000], [100000, 100000]]}
-                nodeExtent={[[-100000, -100000], [100000, 100000]]}
-                autoPanOnNodeDrag={true}
-            >
-                <Background
-                    variant={BackgroundVariant.Dots}
-                    gap={20}
-                    size={1}
-                    color="#1e293b"
-                />
-                <Controls position="bottom-right" showInteractive={false} />
-            </ReactFlow>
-            <SignalFlowOverlay />
+        <main className="w-screen h-screen flex select-none" style={{ backgroundColor: 'var(--background)' }}>
+            {campaignMode && <CampaignPanel />}
 
-            <div
-                id="trash-bin"
-                className="absolute bottom-4 right-24 w-16 h-16 bg-cyan-900/50 border border-cyan-400 rounded-xl flex items-center justify-center transition-all hover:bg-cyan-800/60 z-50 pointer-events-none"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
-                    <path d="M3 6h18"></path>
-                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                </svg>
+            <div className="relative flex-1">
+                <SignalMenu />
+                <ControllerMenu />
+                <GlobalMenu />
+                <SystemMenu />
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onEdgeUpdate={onEdgeUpdate}
+                    onEdgeUpdateStart={onEdgeUpdateStart}
+                    onEdgeUpdateEnd={onEdgeUpdateEnd}
+                    onDragOver={onDragOver}
+                    onDrop={onDrop}
+                    onNodeDragStop={onNodeDragStop}
+                    nodeTypes={nodeTypes}
+                    defaultEdgeOptions={defaultEdgeOptions}
+                    isValidConnection={(connection: Connection) => validateConnection(connection)}
+                    connectionLineStyle={{ stroke: 'var(--border-secondary)', strokeWidth: 2, strokeDasharray: '5 5' }}
+                    fitView
+                    fitViewOptions={{ maxZoom: 0.8, padding: 0.2 }}
+                    className="bg-slate-950"
+                    edgesUpdatable={true}
+                    snapToGrid={true}
+                    snapGrid={[SNAP_GRID, SNAP_GRID]}
+                    minZoom={0.05}
+                    translateExtent={[[-100000, -100000], [100000, 100000]]}
+                    nodeExtent={[[-100000, -100000], [100000, 100000]]}
+                    autoPanOnNodeDrag={true}
+                >
+                    <Background
+                        variant={BackgroundVariant.Dots}
+                        gap={20}
+                        size={1}
+                        color="var(--canvas-dot)"
+                    />
+                    <Controls position="bottom-right" showInteractive={false} />
+                </ReactFlow>
+                <SignalFlowOverlay />
+
+                <div
+                    id="trash-bin"
+                    className="absolute bottom-4 right-24 w-16 h-16 border border-cyan-400 rounded-xl flex items-center justify-center transition-all z-50 pointer-events-none"
+                    style={{ backgroundColor: 'rgba(8, 145, 178, 0.2)' }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                </div>
+
+                <OnboardingModal />
+                <EngineControl />
             </div>
-
-            <EngineControl />
         </main>
     );
 }

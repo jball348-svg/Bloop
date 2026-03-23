@@ -12,6 +12,7 @@ import {
     isControlEdge,
     useStore,
 } from '@/store/useStore';
+import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
 
@@ -52,6 +53,7 @@ export default function DrumNode({ id }: { id: string }) {
     const drumPattern = nodeData?.drumPattern;
     const isPlaying = nodeData?.isPlaying ?? false;
     const currentStep = nodeData?.currentStep ?? -1;
+    const accentStyle = useNodeAccentStyle('drum');
     const [mix, setMix] = useState(80);
 
     useEffect(() => {
@@ -107,9 +109,13 @@ export default function DrumNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative select-none${
+        <div
+            data-node-accent
+            style={accentStyle}
+            className={`themed-node bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative select-none${
             isAdjacent ? getAdjacencyGlowClasses('drum') : ''
-        }`}>
+        }`}
+        >
 
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle
