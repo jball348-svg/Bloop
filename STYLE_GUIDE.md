@@ -17,7 +17,9 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | ADSR | Controller | `border-amber-700` | `text-amber-600` | `bg-amber-600` | `amber-700` (dark amber, distinct from yellow) |
 | Chord | Controller | `border-sky-500` | `text-sky-300` | `bg-sky-400` | `sky` |
 | Generator | Signal | `border-red-500` | `text-red-400` | `bg-red-500` | `red` |
+| Sampler | Signal | `border-stone-400` | `text-stone-200` | `bg-stone-400` | `stone` |
 | Drum | Signal | `border-orange-500` | `text-orange-400` | `bg-orange-500` | `orange` |
+| Advanced Drums | Signal | `border-green-500` | `text-green-300` | `bg-green-500` | `green` |
 | Effect | Signal | `border-fuchsia-500` | `text-fuchsia-400` | `bg-fuchsia-500` | `fuchsia` |
 | Unison | Signal | `border-violet-500` | `text-violet-400` | `bg-violet-500` | `violet` |
 | Detune | Signal | `border-teal-500` | `text-teal-400` | `bg-teal-500` | `teal` |
@@ -84,7 +86,9 @@ Always in the top-left of every node. Hoover state uses the node accent colour.
 | Mood Pad | `w-80` (320px) |
 | Pulse | `w-72` (288px) |
 | Step Sequencer | `w-[22rem]` (352px) |
+| Sampler | `w-80` (320px) |
 | Drum | `w-80` (320px) |
+| Advanced Drums | `w-[27rem]` (432px) |
 | Generator | `w-60` (240px) |
 | Quantizer | `w-60` (240px) |
 | Effect / Chord / ADSR / Speaker | `w-56` (224px) |
@@ -95,6 +99,10 @@ Always in the top-left of every node. Hoover state uses the node accent colour.
 ## Menu Colour Coordination
 
 - **Controllers menu** (left): yellow, white, lime, blue, amber, sky, rose
-- **Signals menu** (top): red, orange, fuchsia, violet, teal, pink, purple
+- **Signals menu** (top): red, stone, orange, green, fuchsia, violet, teal, pink, purple
 - **Global menu** (right): indigo, emerald
 - **System menu** (bottom): neutral/slate (New, Save, Load, Presets, Undo, Redo)
+
+## Legacy Notes
+
+- `DrumNode` is now legacy-facing UI. Keep it for backwards compatibility with saved patches, but route new patches toward `AdvancedDrumNode`.

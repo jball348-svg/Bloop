@@ -72,13 +72,13 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#42](https://github.com/jball348-svg/Bloop/issues/42) | Node Menu Sub-divisions — Generators, Modulators, Controllers, Triggers | ✅ Closed |
 | [#43](https://github.com/jball348-svg/Bloop/issues/43) | XY Mood Pad — Intuitive Non-Musical Controller | ✅ Closed |
 
-### V7 — Roadmap
+### V7 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#44](https://github.com/jball348-svg/Bloop/issues/44) | Sampler Node — Audio File Import & Playback | 🟣 V7 Roadmap |
-| [#45](https://github.com/jball348-svg/Bloop/issues/45) | Sample Manipulation — Pitch Shift, Time Stretch & Reverse | 🟣 V7 Roadmap |
-| [#46](https://github.com/jball348-svg/Bloop/issues/46) | Advanced Drum Machine — Sample-Backed 16-Step Sequencer | 🟣 V7 Roadmap |
+| [#44](https://github.com/jball348-svg/Bloop/issues/44) | Sampler Node — Audio File Import & Playback | ✅ Closed |
+| [#45](https://github.com/jball348-svg/Bloop/issues/45) | Sample Manipulation — Pitch Shift, Time Stretch & Reverse | ✅ Closed |
+| [#46](https://github.com/jball348-svg/Bloop/issues/46) | Advanced Drum Machine — Sample-Backed 16-Step Sequencer | ✅ Closed |
 
 ### V8 — Roadmap
 
@@ -142,7 +142,7 @@ V6 (requires v5 complete):
 ~~#41 (Quantizer)~~ ✅ → ~~#42 (Sub-menus)~~ ✅ → ~~#43 (Mood Pad)~~ ✅
 
 V7 (requires v6 complete):
-#44 (Sampler) → #45 (Sample Manip) → #46 (Drum Machine Rebuild)
+~~#44 (Sampler)~~ ✅ → ~~#45 (Sample Manip)~~ ✅ → ~~#46 (Drum Machine Rebuild)~~ ✅
 
 V8 (requires v7 complete):
 #47 (MIDI In) → #48 (Audio In) → #49 (Session Export)

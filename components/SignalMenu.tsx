@@ -8,7 +8,9 @@ const SIGNAL_SECTIONS = [
         label: 'Generators',
         tools: [
             { type: 'generator', label: 'Generator', color: 'bg-red-500' },
+            { type: 'sampler', label: 'Sampler', color: 'bg-stone-400 text-slate-950' },
             { type: 'drum', label: 'Drum', color: 'bg-orange-500' },
+            { type: 'advanceddrum', label: 'Advanced Drums', color: 'bg-green-500 text-slate-950' },
         ],
     },
     {

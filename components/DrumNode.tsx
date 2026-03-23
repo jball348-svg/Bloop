@@ -136,6 +136,9 @@ export default function DrumNode({ id }: { id: string }) {
                         <span className="text-[10px] font-black uppercase text-orange-400 tracking-[0.2em]">
                             Drums
                         </span>
+                        <div className="rounded-xl border border-orange-500/15 bg-slate-900/40 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.16em] text-orange-200/80">
+                            Legacy node. New patches should use Advanced Drums.
+                        </div>
                         <select
                             value={drumMode}
                             onChange={handleModeChange}

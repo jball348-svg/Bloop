@@ -69,11 +69,13 @@ export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 export type TransportRate = (typeof TRANSPORT_RATE_OPTIONS)[number]['value'];
 export type AudioNodeType =
     | 'generator'
+    | 'sampler'
     | 'effect'
     | 'speaker'
     | 'controller'
     | 'tempo'
     | 'drum'
+    | 'advanceddrum'
     | 'chord'
     | 'adsr'
     | 'keys'
@@ -94,6 +96,13 @@ export type SequencerStep = {
     note: string;
     gate: number;
 };
+export type AdvancedDrumTrackData = {
+    label: string;
+    steps: number[];
+    length: number;
+    sampleName?: string;
+    sampleDataUrl?: string;
+};
 export type AppEdgeData = {
     kind?: ConnectionKind;
     originalSource?: string;
@@ -110,6 +119,21 @@ type DrumRack = {
     snare: Tone.NoiseSynth;
     hatClosed: Tone.MetalSynth;
     hatOpen: Tone.MetalSynth;
+    loop: Tone.Loop | null;
+    step: number;
+};
+type SamplerChain = {
+    player: Tone.Player;
+    pitchShift: Tone.PitchShift;
+    previewTimeout: ReturnType<typeof setTimeout> | null;
+};
+type AdvancedDrumRack = {
+    output: Tone.Gain;
+    kick: Tone.MembraneSynth;
+    snare: Tone.NoiseSynth;
+    hat: Tone.MetalSynth;
+    clap: Tone.NoiseSynth;
+    players: Map<number, Tone.Player>;
     loop: Tone.Loop | null;
     step: number;
 };
@@ -188,6 +212,16 @@ export type AppNode = Node & {
         bypass?: boolean;
         moodX?: number;
         moodY?: number;
+        hasSample?: boolean;
+        sampleName?: string;
+        sampleDataUrl?: string;
+        sampleWaveform?: number[];
+        loop?: boolean;
+        playbackRate?: number;
+        reverse?: boolean;
+        pitchShift?: number;
+        advancedDrumTracks?: AdvancedDrumTrackData[];
+        swing?: number;
     };
     type: AudioNodeType;
 };
@@ -424,7 +458,7 @@ const collectNoteDispatches = (
                 return;
             }
 
-            if (targetNode.type === 'generator') {
+            if (targetNode.type === 'generator' || targetNode.type === 'sampler') {
                 dispatches.push({ generatorId: targetNode.id, note });
                 return;
             }
@@ -618,7 +652,9 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     quantizer: { w: 240, h: 272 },
     adsr: { w: 224, h: 340 },
     generator: { w: 240, h: 220 },
+    sampler: { w: 320, h: 432 },
     drum: { w: 320, h: 360 },
+    advanceddrum: { w: 432, h: 420 },
     effect: { w: 224, h: 260 },
     unison: { w: 224, h: 220 },
     detune: { w: 224, h: 200 },
@@ -736,7 +772,9 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     quantizer: 0.65,
     adsr: 0.75,
     generator: 1,
+    sampler: 1,
     drum: 1,
+    advanceddrum: 1,
     unison: 1.5,
     detune: 1.5,
     effect: 2,
@@ -754,10 +792,10 @@ export const getAdjacencyGlowClasses = (type?: AudioNodeType | string | null) =>
         ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-[#39ff14] shadow-[0_0_24px_rgba(57,255,20,0.25)]'
         : ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]';
 
-const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'drum']);
+const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'sampler', 'drum', 'advanceddrum']);
 const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
 const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'unison', 'detune', 'visualiser', 'speaker']);
-const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'drum', 'effect', 'unison', 'detune', 'visualiser']);
+const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'sampler', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser']);
 
 const getClusterSignalEntry = (clusterIds: Set<string>, nodes: AppNode[], kind: ConnectionKind): string | null => {
     const clusterNodes = nodes.filter(n => clusterIds.has(n.id));
@@ -777,16 +815,21 @@ const getClusterSignalExit = (clusterIds: Set<string>, nodes: AppNode[], kind: C
 
 export const VALID_AUTO_WIRE_PAIRS = new Set([
     'controller->quantizer',
+    'controller->sampler',
     'keys->quantizer',
+    'keys->sampler',
     'moodpad->quantizer',
     'moodpad->chord',
     'moodpad->adsr',
     'moodpad->generator',
+    'moodpad->sampler',
     'pulse->quantizer',
     'pulse->chord',
     'pulse->adsr',
     'pulse->stepsequencer',
     'pulse->generator',
+    'pulse->sampler',
+    'pulse->advanceddrum',
     'controller->chord',
     'controller->adsr',
     'controller->generator',
@@ -794,11 +837,14 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'keys->adsr',
     'keys->generator',
     'keys->drum',
+    'chord->sampler',
     'quantizer->chord',
     'quantizer->adsr',
     'quantizer->generator',
+    'quantizer->sampler',
     'chord->adsr',
     'chord->generator',
+    'adsr->sampler',
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
@@ -806,10 +852,15 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'stepsequencer->chord',
     'stepsequencer->adsr',
     'stepsequencer->generator',
+    'stepsequencer->sampler',
     'generator->unison',
+    'sampler->unison',
     'generator->detune',
+    'sampler->detune',
     'drum->unison',
+    'advanceddrum->unison',
     'drum->detune',
+    'advanceddrum->detune',
     'unison->effect',
     'detune->effect',
     'unison->unison',
@@ -817,12 +868,16 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'detune->unison',
     'detune->detune',
     'generator->effect',
+    'sampler->effect',
     'drum->effect',
+    'advanceddrum->effect',
     'effect->effect',
     'effect->unison',
     'effect->detune',
     'generator->visualiser',
+    'sampler->visualiser',
     'drum->visualiser',
+    'advanceddrum->visualiser',
     'effect->visualiser',
     'unison->visualiser',
     'detune->visualiser',
@@ -834,16 +889,21 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
 
 export const CONTROL_WIRE_PAIRS = new Set([
     'controller->quantizer',
+    'controller->sampler',
     'keys->quantizer',
+    'keys->sampler',
     'moodpad->quantizer',
     'moodpad->chord',
     'moodpad->adsr',
     'moodpad->generator',
+    'moodpad->sampler',
     'pulse->quantizer',
     'pulse->chord',
     'pulse->adsr',
     'pulse->stepsequencer',
     'pulse->generator',
+    'pulse->sampler',
+    'pulse->advanceddrum',
     'controller->chord',
     'controller->adsr',
     'controller->generator',
@@ -851,11 +911,14 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'keys->adsr',
     'keys->generator',
     'keys->drum',
+    'chord->sampler',
     'quantizer->chord',
     'quantizer->adsr',
     'quantizer->generator',
+    'quantizer->sampler',
     'chord->adsr',
     'chord->generator',
+    'adsr->sampler',
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
@@ -863,6 +926,7 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'stepsequencer->chord',
     'stepsequencer->adsr',
     'stepsequencer->generator',
+    'stepsequencer->sampler',
 ]);
 
 const clampTempoBpm = (bpm: number) =>
@@ -908,6 +972,45 @@ export const createDefaultStepSequence = (): SequencerStep[] => {
 
 const getLoopIntervalSeconds = (sync: boolean, rate: TransportRate, intervalMs: number) =>
     sync ? rate : Math.max(intervalMs, 50) / 1000;
+
+export const createDefaultAdvancedDrumTracks = (): AdvancedDrumTrackData[] => [
+    {
+        label: 'Kick',
+        length: 16,
+        steps: [3, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0],
+    },
+    {
+        label: 'Snare',
+        length: 16,
+        steps: [0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0],
+    },
+    {
+        label: 'Hat',
+        length: 12,
+        steps: [2, 0, 2, 0, 2, 1, 2, 0, 2, 0, 2, 1, 2, 0, 2, 0],
+    },
+    {
+        label: 'Clap',
+        length: 8,
+        steps: [0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0],
+    },
+];
+
+const velocityToGain = (velocity: number) => {
+    if (velocity <= 0) {
+        return 0;
+    }
+
+    if (velocity === 1) {
+        return 0.45;
+    }
+
+    if (velocity === 2) {
+        return 0.72;
+    }
+
+    return 1;
+};
 
 const createDrumRack = (): DrumRack => {
     const output = new Tone.Gain(0.9);
@@ -962,6 +1065,42 @@ const createDrumRack = (): DrumRack => {
         snare,
         hatClosed,
         hatOpen,
+        loop: null,
+        step: 0,
+    };
+};
+
+const createAdvancedDrumRack = (): AdvancedDrumRack => {
+    const output = new Tone.Gain(0.9);
+    const kick = new Tone.MembraneSynth({
+        pitchDecay: 0.03,
+        octaves: 8,
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.1 },
+    }).connect(output);
+    const snare = new Tone.NoiseSynth({
+        noise: { type: 'white', playbackRate: 1.6 },
+        envelope: { attack: 0.001, decay: 0.16, sustain: 0 },
+    }).connect(output);
+    const hat = new Tone.MetalSynth({
+        harmonicity: 5.1,
+        modulationIndex: 26,
+        resonance: 3200,
+        octaves: 1.5,
+        envelope: { attack: 0.001, decay: 0.08, release: 0.03 },
+    }).connect(output);
+    hat.frequency.value = 260;
+    const clap = new Tone.NoiseSynth({
+        noise: { type: 'pink', playbackRate: 1.2 },
+        envelope: { attack: 0.001, decay: 0.22, sustain: 0 },
+    }).connect(output);
+
+    return {
+        output,
+        kick,
+        snare,
+        hat,
+        clap,
+        players: new Map(),
         loop: null,
         step: 0,
     };
@@ -1110,6 +1249,8 @@ type AppState = {
     masterOutput: Tone.Volume | null;
     masterVolume: number;
     drumRacks: Map<string, DrumRack>;
+    samplerChains: Map<string, SamplerChain>;
+    advancedDrumRacks: Map<string, AdvancedDrumRack>;
     patterns: Map<string, DisposablePattern>;
     activeChordVoicings: Map<string, ActiveChordVoicing>;
     activeQuantizedNotes: Map<string, ActiveQuantizedNote>;
@@ -1142,6 +1283,21 @@ type AppState = {
     updateTempoBpm: (id: string, bpm: number) => void;
     updateArpScale: (id: string, root: string, scale: string) => void;
     updateOctave: (id: string, octave: number) => void;
+    loadSample: (
+        nodeId: string,
+        audioBuffer: AudioBuffer,
+        options?: { sampleName?: string; sampleDataUrl?: string; waveform?: number[] }
+    ) => void;
+    updateSamplerSettings: (
+        id: string,
+        settings: Partial<Pick<AppNode['data'], 'loop' | 'playbackRate' | 'reverse' | 'pitchShift'>>
+    ) => void;
+    loadAdvancedDrumTrackSample: (
+        nodeId: string,
+        trackIndex: number,
+        audioBuffer: AudioBuffer,
+        options?: { sampleName?: string; sampleDataUrl?: string }
+    ) => void;
     setDrumMode: (id: string, mode: DrumMode) => void;
     toggleDrumStep: (id: string, part: DrumPart, step: number) => void;
     triggerDrumHit: (id: string, part: DrumPart, time?: number | string) => void;
@@ -1149,6 +1305,7 @@ type AppState = {
     triggerNoteOff: (id: string, note: string) => void;
     firePulse: (pulseId: string, intervalMs?: number) => void;
     advanceSequencerStep: (id: string, intervalMs?: number) => void;
+    advanceAdvancedDrumStep: (id: string, time?: number) => void;
     toggleSignalFlow: () => void;
     setSignalFlowVisible: (visible: boolean) => void;
     emitSignalFlow: (sourceId: string, kind: ConnectionKind, color?: string) => void;
@@ -1181,6 +1338,8 @@ export const useStore = create<AppState>((set, get) => ({
     masterOutput: null,
     masterVolume: DEFAULT_MASTER_VOLUME,
     drumRacks: new Map(),
+    samplerChains: new Map(),
+    advancedDrumRacks: new Map(),
     patterns: new Map(),
     activeChordVoicings: new Map(),
     activeQuantizedNotes: new Map(),
@@ -1419,11 +1578,30 @@ export const useStore = create<AppState>((set, get) => ({
                 generator.set({ oscillator: { type: waveShape } as never });
                 node = generator;
             }
+        } else if (type === 'sampler') {
+            const player = new Tone.Player({ autostart: false, loop: false, playbackRate: 1, reverse: false });
+            const pitchShift = new Tone.PitchShift({ pitch: 0, wet: 1 });
+            player.connect(pitchShift);
+
+            const nextSamplerChains = new Map(get().samplerChains);
+            nextSamplerChains.set(id, {
+                player,
+                pitchShift,
+                previewTimeout: null,
+            });
+            set({ samplerChains: nextSamplerChains });
+            node = pitchShift;
         } else if (type === 'drum') {
             const rack = createDrumRack();
             const nextDrumRacks = new Map(get().drumRacks);
             nextDrumRacks.set(id, rack);
             set({ drumRacks: nextDrumRacks });
+            node = rack.output;
+        } else if (type === 'advanceddrum') {
+            const rack = createAdvancedDrumRack();
+            const nextAdvancedDrumRacks = new Map(get().advancedDrumRacks);
+            nextAdvancedDrumRacks.set(id, rack);
+            set({ advancedDrumRacks: nextAdvancedDrumRacks });
             node = rack.output;
         } else if (type === 'effect') {
             const actualSubType = subType || 'none';
@@ -1554,8 +1732,11 @@ export const useStore = create<AppState>((set, get) => ({
         const {
             audioNodes,
             drumRacks,
+            samplerChains,
+            advancedDrumRacks,
             patterns,
             activeChordVoicings,
+            activeQuantizedNotes,
             generatorNoteCounts,
             activeGenerators,
             activeDrumPads,
@@ -1599,10 +1780,53 @@ export const useStore = create<AppState>((set, get) => ({
             });
         }
 
+        const samplerChain = samplerChains.get(id);
+        if (samplerChain) {
+            if (samplerChain.previewTimeout) {
+                clearTimeout(samplerChain.previewTimeout);
+            }
+            try {
+                samplerChain.player.stop();
+            } catch {
+                // Ignore redundant stop calls when sampler preview is already idle.
+            }
+            samplerChain.player.disconnect().dispose();
+
+            const nextSamplerChains = new Map(samplerChains);
+            nextSamplerChains.delete(id);
+            set({ samplerChains: nextSamplerChains });
+        }
+
+        const advancedRack = advancedDrumRacks.get(id);
+        if (advancedRack) {
+            advancedRack.loop?.dispose();
+            advancedRack.players.forEach((player) => {
+                try {
+                    player.stop();
+                } catch {
+                    // Ignore redundant stop calls when deleting the drum machine.
+                }
+                player.disconnect().dispose();
+            });
+            advancedRack.kick.disconnect().dispose();
+            advancedRack.snare.disconnect().dispose();
+            advancedRack.hat.disconnect().dispose();
+            advancedRack.clap.disconnect().dispose();
+
+            const nextAdvancedDrumRacks = new Map(advancedDrumRacks);
+            nextAdvancedDrumRacks.delete(id);
+            set({ advancedDrumRacks: nextAdvancedDrumRacks });
+        }
+
         const nextChordVoicings = new Map(activeChordVoicings);
         [...nextChordVoicings.keys()]
             .filter((voicingKey) => voicingKey.startsWith(`${id}::`))
             .forEach((voicingKey) => nextChordVoicings.delete(voicingKey));
+
+        const nextQuantizedNotes = new Map(activeQuantizedNotes);
+        [...nextQuantizedNotes.keys()]
+            .filter((quantizedKey) => quantizedKey.startsWith(`${id}::`))
+            .forEach((quantizedKey) => nextQuantizedNotes.delete(quantizedKey));
 
         const nextGeneratorNoteCounts = new Map(generatorNoteCounts);
         nextGeneratorNoteCounts.delete(id);
@@ -1612,6 +1836,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         set({
             activeChordVoicings: nextChordVoicings,
+            activeQuantizedNotes: nextQuantizedNotes,
             generatorNoteCounts: nextGeneratorNoteCounts,
             activeGenerators: nextActiveGenerators,
         });
@@ -1714,8 +1939,10 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Handle drum mix - drum rack output is a Gain node
         if (node instanceof Tone.Gain && typeof value.mix === 'number') {
-            const { drumRacks } = get();
-            const isDrumOutput = Array.from(drumRacks.values()).some(rack => rack.output === node);
+            const { drumRacks, advancedDrumRacks } = get();
+            const isDrumOutput =
+                Array.from(drumRacks.values()).some(rack => rack.output === node) ||
+                Array.from(advancedDrumRacks.values()).some(rack => rack.output === node);
 
             if (isDrumOutput) {
                 if (value.mix === 0) {
@@ -1840,6 +2067,124 @@ export const useStore = create<AppState>((set, get) => ({
         });
     },
 
+    loadSample: (nodeId: string, audioBuffer: AudioBuffer, options) => {
+        const chain = get().samplerChains.get(nodeId);
+        if (!chain) {
+            return;
+        }
+
+        chain.player.buffer = new Tone.ToneAudioBuffer(audioBuffer);
+
+        const currentNode = get().nodes.find((node: AppNode) => node.id === nodeId);
+        chain.player.loop = currentNode?.data.loop ?? false;
+        chain.player.reverse = currentNode?.data.reverse ?? false;
+        chain.player.playbackRate = currentNode?.data.playbackRate ?? 1;
+        chain.pitchShift.pitch = currentNode?.data.pitchShift ?? 0;
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === nodeId
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            hasSample: true,
+                            sampleName: options?.sampleName ?? node.data.sampleName ?? 'Loaded Sample',
+                            sampleDataUrl: options?.sampleDataUrl ?? node.data.sampleDataUrl,
+                            sampleWaveform: options?.waveform ?? node.data.sampleWaveform ?? [],
+                        },
+                    }
+                    : node
+            ),
+        });
+    },
+
+    updateSamplerSettings: (id: string, settings) => {
+        const chain = get().samplerChains.get(id);
+        if (!chain) {
+            return;
+        }
+
+        if (typeof settings.loop === 'boolean') {
+            chain.player.loop = settings.loop;
+        }
+        if (typeof settings.playbackRate === 'number') {
+            chain.player.playbackRate = settings.playbackRate;
+        }
+        if (typeof settings.reverse === 'boolean') {
+            chain.player.reverse = settings.reverse;
+        }
+        if (typeof settings.pitchShift === 'number') {
+            chain.pitchShift.pitch = settings.pitchShift;
+        }
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            ...(typeof settings.loop === 'boolean' ? { loop: settings.loop } : {}),
+                            ...(typeof settings.playbackRate === 'number' ? { playbackRate: settings.playbackRate } : {}),
+                            ...(typeof settings.reverse === 'boolean' ? { reverse: settings.reverse } : {}),
+                            ...(typeof settings.pitchShift === 'number' ? { pitchShift: settings.pitchShift } : {}),
+                        },
+                    }
+                    : node
+            ),
+        });
+    },
+
+    loadAdvancedDrumTrackSample: (nodeId: string, trackIndex: number, audioBuffer: AudioBuffer, options) => {
+        const rack = get().advancedDrumRacks.get(nodeId);
+        if (!rack) {
+            return;
+        }
+
+        const existingPlayer = rack.players.get(trackIndex);
+        if (existingPlayer) {
+            try {
+                existingPlayer.stop();
+            } catch {
+                // Ignore redundant stop calls when replacing a track sample.
+            }
+            existingPlayer.disconnect().dispose();
+        }
+
+        const player = new Tone.Player({ autostart: false, loop: false, playbackRate: 1, reverse: false }).connect(rack.output);
+        player.buffer = new Tone.ToneAudioBuffer(audioBuffer);
+        rack.players.set(trackIndex, player);
+
+        set({
+            nodes: get().nodes.map((node: AppNode) => {
+                if (node.id !== nodeId || node.type !== 'advanceddrum') {
+                    return node;
+                }
+
+                const tracks = [...(node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks())];
+                const currentTrack = tracks[trackIndex];
+                if (!currentTrack) {
+                    return node;
+                }
+
+                tracks[trackIndex] = {
+                    ...currentTrack,
+                    sampleName: options?.sampleName ?? currentTrack.sampleName ?? `Track ${trackIndex + 1}`,
+                    sampleDataUrl: options?.sampleDataUrl ?? currentTrack.sampleDataUrl,
+                };
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        advancedDrumTracks: tracks,
+                    },
+                };
+            }),
+        });
+    },
+
     setDrumMode: (id: string, mode: DrumMode) => {
         const { nodes, drumRacks } = get();
         const currentNode = nodes.find((node: AppNode) => node.id === id && node.type === 'drum');
@@ -1943,6 +2288,21 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     triggerNoteOn: (id: string, note: string) => {
+        const samplerChain = get().samplerChains.get(id);
+        if (samplerChain?.player.loaded) {
+            try {
+                samplerChain.player.stop();
+            } catch {
+                // Ignore redundant stop calls when retriggering the sampler.
+            }
+            samplerChain.player.start();
+            set({
+                activeGenerators: new Set([...get().activeGenerators, id]),
+            });
+            get().emitSignalFlow(id, 'audio');
+            return;
+        }
+
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
             node.triggerAttack(note);
@@ -1966,6 +2326,19 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     triggerNoteOff: (id: string, note: string) => {
+        const samplerChain = get().samplerChains.get(id);
+        if (samplerChain?.player.loaded) {
+            if (samplerChain.player.loop) {
+                samplerChain.player.stop();
+            }
+            const nextActiveGenerators = new Set(get().activeGenerators);
+            nextActiveGenerators.delete(id);
+            set({
+                activeGenerators: nextActiveGenerators,
+            });
+            return;
+        }
+
         const node = get().audioNodes.get(id);
         if (node instanceof Tone.PolySynth) {
             node.triggerRelease(note);
@@ -2081,7 +2454,83 @@ export const useStore = create<AppState>((set, get) => ({
                 if (targetNode.type === 'stepsequencer') {
                     get().advanceSequencerStep(targetNode.id, intervalMs);
                 }
+
+                if (targetNode.type === 'advanceddrum') {
+                    get().advanceAdvancedDrumStep(targetNode.id);
+                }
             });
+    },
+
+    advanceAdvancedDrumStep: (id: string, time?: number) => {
+        const rack = get().advancedDrumRacks.get(id);
+        const currentNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'advanceddrum');
+        if (!rack || !currentNode) {
+            return;
+        }
+
+        const tracks: AdvancedDrumTrackData[] =
+            currentNode.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks();
+        const nextStep = ((currentNode.data.currentStep ?? -1) + 1) % DRUM_STEP_COUNT;
+        const swing = currentNode.data.swing ?? 0;
+        const baseTime = typeof time === 'number' ? time : Tone.now();
+        let firedTrack = false;
+
+        tracks.forEach((track, trackIndex) => {
+            const trackLength = Math.max(1, Math.min(DRUM_STEP_COUNT, track.length));
+            const velocity = track.steps[nextStep % trackLength] ?? 0;
+            if (velocity <= 0) {
+                return;
+            }
+
+            const scheduledTime =
+                baseTime +
+                (nextStep % 2 === 1 ? Tone.Time('16n').toSeconds() * 0.5 * swing : 0);
+            const gain = velocityToGain(velocity);
+            const customPlayer = rack.players.get(trackIndex);
+
+            if (customPlayer?.loaded) {
+                customPlayer.volume.value = Tone.gainToDb(Math.max(gain, 0.001));
+                customPlayer.start(scheduledTime);
+            } else if (trackIndex === 0) {
+                rack.kick.triggerAttackRelease('C1', '8n', scheduledTime, gain);
+            } else if (trackIndex === 1) {
+                rack.snare.triggerAttackRelease('16n', scheduledTime, gain);
+            } else if (trackIndex === 2) {
+                rack.hat.triggerAttackRelease('C6', '32n', scheduledTime, gain);
+            } else {
+                rack.clap.triggerAttackRelease('16n', scheduledTime, gain);
+            }
+
+            firedTrack = true;
+        });
+
+        if (firedTrack) {
+            get().emitSignalFlow(id, 'audio');
+        }
+
+        rack.step = nextStep;
+
+        const updateStep = () => {
+            set({
+                nodes: get().nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                currentStep: nextStep,
+                            },
+                        }
+                        : node
+                ),
+            });
+        };
+
+        if (typeof time === 'number') {
+            Tone.getDraw().schedule(updateStep, time);
+        } else {
+            updateStep();
+        }
     },
 
     advanceSequencerStep: (id: string, intervalMs = 250) => {
@@ -2149,6 +2598,19 @@ export const useStore = create<AppState>((set, get) => ({
         let nextGeneratorNoteCounts = generatorNoteCounts;
         const nextActiveGenerators = new Set(activeGenerators);
         dispatches.forEach(({ generatorId, note: voicedNote }) => {
+            const samplerChain = get().samplerChains.get(generatorId);
+            if (samplerChain?.player.loaded) {
+                try {
+                    samplerChain.player.stop();
+                } catch {
+                    // Ignore redundant stop calls when retriggering the sampler.
+                }
+                samplerChain.player.start();
+                nextActiveGenerators.add(generatorId);
+                get().emitSignalFlow(generatorId, 'audio');
+                return;
+            }
+
             const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
                 targetNode.triggerAttack(voicedNote);
@@ -2203,6 +2665,15 @@ export const useStore = create<AppState>((set, get) => ({
         let nextGeneratorNoteCounts = generatorNoteCounts;
         const nextActiveGenerators = new Set(activeGenerators);
         dispatches.forEach(({ generatorId, note: voicedNote }) => {
+            const samplerChain = get().samplerChains.get(generatorId);
+            if (samplerChain?.player.loaded) {
+                if (samplerChain.player.loop) {
+                    samplerChain.player.stop();
+                }
+                nextActiveGenerators.delete(generatorId);
+                return;
+            }
+
             const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
                 targetNode.triggerRelease(voicedNote);
@@ -2233,9 +2704,66 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     toggleNodePlayback: (id: string, isPlaying: boolean) => {
-        const { audioNodes, drumRacks, nodes, patterns } = get();
+        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, nodes, patterns } = get();
         const nodeData = nodes.find((node: AppNode) => node.id === id);
         if (!nodeData) {
+            return;
+        }
+
+        if (nodeData.type === 'sampler') {
+            const chain = samplerChains.get(id);
+            if (!chain?.player.loaded) {
+                return;
+            }
+
+            if (chain.previewTimeout) {
+                clearTimeout(chain.previewTimeout);
+                chain.previewTimeout = null;
+            }
+
+            if (isPlaying) {
+                try {
+                    chain.player.stop();
+                } catch {
+                    // Ignore redundant stop calls when preview is already idle.
+                }
+                chain.player.start();
+
+                if (!chain.player.loop) {
+                    chain.previewTimeout = setTimeout(() => {
+                        const nextActiveGenerators = new Set(get().activeGenerators);
+                        nextActiveGenerators.delete(id);
+                        set({
+                            activeGenerators: nextActiveGenerators,
+                            nodes: get().nodes.map((node: AppNode) =>
+                                node.id === id
+                                    ? { ...node, data: { ...node.data, isPlaying: false } }
+                                    : node
+                            ),
+                        });
+                    }, (chain.player.buffer.duration / Math.max(chain.player.playbackRate, 0.25)) * 1000);
+                }
+
+                set({
+                    activeGenerators: new Set([...get().activeGenerators, id]),
+                });
+            } else {
+                try {
+                    chain.player.stop();
+                } catch {
+                    // Ignore redundant stop calls when preview is already idle.
+                }
+
+                const nextActiveGenerators = new Set(get().activeGenerators);
+                nextActiveGenerators.delete(id);
+                set({ activeGenerators: nextActiveGenerators });
+            }
+
+            set({
+                nodes: nodes.map((node: AppNode) =>
+                    node.id === id ? { ...node, data: { ...node.data, isPlaying } } : node
+                ),
+            });
             return;
         }
 
@@ -2350,6 +2878,45 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
+        if (nodeData.type === 'advanceddrum') {
+            const rack = advancedDrumRacks.get(id);
+            if (!rack) {
+                return;
+            }
+
+            if (isPlaying) {
+                if (!rack.loop) {
+                    rack.loop = new Tone.Loop((time) => {
+                        get().advanceAdvancedDrumStep(id, time);
+                    }, '16n');
+                }
+
+                rack.loop.cancel(0);
+                rack.step = 0;
+                rack.loop.start(0);
+            } else {
+                rack.loop?.stop(0);
+                rack.loop?.cancel(0);
+                rack.step = 0;
+            }
+
+            set({
+                nodes: nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                currentStep: isPlaying ? node.data.currentStep ?? -1 : -1,
+                                isPlaying,
+                            },
+                        }
+                        : node
+                ),
+            });
+            return;
+        }
+
         const node = audioNodes.get(id);
         if (node instanceof Tone.Oscillator) {
             if (isPlaying) {
@@ -2411,6 +2978,23 @@ export const useStore = create<AppState>((set, get) => ({
                                     waveShape: node.data.waveShape ?? 'sine',
                                 },
                             }
+                            : node.type === 'sampler'
+                                ? {
+                                    ...node,
+                                    data: {
+                                        ...node.data,
+                                        label: node.data.label || 'Sampler',
+                                        hasSample: node.data.hasSample ?? false,
+                                        sampleName: node.data.sampleName ?? '',
+                                        sampleDataUrl: node.data.sampleDataUrl,
+                                        sampleWaveform: node.data.sampleWaveform ?? [],
+                                        loop: node.data.loop ?? false,
+                                        playbackRate: node.data.playbackRate ?? 1,
+                                        reverse: node.data.reverse ?? false,
+                                        pitchShift: node.data.pitchShift ?? 0,
+                                        isPlaying: node.data.isPlaying ?? false,
+                                    },
+                                }
                             : node.type === 'drum'
                                 ? {
                                     ...node,
@@ -2423,6 +3007,18 @@ export const useStore = create<AppState>((set, get) => ({
                                         isPlaying: node.data.isPlaying ?? false,
                                     },
                                 }
+                                : node.type === 'advanceddrum'
+                                    ? {
+                                        ...node,
+                                        data: {
+                                            ...node.data,
+                                            label: node.data.label || 'Advanced Drums',
+                                            advancedDrumTracks: node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks(),
+                                            swing: node.data.swing ?? 0,
+                                            currentStep: node.data.currentStep ?? -1,
+                                            isPlaying: node.data.isPlaying ?? false,
+                                        },
+                                    }
                                 : node.type === 'pulse'
                                     ? {
                                         ...node,
@@ -2490,11 +3086,23 @@ export const useStore = create<AppState>((set, get) => ({
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.waveShape);
         } else if (nextNode.data.subType && nextNode.data.subType !== 'none') {
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
-        } else if (nextNode.type === 'drum' || nextNode.type === 'unison' || nextNode.type === 'detune' || nextNode.type === 'visualiser') {
+        } else if (
+            nextNode.type === 'sampler' ||
+            nextNode.type === 'drum' ||
+            nextNode.type === 'advanceddrum' ||
+            nextNode.type === 'unison' ||
+            nextNode.type === 'detune' ||
+            nextNode.type === 'visualiser'
+        ) {
             get().initAudioNode(nextNode.id, nextNode.type);
         }
 
-        if ((nextNode.type === 'pulse' || nextNode.type === 'stepsequencer') && nextNode.data.isPlaying) {
+        if (
+            (nextNode.type === 'pulse' ||
+                nextNode.type === 'stepsequencer' ||
+                nextNode.type === 'advanceddrum') &&
+            nextNode.data.isPlaying
+        ) {
             get().toggleNodePlayback(nextNode.id, true);
         }
 
@@ -2531,6 +3139,14 @@ export const useStore = create<AppState>((set, get) => ({
                                 );
 
                                 dispatches.forEach(({ generatorId, note }) => {
+                                    const samplerChain = get().samplerChains.get(generatorId);
+                                    if (samplerChain?.player.loaded) {
+                                        if (samplerChain.player.loop) {
+                                            samplerChain.player.stop();
+                                        }
+                                        return;
+                                    }
+
                                     const targetNode = audioNodes.get(generatorId);
                                     if (targetNode instanceof Tone.PolySynth) {
                                         targetNode.triggerRelease(note);
@@ -2566,6 +3182,14 @@ export const useStore = create<AppState>((set, get) => ({
                             );
 
                             dispatches.forEach(({ generatorId, note }) => {
+                                const samplerChain = get().samplerChains.get(generatorId);
+                                if (samplerChain?.player.loaded) {
+                                    if (samplerChain.player.loop) {
+                                        samplerChain.player.stop();
+                                    }
+                                    return;
+                                }
+
                                 const targetNode = audioNodes.get(generatorId);
                                 if (targetNode instanceof Tone.PolySynth) {
                                     targetNode.triggerRelease(note);
@@ -2703,7 +3327,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     clearCanvas: () => {
-        const { audioNodes, drumRacks, patterns, masterOutput } = get();
+        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, patterns, masterOutput } = get();
 
         signalFlowTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
         signalFlowTimeouts.clear();
@@ -2722,6 +3346,34 @@ export const useStore = create<AppState>((set, get) => ({
             rack.hatOpen.disconnect().dispose();
         });
 
+        samplerChains.forEach((chain) => {
+            if (chain.previewTimeout) {
+                clearTimeout(chain.previewTimeout);
+            }
+            try {
+                chain.player.stop();
+            } catch {
+                // Ignore redundant stop calls when clearing the canvas.
+            }
+            chain.player.disconnect().dispose();
+        });
+
+        advancedDrumRacks.forEach((rack) => {
+            rack.loop?.dispose();
+            rack.players.forEach((player) => {
+                try {
+                    player.stop();
+                } catch {
+                    // Ignore redundant stop calls when clearing the canvas.
+                }
+                player.disconnect().dispose();
+            });
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hat.disconnect().dispose();
+            rack.clap.disconnect().dispose();
+        });
+
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
             node.disconnect().dispose();
@@ -2737,6 +3389,8 @@ export const useStore = create<AppState>((set, get) => ({
             edges: [],
             audioNodes: new Map(),
             drumRacks: new Map(),
+            samplerChains: new Map(),
+            advancedDrumRacks: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
             activeQuantizedNotes: new Map(),
@@ -2773,7 +3427,14 @@ export const useStore = create<AppState>((set, get) => ({
                 get().initAudioNode(node.id, node.type, node.data.waveShape);
             } else if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
+            } else if (
+                node.type === 'sampler' ||
+                node.type === 'drum' ||
+                node.type === 'advanceddrum' ||
+                node.type === 'unison' ||
+                node.type === 'detune' ||
+                node.type === 'visualiser'
+            ) {
                 get().initAudioNode(node.id, node.type);
             }
 
@@ -2783,10 +3444,42 @@ export const useStore = create<AppState>((set, get) => ({
             }
         });
 
+        nodes.forEach((node) => {
+            if (node.type === 'sampler' && node.data.sampleDataUrl) {
+                const chain = get().samplerChains.get(node.id);
+                if (chain) {
+                    void chain.player.load(node.data.sampleDataUrl).then(() => {
+                        chain.player.loop = node.data.loop ?? false;
+                        chain.player.playbackRate = node.data.playbackRate ?? 1;
+                        chain.player.reverse = node.data.reverse ?? false;
+                        chain.pitchShift.pitch = node.data.pitchShift ?? 0;
+                    }).catch((error) => {
+                        console.error('Failed to restore sampler sample', error);
+                    });
+                }
+            }
+
+            if (node.type === 'advanceddrum' && node.data.advancedDrumTracks) {
+                const rack = get().advancedDrumRacks.get(node.id);
+                const tracks: AdvancedDrumTrackData[] = node.data.advancedDrumTracks;
+                tracks.forEach((track, trackIndex) => {
+                    if (!track.sampleDataUrl || !rack) {
+                        return;
+                    }
+
+                    const player = new Tone.Player({ autostart: false, loop: false }).connect(rack.output);
+                    rack.players.set(trackIndex, player);
+                    void player.load(track.sampleDataUrl).catch((error) => {
+                        console.error('Failed to restore advanced drum sample', error);
+                    });
+                });
+            }
+        });
+
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
         nodes
-            .filter((node: AppNode) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .filter((node: AppNode) => (node.type === 'pulse' || node.type === 'stepsequencer' || node.type === 'advanceddrum') && node.data.isPlaying)
             .forEach((node: AppNode) => get().toggleNodePlayback(node.id, true));
     },
 
@@ -3195,7 +3888,7 @@ export const useStore = create<AppState>((set, get) => ({
         });
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
-        const { audioNodes, drumRacks, patterns } = get();
+        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
 
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
@@ -3211,6 +3904,34 @@ export const useStore = create<AppState>((set, get) => ({
             rack.hatOpen.disconnect().dispose();
         });
 
+        samplerChains.forEach((chain) => {
+            if (chain.previewTimeout) {
+                clearTimeout(chain.previewTimeout);
+            }
+            try {
+                chain.player.stop();
+            } catch {
+                // Ignore redundant stop calls during undo re-sync.
+            }
+            chain.player.disconnect().dispose();
+        });
+
+        advancedDrumRacks.forEach((rack) => {
+            rack.loop?.dispose();
+            rack.players.forEach((player) => {
+                try {
+                    player.stop();
+                } catch {
+                    // Ignore redundant stop calls during undo re-sync.
+                }
+                player.disconnect().dispose();
+            });
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hat.disconnect().dispose();
+            rack.clap.disconnect().dispose();
+        });
+
         // Dispose all patterns
         patterns.forEach((pattern) => {
             pattern.stop().dispose();
@@ -3220,6 +3941,8 @@ export const useStore = create<AppState>((set, get) => ({
         set({
             audioNodes: new Map(),
             drumRacks: new Map(),
+            samplerChains: new Map(),
+            advancedDrumRacks: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
             activeQuantizedNotes: new Map(),
@@ -3233,8 +3956,47 @@ export const useStore = create<AppState>((set, get) => ({
         previousSnapshot.nodes.forEach((node) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
+            } else if (
+                node.type === 'sampler' ||
+                node.type === 'drum' ||
+                node.type === 'advanceddrum' ||
+                node.type === 'unison' ||
+                node.type === 'detune' ||
+                node.type === 'visualiser'
+            ) {
                 get().initAudioNode(node.id, node.type);
+            }
+        });
+
+        previousSnapshot.nodes.forEach((node) => {
+            if (node.type === 'sampler' && node.data.sampleDataUrl) {
+                const chain = get().samplerChains.get(node.id);
+                if (chain) {
+                    void chain.player.load(node.data.sampleDataUrl).then(() => {
+                        chain.player.loop = node.data.loop ?? false;
+                        chain.player.playbackRate = node.data.playbackRate ?? 1;
+                        chain.player.reverse = node.data.reverse ?? false;
+                        chain.pitchShift.pitch = node.data.pitchShift ?? 0;
+                    }).catch((error) => {
+                        console.error('Failed to restore sampler sample', error);
+                    });
+                }
+            }
+
+            if (node.type === 'advanceddrum' && node.data.advancedDrumTracks) {
+                const rack = get().advancedDrumRacks.get(node.id);
+                const tracks: AdvancedDrumTrackData[] = node.data.advancedDrumTracks;
+                tracks.forEach((track, trackIndex) => {
+                    if (!track.sampleDataUrl || !rack) {
+                        return;
+                    }
+
+                    const player = new Tone.Player({ autostart: false, loop: false }).connect(rack.output);
+                    rack.players.set(trackIndex, player);
+                    void player.load(track.sampleDataUrl).catch((error) => {
+                        console.error('Failed to restore advanced drum sample', error);
+                    });
+                });
             }
         });
 
@@ -3242,7 +4004,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
         previousSnapshot.nodes
-            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer' || node.type === 'advanceddrum') && node.data.isPlaying)
             .forEach((node) => get().toggleNodePlayback(node.id, true));
     },
 
@@ -3270,7 +4032,7 @@ export const useStore = create<AppState>((set, get) => ({
         });
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
-        const { audioNodes, drumRacks, patterns } = get();
+        const { audioNodes, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
 
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
@@ -3286,6 +4048,34 @@ export const useStore = create<AppState>((set, get) => ({
             rack.hatOpen.disconnect().dispose();
         });
 
+        samplerChains.forEach((chain) => {
+            if (chain.previewTimeout) {
+                clearTimeout(chain.previewTimeout);
+            }
+            try {
+                chain.player.stop();
+            } catch {
+                // Ignore redundant stop calls during redo re-sync.
+            }
+            chain.player.disconnect().dispose();
+        });
+
+        advancedDrumRacks.forEach((rack) => {
+            rack.loop?.dispose();
+            rack.players.forEach((player) => {
+                try {
+                    player.stop();
+                } catch {
+                    // Ignore redundant stop calls during redo re-sync.
+                }
+                player.disconnect().dispose();
+            });
+            rack.kick.disconnect().dispose();
+            rack.snare.disconnect().dispose();
+            rack.hat.disconnect().dispose();
+            rack.clap.disconnect().dispose();
+        });
+
         // Dispose all patterns
         patterns.forEach((pattern) => {
             pattern.stop().dispose();
@@ -3295,6 +4085,8 @@ export const useStore = create<AppState>((set, get) => ({
         set({
             audioNodes: new Map(),
             drumRacks: new Map(),
+            samplerChains: new Map(),
+            advancedDrumRacks: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
             activeQuantizedNotes: new Map(),
@@ -3308,8 +4100,47 @@ export const useStore = create<AppState>((set, get) => ({
         nextSnapshot.nodes.forEach((node) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
+            } else if (
+                node.type === 'sampler' ||
+                node.type === 'drum' ||
+                node.type === 'advanceddrum' ||
+                node.type === 'unison' ||
+                node.type === 'detune' ||
+                node.type === 'visualiser'
+            ) {
                 get().initAudioNode(node.id, node.type);
+            }
+        });
+
+        nextSnapshot.nodes.forEach((node) => {
+            if (node.type === 'sampler' && node.data.sampleDataUrl) {
+                const chain = get().samplerChains.get(node.id);
+                if (chain) {
+                    void chain.player.load(node.data.sampleDataUrl).then(() => {
+                        chain.player.loop = node.data.loop ?? false;
+                        chain.player.playbackRate = node.data.playbackRate ?? 1;
+                        chain.player.reverse = node.data.reverse ?? false;
+                        chain.pitchShift.pitch = node.data.pitchShift ?? 0;
+                    }).catch((error) => {
+                        console.error('Failed to restore sampler sample', error);
+                    });
+                }
+            }
+
+            if (node.type === 'advanceddrum' && node.data.advancedDrumTracks) {
+                const rack = get().advancedDrumRacks.get(node.id);
+                const tracks: AdvancedDrumTrackData[] = node.data.advancedDrumTracks;
+                tracks.forEach((track, trackIndex) => {
+                    if (!track.sampleDataUrl || !rack) {
+                        return;
+                    }
+
+                    const player = new Tone.Player({ autostart: false, loop: false }).connect(rack.output);
+                    rack.players.set(trackIndex, player);
+                    void player.load(track.sampleDataUrl).catch((error) => {
+                        console.error('Failed to restore advanced drum sample', error);
+                    });
+                });
             }
         });
 
@@ -3317,7 +4148,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
         nextSnapshot.nodes
-            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer' || node.type === 'advanceddrum') && node.data.isPlaying)
             .forEach((node) => get().toggleNodePlayback(node.id, true));
     },
 }));

@@ -37,6 +37,8 @@ import StepSequencerNode from '@/components/StepSequencerNode';
 import SignalFlowOverlay from '@/components/SignalFlowOverlay';
 import QuantizerNode from '@/components/QuantizerNode';
 import MoodPadNode from '@/components/MoodPadNode';
+import SamplerNode from '@/components/SamplerNode';
+import AdvancedDrumNode from '@/components/AdvancedDrumNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
 import AdsrNode from '@/components/AdsrNode';
@@ -61,7 +63,9 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     quantizer:  { w: 240, h: 272 },
     adsr:       { w: 224, h: 340 },
     generator:  { w: 240, h: 220 },
+    sampler:    { w: 320, h: 432 },
     drum:       { w: 320, h: 360 },
+    advanceddrum: { w: 432, h: 420 },
     effect:     { w: 224, h: 260 },
     unison:     { w: 224, h: 220 },
     detune:     { w: 224, h: 200 },
@@ -136,6 +140,8 @@ function BloopCanvasInner() {
         visualiser: VisualiserNode,
         quantizer: QuantizerNode,
         moodpad: MoodPadNode,
+        sampler: SamplerNode,
+        advanceddrum: AdvancedDrumNode,
         pulse: PulseNode,
         stepsequencer: StepSequencerNode,
         speaker: SpeakerNode,
@@ -210,7 +216,9 @@ function BloopCanvasInner() {
             subType = 'wave';
             label = 'Oscillator';
         }
+        if (type === 'sampler') label = 'Sampler';
         if (type === 'drum') label = 'Drums';
+        if (type === 'advanceddrum') label = 'Advanced Drums';
         if (type === 'effect') subType = 'reverb';
         if (type === 'unison') {
             label = 'Unison';

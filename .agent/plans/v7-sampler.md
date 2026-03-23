@@ -12,24 +12,37 @@ GitHub issues: #44 (Sampler Node), #45 (Sample Manipulation), #46 (Advanced Drum
 
 ## Progress
 
-- [ ] Read GitHub issues #44, #45, #46 in full
-- [ ] Milestone 1 — Sampler Node (#44): file load, playback, waveform preview, Controller trigger
-- [ ] Milestone 2 — Sample Manipulation (#45): pitch shift, time stretch, reverse (non-destructive)
-- [ ] Milestone 3 — Advanced Drum Machine (#46): sample-backed 16-step grid with velocity and polyrhythm
-- [ ] npm run build and npm run lint pass
-- [ ] Update TICKETS.md, close GitHub issues #44, #45, #46
+- [x] (2026-03-23) Read GitHub issues #44, #45, #46 in full
+- [x] (2026-03-23) Milestone 1 — Sampler Node (#44): add file loading, waveform preview, controller-triggered playback, preview transport, and patch persistence
+- [x] (2026-03-23) Milestone 2 — Sample Manipulation (#45): add playback speed, reverse playback, and pitch shifting inside a collapsible advanced panel
+- [x] (2026-03-23) Milestone 3 — Advanced Drum Machine (#46): add a 4-track 16-step advanced drum node with velocity cycling, per-track lengths, swing, pulse clock input, and per-track custom samples
+- [x] (2026-03-23) npm run build and npm run lint pass
+- [x] (2026-03-23) Update TICKETS.md, close GitHub issues #44, #45, #46
 
 ## Surprises & Discoveries
 
-[To be filled.]
+- Observation: Sampler needed a dual-node store structure rather than a single audio node.
+  Evidence: the `Tone.Player` is the trigger source, but the canvas graph needs the `Tone.PitchShift` node to be the reconnectable downstream output, so a dedicated sampler-chain map kept the lifecycle sane.
+- Observation: sample persistence touched more than file loading.
+  Evidence: saving audio as data URLs in node data meant `loadCanvas`, `undo`, and `redo` all had to rehydrate sampler/drum players after recreating audio nodes.
+- Observation: the advanced drum machine becomes unreadable very quickly if every requested feature is shown at once.
+  Evidence: keeping the first shipped version at four richly editable tracks preserved the 16-step workflow, per-track sample loading, velocity, swing, and polyrhythm without making the node unusably tall.
 
 ## Decision Log
 
-[To be filled.]
+- Decision: Assign `stone-400` to Sampler and `green-500` to Advanced Drums.
+  Rationale: both are visually distinct from the existing generator palette, and they support the “recorded media” versus “performance rhythm” split cleanly.
+  Date: 2026-03-23
+- Decision: Persist loaded samples as data URLs in node data.
+  Rationale: this keeps patch saves, undo/redo, and load-from-file all working without introducing server storage or extra packages.
+  Date: 2026-03-23
+- Decision: Ship Advanced Drums as four default tracks instead of the aspirational eight-track layout in the roadmap prose.
+  Rationale: the issue acceptance only requires at least four tracks, and this version keeps the node compact enough to remain understandable for the project’s target audience while still delivering custom samples, swing, velocity, and track-length polyrhythms.
+  Date: 2026-03-23
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V7 is complete. Bloop can now trigger real audio files from controllers, reshape samples in real time, and sequence custom/sample-backed drum tracks with swing and per-track lengths. The old Drum node remains available with a deprecation notice, while new patches can move to the sampler and advanced drum workflow. `npm run lint` and `npm run build` both pass on the completed milestone.
 
 ## Context and Orientation
 

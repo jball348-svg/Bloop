@@ -36,7 +36,9 @@ export default function PackedNode({ id }: PackedNodeProps) {
         quantizer: 0.65,
         adsr: 0.75,
         generator: 1,
+        sampler: 1,
         drum: 1,
+        advanceddrum: 1,
         unison: 1.5,
         detune: 1.5,
         effect: 2,
@@ -59,10 +61,10 @@ export default function PackedNode({ id }: PackedNodeProps) {
     const entryNode = clusterNodes.reduce((a, b) => (SIGNAL_ORDER[a.type] ?? 99) < (SIGNAL_ORDER[b.type] ?? 99) ? a : b);
     const exitNode = clusterNodes.reduce((a, b) => (SIGNAL_ORDER[a.type] ?? -1) > (SIGNAL_ORDER[b.type] ?? -1) ? a : b);
 
-    const hasControlIn = ['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'drum'].includes(entryNode.type);
+    const hasControlIn = ['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'sampler', 'drum', 'advanceddrum'].includes(entryNode.type);
     const hasAudioIn = ['effect', 'unison', 'detune', 'visualiser', 'speaker'].includes(entryNode.type);
     const hasControlOut = ['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr'].includes(exitNode.type);
-    const hasAudioOut = ['generator', 'drum', 'effect', 'unison', 'detune', 'visualiser'].includes(exitNode.type);
+    const hasAudioOut = ['generator', 'sampler', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser'].includes(exitNode.type);
 
     const handleBlur = () => {
         setIsEditing(false);
