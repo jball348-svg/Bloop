@@ -1,114 +1,155 @@
-# Bloop v3
+# Bloop
 
-Bloop is a visual modular audio sandbox built with Next.js, React Flow, and Tone.js. Users drag audio nodes onto a canvas, snap them into place, and shape playable signal chains in real time — no music theory or technical knowledge required.
+Bloop is a visual modular audio sandbox for non-musicians and curious tinkerers. You drag colourful nodes onto a canvas, connect them with cables or snap them into place, and build playable synth patches without needing to know traditional audio-routing jargon first.
+
+The current repo reflects the v10 state of the product: external input, recording export, onboarding, theming, an expanded preset library, advanced visualisers, and a beginner-friendly campaign mode all ship in the app today.
 
 ---
 
-## V3 Feature Set
+## Current Feature Set
 
-### Controllers (fire note events — no audio output)
+### Controller Nodes
 
-| Node | Type | Description |
-|---|---|---|
-| **Arp** | Multi-instance | Arpeggiator. Cycles through a selected scale at tempo, fires note events to downstream nodes. |
-| **Keys** | Multi-instance | QWERTY keyboard. Maps A–K to piano keys across 7 octaves, with on-screen visual feedback. Black/white theme. |
-| **ADSR** | Multi-instance | Envelope controller. Sits between a Controller and a Generator/Drum. Shapes attack, decay, sustain, release. Pass-through for note events. |
-| **Chord** | Multi-instance | Transforms a single incoming note into a full chord voicing (Major, Minor, Dom7, Maj7, Min7, Sus2, Sus4, Dim, Aug). |
+| Node | Description |
+|---|---|
+| **Arpeggiator** | Tempo-synced note generator with scale selection and play/stop state. |
+| **Keys** | QWERTY keyboard controller with visual piano layout. |
+| **MIDI In** | External MIDI input via Web MIDI API with device selection and velocity-aware note triggering. |
+| **ADSR** | Envelope controller for attack, decay, sustain, and release shaping. |
+| **Chord** | Expands a single note into chord voicings including major, minor, 7ths, sus, diminished, and augmented shapes. |
+| **Pulse** | Discrete trigger node for clocking sequencers or firing note events. |
+| **Step Sequencer** | Multi-step melodic sequencer with per-step note and gate settings. |
+| **Mood Pad** | XY controller that outputs musical gestures through an intuitive "feel-first" interface. |
 
-### Signals (produce or process audio)
+### Signal / Audio Nodes
 
-| Node | Type | Description |
-|---|---|---|
-| **Generator** | Multi-instance | Polyphonic oscillator. Waveforms: sine, square, triangle, sawtooth, noise (white). Receives note events. |
-| **Drum** | Multi-instance | Drum machine. Hits mode (tap-to-trigger) and Grid mode (16-step sequencer). Kick, snare, closed hat, open hat. |
-| **Effect** | Multi-instance | Swappable audio processor: Reverb, Delay, Distortion, Phaser, BitCrusher. Each has Mix and type-specific controls. |
-| **Unison** | Multi-instance | Chorus-based voice stacking. Adds warmth and width via depth, speed, and mix controls. |
-| **Detune** | Multi-instance | Pitch shift node. Fine pitch offset in semitones with wet/dry mix. |
-| **Visualiser** | Multi-instance | Real-time signal display. Waveform (oscilloscope) and Spectrum (FFT frequency bars) modes. Audio passes through unmodified. |
+| Node | Description |
+|---|---|
+| **Generator** | Polyphonic oscillator with sine, square, triangle, sawtooth, and noise modes. |
+| **Sampler** | File-backed sampler with waveform preview, loop, reverse, playback-rate, and pitch-shift controls. |
+| **Audio In** | Live microphone or USB-interface input via `getUserMedia`, with gain control and level metering. |
+| **Drum** | Legacy drum machine kept for backwards-compatible patches. |
+| **Advanced Drums** | Sample-capable multi-track drum machine with step sequencing and swing. |
+| **Effect** | Reverb, delay, distortion, phaser, and bitcrusher processor node. |
+| **Unison** | Chorus-based width / detune-style voice thickening. |
+| **Detune** | Pitch-shift processor with wet mix control. |
+| **Quantizer** | Theory helper that snaps note events into a selected key and scale. |
+| **Visualiser** | Waveform, spectrum, VU meter, and dual-input XY/Lissajous visualisation. |
 
-### Global (singletons — no cables)
+### Global Nodes
 
-| Node | Type | Description |
-|---|---|---|
-| **Tempo** | Singleton | Global BPM broadcaster. Controls Tone.Transport — all rhythmic nodes follow it automatically. |
-| **Amplifier** | Singleton | Global master output. Controls master volume. All audio routes here without cables. |
+| Node | Description |
+|---|---|
+| **Tempo** | Singleton transport controller for BPM. |
+| **Amplifier** | Singleton master output volume node. |
 
-### Canvas & Interaction
-- **Empty canvas on load** — start from a blank slate every session
-- **New / Clear button** — System menu wipes the canvas and disposes all audio cleanly
-- **Undo / Redo** — `Cmd/Ctrl+Z` and `Cmd/Ctrl+Shift+Z`, plus on-canvas buttons. 50-step history.
-- **Drag-and-drop** from four contextual edge menus
-- **15px grid snapping** across the whole canvas
-- **Anti-overlap lego placement** — dragging onto an occupied position snaps nodes flush beside each other
-- **Adjacency detection** — nodes within 48px horizontally and 100px vertically qualify as adjacent
-- **Cyan adjacency glow** — visual indicator that nodes are close enough to auto-route
-- **Hidden auto-wiring** — adjacent nodes are connected with invisible edges that route audio without drawing cables
-- **Manual wiring** — visible cable connections still available for explicit routing
-- **Drag-to-trash deletion** — drag any node to the bin in the bottom-right corner
-- **In-node delete button** — × button on each node for direct removal
-- **Extended zoom range** — zoom out to 5% for a full patch overview
-- **Save / Load** — users can save patches as `.bloop` files and load them back into the canvas
-- **Starter Presets** — curated starter patches available in the System menu
-- **Directional Snapping** — Controller nodes snap horizontally; Signal nodes snap vertically to prevent routing errors
-- **Module Locking** — snapped groups can be "locked" into a single movable object, exposing only necessary handles
+### Canvas, Workflow, and UX
 
-### Four Contextual Menus
+- Drag-and-drop node creation from contextual edge menus.
+- Directional control routing and audio routing.
+- Spatial snapping, adjacency detection, locking, and packed macro nodes.
+- Save and load `.bloop` patch files.
+- Undo and redo with 50-step history.
+- Signal Flow overlay for animated cable pulses.
+- In-app onboarding with replayable animated tutorial clips and intro audio.
+- Light, dark, and system theme support.
+- Per-node accent overrides from a curated palette, with unlockable campaign skins.
+- Categorised preset browser with 15+ built-in patches plus unlockable reward presets.
+- Beginner campaign mode with five playable levels, patch verification, and persistent rewards.
+
+### Input / Output
+
+- **MIDI input** through Web MIDI API.
+- **Live audio input** through browser microphone / interface permissions.
+- **Session recording** from the System menu with downloadable browser-native audio export.
+
+---
+
+## Menus
 
 | Menu | Position | Contents |
 |---|---|---|
-| **Signals** | Top centre | Generator, Effect, Drum, Unison, Detune, Visualiser |
-| **Controllers** | Left centre | Arp, Keys, ADSR, Chord |
-| **Global** | Right centre | Tempo, Amplifier (greyed out when already on canvas) |
-| **System** | Bottom centre | New (clears canvas), Save, Load, Presets, Undo, Redo |
+| **Signals** | Top centre | Generator, Sampler, Audio In, Drum, Advanced Drums, Effect, Unison, Detune, Quantizer, Visualiser |
+| **Controllers** | Left centre | Keys, MIDI In, Arpeggiator, Chord, Pulse, Step Sequencer, ADSR, Mood Pad |
+| **Global** | Right centre | Tempo, Amplifier |
+| **System** | Bottom centre | New, Save, Load, Presets, Appearance, Intro, Campaign, Signal Flow, Record, Undo, Redo |
+
+---
+
+## Presets and Campaign
+
+- The preset library is grouped into:
+  - Getting Started
+  - Rhythmic
+  - Ambient
+  - Complex Patches
+  - Feature Showcases
+  - Campaign Rewards
+- Campaign mode is optional and does not restrict sandbox use.
+- Completing campaign levels unlocks:
+  - extra accent skins for the Appearance panel
+  - reward presets in the Presets panel
+
+---
+
+## Important Current Behaviour
+
+- `.bloop` patch files save the graph and master volume only.
+- Theme, onboarding progress, unlocked skins, unlocked presets, and campaign progress are stored separately in local storage.
+- MIDI support depends on browser support for the Web MIDI API. Chromium-based browsers are the safest choice.
+- Recording currently exports browser-native audio (`.webm`) rather than WAV.
+- Audio still requires a user gesture to start. You must click the engine-start overlay before testing sound.
 
 ---
 
 ## Tech Stack
 
-| | |
+| Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router) |
-| Canvas | React Flow 11 |
+| UI / Canvas | React Flow 11 |
 | Audio Engine | Tone.js 15 |
-| State | Zustand 5 |
+| State Management | Zustand 5 |
 | Styling | Tailwind CSS 4 |
-| Music Theory | @tonaljs/tonal |
+| Music Theory | `@tonaljs/tonal` |
 | Language | TypeScript |
+| React | React 19 |
 
 ---
 
 ## Project Structure
 
-```
+```text
 bloop/
 ├── app/
-│   ├── page.tsx              # Canvas, drag/drop, snapping, overlap resolution, adjacency
-│   └── layout.tsx            # Root layout, fonts, metadata
+│   ├── page.tsx                  # Main canvas, menus, campaign split layout
+│   ├── layout.tsx                # Root layout + theme controller mount
+│   └── globals.css               # Theme variables and shared chrome styling
 ├── components/
-│   ├── SignalMenu.tsx         # Top menu — Generator, Effect, Drum, Unison, Detune, Visualiser
-│   ├── ControllerMenu.tsx     # Left menu — Arp, Keys, ADSR, Chord
-│   ├── GlobalMenu.tsx         # Right menu — Tempo, Amplifier (singletons)
-│   ├── SystemMenu.tsx         # Bottom menu — New, Save, Load, Presets, Undo/Redo
-│   ├── ControllerNode.tsx     # Arpeggiator — fires note events
-│   ├── KeysNode.tsx           # QWERTY keyboard controller — black/white theme
-│   ├── AdsrNode.tsx           # ADSR envelope controller — pass-through with live diagram
-│   ├── ChordNode.tsx          # Note-to-chord transformer
-│   ├── GeneratorNode.tsx      # Polyphonic oscillator, 5 waveforms including noise
-│   ├── DrumNode.tsx           # Drum machine — Hits and Grid modes
-│   ├── EffectNode.tsx         # Swappable FX processor
-│   ├── UnisonNode.tsx         # Chorus-based unison/width node
-│   ├── DetuneNode.tsx         # Pitch shift node
-│   ├── VisualiserNode.tsx     # Real-time waveform/spectrum display
-│   ├── TempoNode.tsx          # Global BPM — singleton
-│   ├── SpeakerNode.tsx        # Global output volume — singleton (Amplifier)
-│   └── EngineControl.tsx      # Audio unlock overlay
+│   ├── *Node.tsx                 # Individual node UIs
+│   ├── SystemMenu.tsx            # Save/load, presets, appearance, campaign, recording
+│   ├── OnboardingModal.tsx       # First-run / replayable onboarding overlay
+│   ├── CampaignPanel.tsx         # Left-side campaign UI
+│   ├── ThemeController.tsx       # Applies light/dark/system mode
+│   └── SignalFlowOverlay.tsx     # Animated cable pulses
 ├── store/
-│   ├── useStore.ts            # All audio lifecycle, routing, undo/redo, adjacency, and state
-│   └── presets.ts             # Curated starter patches for the Presets menu
-├── AGENTS.md                  # AI agent briefing — read before touching code
-├── STYLE_GUIDE.md             # Node colour registry and design system
-├── TICKETS.md                 # Ticket status and work order
-└── PROJECT_OVERVIEW.md        # Full technical deep-dive
+│   ├── useStore.ts               # Main canvas + audio lifecycle store
+│   ├── usePreferencesStore.ts    # Theme, onboarding, unlocked skins/presets
+│   ├── presets.ts                # Categorised preset catalog
+│   ├── campaign.ts               # Campaign progress store
+│   └── campaignLevels.ts         # Beginner campaign content
+├── lib/
+│   ├── nodePalette.ts            # Accent palette and reward skins
+│   ├── campaignTypes.ts          # Campaign types
+│   └── campaignVerifier.ts       # Pure level verification helpers
+├── public/
+│   └── onboarding/               # Animated onboarding tutorial assets
+├── .agent/plans/                 # Versioned ExecPlans
+├── AGENTS.md                     # Project briefing for coding agents
+├── STYLE_GUIDE.md                # Node colour and UI design system
+├── TICKETS.md                    # Ticket history / status
+├── PROJECT_OVERVIEW.md           # Technical deep-dive
+└── ROADMAP.md                    # Roadmap context
 ```
 
 ---
@@ -120,6 +161,25 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` and click **START AUDIO ENGINE** before testing any sound.
+Open [http://localhost:3000](http://localhost:3000), click **START AUDIO ENGINE**, and then begin patching.
 
-`npm run dev` clears a stale `:3000` lock before launching, which helps during repeated local restarts.
+Useful commands:
+
+```bash
+npm run build
+npm run lint
+```
+
+`npm run dev` clears stale port-3000 locks before starting the local server.
+
+---
+
+## Architecture Notes
+
+- `store/useStore.ts` is the source of truth for the audio graph.
+- Tone.js audio nodes live in store-managed Maps, not in component state.
+- Components are UI shells that call store actions.
+- `VisualiserNode` is the only intentional exception: it owns display-only analysers that reconnect when the graph changes.
+- Undo, redo, save/load, and graph rebuilds all flow through the store lifecycle.
+
+If you are changing behaviour rather than just using the app, read [AGENTS.md](./AGENTS.md), [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md), and [STYLE_GUIDE.md](./STYLE_GUIDE.md) first.
