@@ -16,6 +16,9 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Keys | Controller | `border-white` | `text-white` | `bg-white` | `white` |
 | ADSR | Controller | `border-amber-700` | `text-amber-600` | `bg-amber-600` | `amber-700` (dark amber, distinct from yellow) |
 | Chord | Controller | `border-sky-500` | `text-sky-300` | `bg-sky-400` | `sky` |
+| Pulse | Controller | `border-lime-500` | `text-lime-400` | `bg-lime-500` | `lime` |
+| Step Sequencer | Controller | `border-blue-500` | `text-blue-400` | `bg-blue-500` | `blue` |
+| Mood Pad | Controller | `border-rose-500` | `text-rose-300` | `bg-rose-500` | `rose` |
 | Generator | Signal | `border-red-500` | `text-red-400` | `bg-red-500` | `red` |
 | Sampler | Signal | `border-stone-400` | `text-stone-200` | `bg-stone-400` | `stone` |
 | Drum | Signal | `border-orange-500` | `text-orange-400` | `bg-orange-500` | `orange` |
@@ -25,19 +28,27 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Detune | Signal | `border-teal-500` | `text-teal-400` | `bg-teal-500` | `teal` |
 | Visualiser | Signal | `border-pink-500` | `text-pink-400` | `bg-pink-500` | `pink` |
 | Quantizer | Signal / Theory | `border-purple-500` | `text-purple-300` | `bg-purple-500` | `purple` |
-| Pulse | Controller | `border-lime-500` | `text-lime-400` | `bg-lime-500` | `lime` |
-| Step Sequencer | Controller | `border-blue-500` | `text-blue-400` | `bg-blue-500` | `blue` |
-| Mood Pad | Controller | `border-rose-500` | `text-rose-300` | `bg-rose-500` | `rose` |
+| Packed Node (Macro) | Macro | `border-orange-400` | `text-orange-300` | `bg-orange-400` | `orange-400` (neon orange — distinct from Drum's orange-500) |
 | Tempo | Global | `border-indigo-500` | `text-indigo-400` | n/a | `indigo` |
 | Amplifier | Global | `border-emerald-500` | `text-emerald-400` | n/a | `emerald` |
 
 ### Available (not yet assigned)
 
-Pick the next colour for any new node — each should be visually distinct from its neighbours in the menu.
+- No unused registry colours remain. If a new node type is needed beyond the above, choose a new distinct Tailwind hue (e.g. `cyan-600`, `slate-400`, `neutral-300`) and add it here first before implementing the component. **Do not use `cyan-400/500`** — that shade is reserved for adjacency glows.
 
-- No unused registry colours remain. Pick a new distinct Tailwind hue and add it here before creating another node type.
+> **Do not use `cyan`** for node colours — it is reserved exclusively for the adjacency glow ring and audio-domain cable colour.
 
-> **Do not use `cyan`** for node colours — it is reserved exclusively for the adjacency glow ring.
+---
+
+## Canvas Accent Language
+
+| Signal | Colour | Usage |
+|---|---|---|
+| Audio domain cables | `cyan` `#22d3ee` | Edges between Generator → Effect → Visualiser etc. |
+| Control domain cables | neon green `#39ff14` / `#00ff88` | Edges from Controller → ADSR → Generator etc. |
+| Adjacency glow ring (audio) | `ring-cyan-400` | Snapped nodes in the audio domain |
+| Adjacency glow ring (control) | neon green ring | Snapped nodes in the control domain |
+| Trash bin indicator | `red-500` / `red-900` | Drop zone for node deletion |
 
 ---
 
@@ -50,15 +61,22 @@ Pick the next colour for any new node — each should be visually distinct from 
 }`}>
 ```
 - Background is always `bg-slate-800`
-- Adjacency glow is always `ring-cyan-400`
+- Adjacency glow for audio-domain nodes is `ring-cyan-400`
+- Adjacency glow for control-domain nodes is neon green (see Canvas Accent Language)
 
-### Locking System (v3 New)
+### Locking System (v3)
 Nodes within a snapped group can be locked to move logically as one object.
 ```tsx
 <LockButton id={id} isAdjacent={isAdjacent} accentColor="[COLOUR]" />
 ```
 - The `LockButton` component handles state sync across snapped clusters.
 - When `isLocked` is true, dragging any node in the cluster moves all of them.
+
+### Packing System (v4 — complete)
+A locked group can be "packed" into a single Macro Node using `PackedNode.tsx`.
+- Every node component has a conditional return at the top: `if (nodeData?.isPackedVisible) return <PackedNode id={id} />`
+- `PackedNode` uses the `orange-400` colour scheme with an editable label and an Unpack button.
+- Audio routing is preserved during pack/unpack via edge redirection in `store/useStore.ts`.
 
 ### Handles & Routing Constraints
 V3 introduced directional routing rules based on handle IDs.
@@ -74,7 +92,7 @@ To prevent mid-chain connections in locked groups, only the entry and exit point
 ```
 
 ### Delete Button
-Always in the top-left of every node. Hoover state uses the node accent colour.
+Always in the top-left of every node. Hover state uses the node accent colour.
 
 ---
 
@@ -93,6 +111,7 @@ Always in the top-left of every node. Hoover state uses the node accent colour.
 | Quantizer | `w-60` (240px) |
 | Effect / Chord / ADSR / Speaker | `w-56` (224px) |
 | Tempo | `w-64` (256px) |
+| Packed Node (Macro) | `w-56` (224px) — same as standard node |
 
 ---
 
@@ -103,6 +122,9 @@ Always in the top-left of every node. Hoover state uses the node accent colour.
 - **Global menu** (right): indigo, emerald
 - **System menu** (bottom): neutral/slate (New, Save, Load, Presets, Undo, Redo)
 
+---
+
 ## Legacy Notes
 
-- `DrumNode` is now legacy-facing UI. Keep it for backwards compatibility with saved patches, but route new patches toward `AdvancedDrumNode`.
+- `DrumNode` is legacy-facing from v7 onwards. Keep it for backwards compatibility with saved patches, but route new patches toward `AdvancedDrumNode`.
+- The original `SpeakerNode.tsx` was renamed to `Amplifier` in v2. Do not re-add a Speaker node type.
