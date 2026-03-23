@@ -12,6 +12,56 @@ The primary audience is **non-musicians and non-technical users**. Every design 
 
 ---
 
+## Dev Environment
+
+```bash
+npm install          # Install all dependencies
+npm run dev          # Start dev server at http://localhost:3000
+npm run build        # Production build — must pass before closing any ticket
+npm run lint         # ESLint — must pass before closing any ticket
+```
+
+TypeScript is checked at build time via `npm run build`. There is no separate `tsc` step. The dev server uses Turbopack; hot reload is enabled. Audio requires a user gesture to start (the EngineControl overlay handles this). Test audio in the browser after `npm run dev`.
+
+---
+
+## ExecPlans
+
+When implementing complex features, significant refactors, or any work spanning multiple files or multiple GitHub issues, use an ExecPlan as described in `.agent/PLANS.md`.
+
+An ExecPlan is a living design document written before starting work and updated continuously as implementation proceeds. It allows autonomous long-running sessions to stay on track without losing context.
+
+**When to create an ExecPlan:** Any task involving 3+ files, any new node type, any changes to the audio graph lifecycle, or any versioned milestone in `.agent/plans/`.
+
+**How to use:** Before starting any versioned milestone (v4, v5, v6 etc.), read the corresponding plan in `.agent/plans/`. If no plan exists, create one following `.agent/PLANS.md` before writing any code. Do not prompt the user for next steps — proceed to the next milestone in the plan automatically.
+
+Plans live at:
+- `.agent/PLANS.md` — the ExecPlan format spec (read this first)
+- `.agent/plans/v4-stability-packing-deployment.md`
+- `.agent/plans/v5-pulse-sequencer-signal-flow.md`
+- `.agent/plans/v6-theory-ui-restructure.md`
+- `.agent/plans/v7-sampler.md`
+- `.agent/plans/v8-io-connectivity.md`
+- `.agent/plans/v9-polish-onboarding.md`
+- `.agent/plans/v10-campaign-mode.md`
+
+---
+
+## Commit Conventions
+
+Commit messages must follow: `type(scope): description`
+
+Types: `feat`, `fix`, `refactor`, `style`, `docs`, `test`, `chore`
+
+Examples:
+- `feat(pulse-node): add discrete trigger node with tempo sync`
+- `fix(snapping): resolve overlap resolution on rapid drag`
+- `docs(tickets): close #33 bug omnibus`
+
+Always update `TICKETS.md` in the same commit as the work that closes a ticket. Always close the corresponding GitHub issue when a ticket is complete.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -50,11 +100,16 @@ bloop/
 │   ├── VisualiserNode.tsx     # Real-time waveform/spectrum display
 │   ├── TempoNode.tsx          # Global BPM broadcaster — singleton, no cables
 │   ├── SpeakerNode.tsx        # Global output volume — singleton, labelled 'Amplifier', no cables
+│   ├── PackedNode.tsx         # Macro-node UI for packed groups (v4, done)
 │   └── EngineControl.tsx      # Tone.js audio unlock overlay
 ├── store/
 │   └── useStore.ts            # THE BRAIN. All audio node lifecycle, routing, undo/redo, and state.
+├── .agent/
+│   ├── PLANS.md               # ExecPlan format spec — read before writing any plan
+│   └── plans/                 # One ExecPlan per version milestone
 ├── STYLE_GUIDE.md             # Node colour registry and UI patterns — read before styling anything
 ├── TICKETS.md                 # Current ticket status and work order — check this before starting.
+├── ROADMAP.md                 # Full v4-v10 roadmap overview
 ├── PROJECT_OVERVIEW.md        # Full technical deep-dive — read before any significant change.
 └── AGENTS.md                  # This file.
 ```
@@ -139,12 +194,14 @@ Always call `.dispose()` on Tone.js nodes when removing them. Failure causes mem
 | Visualiser | pink-500 |
 | Tempo | indigo-500 |
 | Amplifier | emerald-500 |
+| Packed Node | orange-400 (neon orange — v4 done) |
 
 **cyan is reserved** — adjacency glow rings and edge strokes only. Never use as a node colour.
 
 ### Canvas Accent Language
-- All adjacency / routing indicators use **cyan** (`#22d3ee`) — rings, edge glow, trash bin
-- Manual edges: cyan glow stroke
+- Audio domain cables and glow: **cyan** (`#22d3ee`)
+- Control domain cables: **neon green** (`#39ff14` or `#00ff88`) — v4 #34
+- Adjacency rings follow domain colour (cyan for audio, neon green for control)
 - Dashed slate preview line during connection drag
 
 ### Node Base Pattern
@@ -185,8 +242,9 @@ All nodes use: `bg-slate-800`, coloured `border-2`, `rounded-2xl`, `p-3`. See `S
 
 1. Read `TICKETS.md` — understand the work order and what is already done
 2. Read the GitHub issue for the full spec
-3. Read `PROJECT_OVERVIEW.md` if the change touches audio, routing, adjacency, or node lifecycle
-4. Read `STYLE_GUIDE.md` if the change involves any new or modified node UI
-5. Identify all affected files — changes often ripple between `page.tsx`, `useStore.ts`, menu components, and node components
-6. Check for dependencies — some tickets must be completed before others
-7. When done, update `TICKETS.md` to reflect the new status and update `STYLE_GUIDE.md` if a new colour was assigned
+3. Read the relevant ExecPlan in `.agent/plans/` — or create one if it doesn't exist
+4. Read `PROJECT_OVERVIEW.md` if the change touches audio, routing, adjacency, or node lifecycle
+5. Read `STYLE_GUIDE.md` if the change involves any new or modified node UI
+6. Identify all affected files — changes often ripple between `page.tsx`, `useStore.ts`, menu components, and node components
+7. Check for dependencies — some tickets must be completed before others
+8. When done: update `TICKETS.md`, close the GitHub issue, update the ExecPlan Progress section, and update `STYLE_GUIDE.md` if a new colour was assigned
