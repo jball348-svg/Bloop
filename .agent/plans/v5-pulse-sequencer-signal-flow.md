@@ -12,24 +12,37 @@ GitHub issues: #38 (Pulse Node), #39 (Step Sequencer), #40 (Signal Flow Visualis
 
 ## Progress
 
-- [ ] Read GitHub issues #38, #39, #40 in full
-- [ ] Milestone 1 — Pulse Node (#38): new controller-domain node that fires discrete trigger events
-- [ ] Milestone 2 — Step Sequencer (#39): 16-step grid node that advances on each Pulse input
-- [ ] Milestone 3 — Signal Flow Visualisation (#40): animated orbs along edges on signal fire
-- [ ] npm run build and npm run lint pass
-- [ ] Update TICKETS.md, close GitHub issues #38, #39, #40
+- [x] (2026-03-23) Read GitHub issues #38, #39, #40 in full
+- [x] (2026-03-23) Milestone 1 — Pulse Node (#38): add Pulse node UI, transport/free-run loop scheduling, manual trigger, and pulse-to-generator / pulse-to-sequencer dispatch
+- [x] (2026-03-23) Milestone 2 — Step Sequencer (#39): add editable 16-step sequencer node with pulse clock input and direct tempo-sync mode
+- [x] (2026-03-23) Milestone 3 — Signal Flow Visualisation (#40): add toggleable animated orb overlay for control/audio signal activity with auto-disable on slow frames
+- [x] (2026-03-23) npm run build and npm run lint pass
+- [x] (2026-03-23) Update TICKETS.md, close GitHub issues #38, #39, #40
 
 ## Surprises & Discoveries
 
-[To be filled.]
+- Observation: The existing `patterns` map in `store/useStore.ts` was effectively unused before v5.
+  Evidence: cleanup logic already existed for `patterns`, but no active node type was writing loops into it, so it was a clean place to store Pulse and Sequencer `Tone.Loop` instances.
+- Observation: Signal flow visualisation is much easier to keep cosmetic-only when driven from a lightweight event list instead of querying live edge DOM paths.
+  Evidence: rendering animated SVG circles in a viewport-synced overlay avoided mutating React Flow state and kept the feature independent from audio timing.
+- Observation: Direct pulse-to-generator triggering needed its own gate bookkeeping.
+  Evidence: using the existing note trigger/release flow avoided stuck-note regressions when pulses hit the same generator repeatedly.
 
 ## Decision Log
 
-[To be filled.]
+- Decision: Assign `lime-500` to Pulse and `blue-500` to Step Sequencer.
+  Rationale: Both colors were still available in the style guide registry and are visually distinct from the existing controller palette while staying legible on the dark canvas.
+  Date: 2026-03-23
+- Decision: Keep Pulse and Step Sequencer as control-domain nodes with no Tone audio node instances.
+  Rationale: Their job is event scheduling/dispatch, so storing only `Tone.Loop` clock objects in `patterns` preserves the repo's “audio objects live in the store” rule without inventing fake audio nodes.
+  Date: 2026-03-23
+- Decision: Emit signal-flow events from store actions and animate them in a separate overlay.
+  Rationale: This makes the visualisation purely observational, keeps audio timing untouched, and lets the system auto-disable itself on poor frame pacing.
+  Date: 2026-03-23
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V5 is complete. Bloop now has a reusable pulse-clock node, a proper step sequencer that can run from either a pulse input or direct transport sync, and a toggleable signal-flow teaching mode that makes both control and audio routing visible without interfering with playback.
 
 ## Context and Orientation
 

@@ -11,6 +11,8 @@ const ControllerMenu = () => {
     const controllerTools = [
         { type: 'controller', label: 'Arpeggiator', color: 'bg-yellow-500' },
         { type: 'keys', label: 'Keys', color: 'bg-black border border-white' },
+        { type: 'pulse', label: 'Pulse', color: 'bg-lime-500 text-slate-950' },
+        { type: 'stepsequencer', label: 'Sequencer', color: 'bg-blue-500' },
         { type: 'chord', label: 'Chord', color: 'bg-sky-500' },
         { type: 'adsr', label: 'ADSR', color: 'bg-amber-700' },
     ];

@@ -32,6 +32,13 @@ export const AUDIO_SIGNAL_COLOR = '#22d3ee';
 export const CONTROL_SIGNAL_COLOR = '#39ff14';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
+export const TRANSPORT_RATE_OPTIONS = [
+    { value: '1n', label: '1/1' },
+    { value: '2n', label: '1/2' },
+    { value: '4n', label: '1/4' },
+    { value: '8n', label: '1/8' },
+    { value: '16n', label: '1/16' },
+] as const;
 export const CHORD_QUALITY_OPTIONS = [
     { value: 'major', label: 'Major' },
     { value: 'minor', label: 'Minor' },
@@ -46,12 +53,32 @@ export const CHORD_QUALITY_OPTIONS = [
 export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
 
-export type AudioNodeType = 'generator' | 'effect' | 'speaker' | 'controller' | 'tempo' | 'drum' | 'chord' | 'adsr' | 'keys' | 'unison' | 'detune' | 'visualiser';
+export type TransportRate = (typeof TRANSPORT_RATE_OPTIONS)[number]['value'];
+export type AudioNodeType =
+    | 'generator'
+    | 'effect'
+    | 'speaker'
+    | 'controller'
+    | 'tempo'
+    | 'drum'
+    | 'chord'
+    | 'adsr'
+    | 'keys'
+    | 'unison'
+    | 'detune'
+    | 'visualiser'
+    | 'pulse'
+    | 'stepsequencer';
 export type ConnectionKind = 'audio' | 'tempo' | 'control';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
 export type DrumPart = (typeof DRUM_PARTS)[number];
 export type DrumPattern = Record<DrumPart, boolean[]>;
+export type SequencerStep = {
+    enabled: boolean;
+    note: string;
+    gate: number;
+};
 export type AppEdgeData = {
     kind?: ConnectionKind;
     originalSource?: string;
@@ -97,6 +124,15 @@ type NodeValueUpdate = {
     packedName?: string;
 };
 
+export type SignalFlowEvent = {
+    id: string;
+    edgeId: string;
+    kind: ConnectionKind;
+    color?: string;
+    createdAt: number;
+    durationMs: number;
+};
+
 export type AppNode = Node & {
     data: {
         label: string;
@@ -121,6 +157,15 @@ export type AppNode = Node & {
         packedName?: string;
         isPackedVisible?: boolean;
         packGroupId?: string;
+        pulseSync?: boolean;
+        pulseRate?: TransportRate;
+        pulseIntervalMs?: number;
+        pulseNote?: string;
+        stepSequence?: SequencerStep[];
+        selectedStep?: number;
+        sequenceSync?: boolean;
+        sequenceRate?: TransportRate;
+        sequenceIntervalMs?: number;
     };
     type: AudioNodeType;
 };
@@ -412,6 +457,8 @@ const applyAdsrToDownstreamGenerators = (
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys: { w: 288, h: 320 },
+    pulse: { w: 288, h: 280 },
+    stepsequencer: { w: 352, h: 420 },
     chord: { w: 224, h: 240 },
     adsr: { w: 224, h: 340 },
     generator: { w: 240, h: 220 },
@@ -520,11 +567,14 @@ export const ADJ_X_THRESHOLD = 100;    // max horizontal centre misalignment for
 const AUTO_EDGE_PREFIX = 'auto-';
 const DRUM_PAD_HIGHLIGHT_MS = 120;
 const drumPadTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const signalFlowTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
     keys: 0,
+    pulse: 0,
+    stepsequencer: 0.25,
     chord: 0.5,
     adsr: 0.75,
     generator: 1,
@@ -536,7 +586,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     speaker: 3,
 };
 
-const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr']);
+const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'pulse', 'stepsequencer', 'chord', 'adsr']);
 
 export const isControlDomainNodeType = (type?: AudioNodeType | string | null) =>
     Boolean(type) && CONTROL_DOMAIN_TYPES.has(type as AudioNodeType);
@@ -546,8 +596,8 @@ export const getAdjacencyGlowClasses = (type?: AudioNodeType | string | null) =>
         ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-[#39ff14] shadow-[0_0_24px_rgba(57,255,20,0.25)]'
         : ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]';
 
-const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr', 'generator', 'drum']);
-const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr']);
+const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'adsr', 'generator', 'drum']);
+const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'pulse', 'stepsequencer', 'chord', 'adsr']);
 const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'unison', 'detune', 'visualiser', 'speaker']);
 const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'drum', 'effect', 'unison', 'detune', 'visualiser']);
 
@@ -568,6 +618,8 @@ const getClusterSignalExit = (clusterIds: Set<string>, nodes: AppNode[], kind: C
 };
 
 export const VALID_AUTO_WIRE_PAIRS = new Set([
+    'pulse->stepsequencer',
+    'pulse->generator',
     'controller->chord',
     'controller->adsr',
     'controller->generator',
@@ -580,6 +632,9 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
+    'stepsequencer->chord',
+    'stepsequencer->adsr',
+    'stepsequencer->generator',
     'generator->unison',
     'generator->detune',
     'drum->unison',
@@ -607,6 +662,8 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
 ]);
 
 export const CONTROL_WIRE_PAIRS = new Set([
+    'pulse->stepsequencer',
+    'pulse->generator',
     'controller->chord',
     'controller->adsr',
     'controller->generator',
@@ -619,6 +676,9 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
+    'stepsequencer->chord',
+    'stepsequencer->adsr',
+    'stepsequencer->generator',
 ]);
 
 const clampTempoBpm = (bpm: number) =>
@@ -643,12 +703,27 @@ const volumePercentToDb = (volume: number) => {
     return ((nextVolume - 1) / 99) * 36 - 30;
 };
 
+const DEFAULT_PULSE_NOTE = 'C4';
+
 const createDefaultDrumPattern = (): DrumPattern => ({
     kick: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
     snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
     hatClosed: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
     hatOpen: [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
 });
+
+export const createDefaultStepSequence = (): SequencerStep[] => {
+    const notes = ['C4', 'D4', 'E4', 'G4'];
+
+    return Array.from({ length: 16 }, (_, index) => ({
+        enabled: index < notes.length,
+        note: notes[index % notes.length] ?? DEFAULT_PULSE_NOTE,
+        gate: 60,
+    }));
+};
+
+const getLoopIntervalSeconds = (sync: boolean, rate: TransportRate, intervalMs: number) =>
+    sync ? rate : Math.max(intervalMs, 50) / 1000;
 
 const createDrumRack = (): DrumRack => {
     const output = new Tone.Gain(0.9);
@@ -808,6 +883,42 @@ const getEdgePresentation = (kind: ConnectionKind) => {
     };
 };
 
+const collectReachableEdgeIds = (
+    sourceId: string,
+    kind: ConnectionKind,
+    edges: AppEdge[],
+    visited = new Set<string>()
+): string[] => {
+    const nextEdgeIds: string[] = [];
+
+    edges
+        .filter((edge) => edge.source === sourceId)
+        .filter((edge) =>
+            kind === 'control'
+                ? isControlEdge(edge)
+                : kind === 'audio'
+                    ? isAudioEdge(edge)
+                    : isTempoEdge(edge)
+        )
+        .forEach((edge) => {
+            const visitKey = `${edge.id}:${sourceId}:${kind}`;
+            if (visited.has(visitKey)) {
+                return;
+            }
+
+            const nextVisited = new Set(visited);
+            nextVisited.add(visitKey);
+
+            if (!edge.hidden) {
+                nextEdgeIds.push(edge.id);
+            }
+
+            nextEdgeIds.push(...collectReachableEdgeIds(edge.target, kind, edges, nextVisited));
+        });
+
+    return nextEdgeIds;
+};
+
 type AppState = {
     nodes: AppNode[];
     edges: AppEdge[];
@@ -822,6 +933,8 @@ type AppState = {
     activeDrumPads: Set<string>;
     adjacentNodeIds: Set<string>;
     autoEdgeIds: Set<string>;
+    signalFlowVisible: boolean;
+    signalFlowEvents: SignalFlowEvent[];
     past: Array<{ nodes: AppNode[]; edges: Edge[] }>;
     future: Array<{ nodes: AppNode[]; edges: Edge[] }>;
     canUndo: boolean;
@@ -839,6 +952,8 @@ type AppState = {
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => void;
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: NodeValueUpdate) => void;
+    updateNodeData: (id: string, data: Partial<AppNode['data']>) => void;
+    updateSequencerStep: (id: string, stepIndex: number, step: Partial<SequencerStep>) => void;
     updateTempoBpm: (id: string, bpm: number) => void;
     updateArpScale: (id: string, root: string, scale: string) => void;
     updateOctave: (id: string, octave: number) => void;
@@ -847,6 +962,12 @@ type AppState = {
     triggerDrumHit: (id: string, part: DrumPart, time?: number | string) => void;
     triggerNoteOn: (id: string, note: string) => void;
     triggerNoteOff: (id: string, note: string) => void;
+    firePulse: (pulseId: string, intervalMs?: number) => void;
+    advanceSequencerStep: (id: string, intervalMs?: number) => void;
+    toggleSignalFlow: () => void;
+    setSignalFlowVisible: (visible: boolean) => void;
+    emitSignalFlow: (sourceId: string, kind: ConnectionKind, color?: string) => void;
+    clearSignalFlowEvent: (eventId: string) => void;
     fireNoteOn: (controllerId: string, note: string) => void;
     fireNoteOff: (controllerId: string, note: string) => void;
     packGroup: (id: string) => void;
@@ -882,6 +1003,8 @@ export const useStore = create<AppState>((set, get) => ({
     activeDrumPads: new Set(),
     adjacentNodeIds: new Set(),
     autoEdgeIds: new Set(),
+    signalFlowVisible: false,
+    signalFlowEvents: [],
     past: [],
     future: [],
     canUndo: false,
@@ -1137,7 +1260,16 @@ export const useStore = create<AppState>((set, get) => ({
             node = new Tone.PitchShift({ pitch: 0, wet: 1 });
         } else if (type === 'visualiser') {
             node = new Tone.Gain(1); // passthrough — analysers are attached in the component
-        } else if (type === 'controller' || type === 'tempo' || type === 'speaker' || type === 'chord' || type === 'adsr' || type === 'keys') {
+        } else if (
+            type === 'controller' ||
+            type === 'tempo' ||
+            type === 'speaker' ||
+            type === 'chord' ||
+            type === 'adsr' ||
+            type === 'keys' ||
+            type === 'pulse' ||
+            type === 'stepsequencer'
+        ) {
             return;
         }
 
@@ -1436,6 +1568,51 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
+    updateNodeData: (id: string, data: Partial<AppNode['data']>) => {
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            ...data,
+                        },
+                    }
+                    : node
+            ),
+        });
+    },
+
+    updateSequencerStep: (id: string, stepIndex: number, step: Partial<SequencerStep>) => {
+        set({
+            nodes: get().nodes.map((node: AppNode) => {
+                if (node.id !== id || node.type !== 'stepsequencer') {
+                    return node;
+                }
+
+                const stepSequence = [...(node.data.stepSequence ?? createDefaultStepSequence())];
+                const currentStep = stepSequence[stepIndex];
+                if (!currentStep) {
+                    return node;
+                }
+
+                stepSequence[stepIndex] = {
+                    ...currentStep,
+                    ...step,
+                };
+
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        stepSequence,
+                    },
+                };
+            }),
+        });
+    },
+
     updateTempoBpm: (id: string, bpm: number) => {
         const nextBpm = clampTempoBpm(bpm);
         const { nodes } = get();
@@ -1554,6 +1731,8 @@ export const useStore = create<AppState>((set, get) => ({
             rack.hatOpen.triggerAttackRelease('A5', '8n', time, 0.35);
         }
 
+        get().emitSignalFlow(id, 'audio');
+
         const padKey = `${id}:${part}`;
         const existingTimeout = drumPadTimeouts.get(padKey);
         if (existingTimeout) {
@@ -1588,11 +1767,13 @@ export const useStore = create<AppState>((set, get) => ({
                 generatorNoteCounts: nextGeneratorNoteCounts,
                 activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
             });
+            get().emitSignalFlow(id, 'audio');
         } else if (node instanceof Tone.Noise) {
             node.start();
             set({
                 activeGenerators: new Set([...get().activeGenerators, id]),
             });
+            get().emitSignalFlow(id, 'audio');
         }
     },
 
@@ -1619,10 +1800,167 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
+    clearSignalFlowEvent: (eventId: string) => {
+        const timeoutId = signalFlowTimeouts.get(eventId);
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            signalFlowTimeouts.delete(eventId);
+        }
+
+        set({
+            signalFlowEvents: get().signalFlowEvents.filter((event) => event.id !== eventId),
+        });
+    },
+
+    setSignalFlowVisible: (visible: boolean) => {
+        if (!visible) {
+            signalFlowTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+            signalFlowTimeouts.clear();
+        }
+
+        set({
+            signalFlowVisible: visible,
+            signalFlowEvents: visible ? get().signalFlowEvents : [],
+        });
+    },
+
+    toggleSignalFlow: () => {
+        get().setSignalFlowVisible(!get().signalFlowVisible);
+    },
+
+    emitSignalFlow: (sourceId: string, kind: ConnectionKind, color?: string) => {
+        if (!get().signalFlowVisible) {
+            return;
+        }
+
+        const edgeIds = collectReachableEdgeIds(sourceId, kind, get().edges);
+        if (edgeIds.length === 0) {
+            return;
+        }
+
+        const now = performance.now();
+        const nextEvents = edgeIds.map((edgeId) => {
+            const eventId = `${edgeId}-${now}-${Math.random().toString(16).slice(2)}`;
+            const event: SignalFlowEvent = {
+                id: eventId,
+                edgeId,
+                kind,
+                color,
+                createdAt: now,
+                durationMs: kind === 'audio' ? 900 : 700,
+            };
+
+            signalFlowTimeouts.set(
+                eventId,
+                setTimeout(() => {
+                    get().clearSignalFlowEvent(eventId);
+                }, event.durationMs)
+            );
+
+            return event;
+        });
+
+        set({
+            signalFlowEvents: [...get().signalFlowEvents, ...nextEvents],
+        });
+    },
+
+    firePulse: (pulseId: string, intervalMs = 125) => {
+        const { edges, nodes, audioNodes } = get();
+        const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
+        const pulseNode = nodesById.get(pulseId);
+        if (!pulseNode) {
+            return;
+        }
+
+        const pulseColor = pulseNode.data.isPackedVisible ? '#d946ef' : undefined;
+        get().emitSignalFlow(pulseId, 'control', pulseColor);
+
+        edges
+            .filter((edge) => isControlEdge(edge) && edge.source === pulseId)
+            .forEach((edge) => {
+                const targetId = edge.data?.originalTarget || edge.target;
+                const targetNode = nodesById.get(targetId);
+                if (!targetNode) {
+                    return;
+                }
+
+                if (targetNode.type === 'stepsequencer') {
+                    get().advanceSequencerStep(targetNode.id, intervalMs);
+                    return;
+                }
+
+                if (targetNode.type === 'generator') {
+                    const note = pulseNode.data.pulseNote ?? DEFAULT_PULSE_NOTE;
+                    const targetAudioNode = audioNodes.get(targetNode.id);
+
+                    if (targetAudioNode instanceof Tone.PolySynth) {
+                        get().triggerNoteOn(targetNode.id, note);
+                        window.setTimeout(() => {
+                            get().triggerNoteOff(targetNode.id, note);
+                        }, Math.min(Math.max(intervalMs * 0.4, 80), 240));
+                    } else if (targetAudioNode instanceof Tone.Noise) {
+                        try {
+                            targetAudioNode.stop();
+                        } catch {
+                            // Ignore redundant stop calls when pulse retriggers noise.
+                        }
+                        get().triggerNoteOn(targetNode.id, note);
+                        window.setTimeout(() => {
+                            get().triggerNoteOff(targetNode.id, note);
+                        }, Math.min(Math.max(intervalMs * 0.4, 80), 240));
+                    }
+                }
+            });
+    },
+
+    advanceSequencerStep: (id: string, intervalMs = 250) => {
+        const currentNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'stepsequencer');
+        if (!currentNode) {
+            return;
+        }
+
+        const stepSequence = currentNode.data.stepSequence ?? createDefaultStepSequence();
+        if (stepSequence.length === 0) {
+            return;
+        }
+
+        const nextStepIndex = ((currentNode.data.currentStep ?? -1) + 1) % stepSequence.length;
+        const nextStep = stepSequence[nextStepIndex];
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            currentStep: nextStepIndex,
+                        },
+                    }
+                    : node
+            ),
+        });
+
+        if (!nextStep?.enabled) {
+            return;
+        }
+
+        get().fireNoteOn(id, nextStep.note);
+        const gateDuration = Math.max(60, intervalMs * (nextStep.gate / 100));
+        window.setTimeout(() => {
+            get().fireNoteOff(id, nextStep.note);
+        }, gateDuration);
+    },
+
     fireNoteOn: (controllerId: string, note: string) => {
         const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts, activeGenerators } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
+        const sourceNode = nodesById.get(controllerId);
+        const controlColor = sourceNode?.data.isPackedVisible ? '#d946ef' : undefined;
+
+        get().emitSignalFlow(controllerId, 'control', controlColor);
 
         // Apply ADSR envelopes to downstream generators before triggering notes
         applyAdsrEnvelopes(controllerId, nodesById, edges, audioNodes);
@@ -1648,6 +1986,7 @@ export const useStore = create<AppState>((set, get) => ({
                     voicedNote
                 );
                 nextActiveGenerators.add(generatorId);
+                get().emitSignalFlow(generatorId, 'audio');
             } else if (targetNode instanceof Tone.Noise) {
                 if (nextActiveGenerators.has(generatorId)) {
                     try {
@@ -1658,6 +1997,7 @@ export const useStore = create<AppState>((set, get) => ({
                 }
                 targetNode.start();
                 nextActiveGenerators.add(generatorId);
+                get().emitSignalFlow(generatorId, 'audio');
             }
         });
 
@@ -1717,9 +2057,59 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     toggleNodePlayback: (id: string, isPlaying: boolean) => {
-        const { audioNodes, drumRacks, nodes } = get();
+        const { audioNodes, drumRacks, nodes, patterns } = get();
         const nodeData = nodes.find((node: AppNode) => node.id === id);
         if (!nodeData) {
+            return;
+        }
+
+        if (nodeData.type === 'pulse' || nodeData.type === 'stepsequencer') {
+            const existingPattern = patterns.get(id);
+            if (existingPattern) {
+                existingPattern.stop().dispose();
+                const nextPatterns = new Map(patterns);
+                nextPatterns.delete(id);
+                set({ patterns: nextPatterns });
+            }
+
+            if (isPlaying) {
+                const interval = getLoopIntervalSeconds(
+                    nodeData.type === 'pulse'
+                        ? nodeData.data.pulseSync ?? true
+                        : nodeData.data.sequenceSync ?? true,
+                    nodeData.type === 'pulse'
+                        ? nodeData.data.pulseRate ?? '4n'
+                        : nodeData.data.sequenceRate ?? '8n',
+                    nodeData.type === 'pulse'
+                        ? nodeData.data.pulseIntervalMs ?? 500
+                        : nodeData.data.sequenceIntervalMs ?? 250
+                );
+                const intervalMs =
+                    typeof interval === 'number'
+                        ? interval * 1000
+                        : Tone.Time(interval).toMilliseconds();
+
+                const loop = new Tone.Loop(() => {
+                    if (nodeData.type === 'pulse') {
+                        get().firePulse(id, Math.max(intervalMs, 50));
+                    } else {
+                        get().advanceSequencerStep(id, Math.max(intervalMs, 50));
+                    }
+                }, interval);
+
+                loop.start(0);
+                const nextPatterns = new Map(get().patterns);
+                nextPatterns.set(id, loop);
+                set({ patterns: nextPatterns });
+            }
+
+            set({
+                nodes: nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? { ...node, data: { ...node.data, isPlaying, currentStep: isPlaying ? node.data.currentStep ?? -1 : node.data.currentStep } }
+                        : node
+                ),
+            });
             return;
         }
 
@@ -1857,6 +2247,34 @@ export const useStore = create<AppState>((set, get) => ({
                                         isPlaying: node.data.isPlaying ?? false,
                                     },
                                 }
+                                : node.type === 'pulse'
+                                    ? {
+                                        ...node,
+                                        data: {
+                                            ...node.data,
+                                            label: node.data.label || 'Pulse',
+                                            pulseSync: node.data.pulseSync ?? true,
+                                            pulseRate: node.data.pulseRate ?? '4n',
+                                            pulseIntervalMs: node.data.pulseIntervalMs ?? 500,
+                                            pulseNote: node.data.pulseNote ?? DEFAULT_PULSE_NOTE,
+                                            isPlaying: node.data.isPlaying ?? false,
+                                        },
+                                    }
+                                    : node.type === 'stepsequencer'
+                                        ? {
+                                            ...node,
+                                            data: {
+                                                ...node.data,
+                                                label: node.data.label || 'Sequencer',
+                                                stepSequence: node.data.stepSequence ?? createDefaultStepSequence(),
+                                                selectedStep: node.data.selectedStep ?? 0,
+                                                currentStep: node.data.currentStep ?? -1,
+                                                sequenceSync: node.data.sequenceSync ?? true,
+                                                sequenceRate: node.data.sequenceRate ?? '8n',
+                                                sequenceIntervalMs: node.data.sequenceIntervalMs ?? 250,
+                                                isPlaying: node.data.isPlaying ?? false,
+                                            },
+                                        }
                                 : node;
 
         set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
@@ -1877,6 +2295,10 @@ export const useStore = create<AppState>((set, get) => ({
             get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
         } else if (nextNode.type === 'drum' || nextNode.type === 'unison' || nextNode.type === 'detune' || nextNode.type === 'visualiser') {
             get().initAudioNode(nextNode.id, nextNode.type);
+        }
+
+        if ((nextNode.type === 'pulse' || nextNode.type === 'stepsequencer') && nextNode.data.isPlaying) {
+            get().toggleNodePlayback(nextNode.id, true);
         }
 
         get().rebuildAudioGraph();
@@ -2037,10 +2459,16 @@ export const useStore = create<AppState>((set, get) => ({
             }
         });
         get().rebuildAudioGraph();
+        nodes
+            .filter((node: AppNode) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .forEach((node: AppNode) => get().toggleNodePlayback(node.id, true));
     },
 
     clearCanvas: () => {
         const { audioNodes, drumRacks, patterns, masterOutput } = get();
+
+        signalFlowTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+        signalFlowTimeouts.clear();
 
         // Stop and dispose all patterns (arpeggiators etc.)
         patterns.forEach((pattern) => {
@@ -2078,6 +2506,7 @@ export const useStore = create<AppState>((set, get) => ({
             activeDrumPads: new Set(),
             adjacentNodeIds: new Set(),
             autoEdgeIds: new Set(),
+            signalFlowEvents: [],
             masterOutput: null,
         });
     },
@@ -2117,6 +2546,9 @@ export const useStore = create<AppState>((set, get) => ({
 
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
+        nodes
+            .filter((node: AppNode) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .forEach((node: AppNode) => get().toggleNodePlayback(node.id, true));
     },
 
     autoWireAdjacentNodes: () => {
@@ -2554,13 +2986,14 @@ export const useStore = create<AppState>((set, get) => ({
             generatorNoteCounts: new Map(),
             activeGenerators: new Set(),
             activeDrumPads: new Set(),
+            signalFlowEvents: [],
         });
 
         // Reinitialize audio nodes for restored state
         previousSnapshot.nodes.forEach((node) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum') {
+            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
                 get().initAudioNode(node.id, node.type);
             }
         });
@@ -2568,6 +3001,9 @@ export const useStore = create<AppState>((set, get) => ({
         // Rebuild audio graph and recalculate adjacency
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
+        previousSnapshot.nodes
+            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .forEach((node) => get().toggleNodePlayback(node.id, true));
     },
 
     redo: () => {
@@ -2624,13 +3060,14 @@ export const useStore = create<AppState>((set, get) => ({
             generatorNoteCounts: new Map(),
             activeGenerators: new Set(),
             activeDrumPads: new Set(),
+            signalFlowEvents: [],
         });
 
         // Reinitialize audio nodes for restored state
         nextSnapshot.nodes.forEach((node) => {
             if (node.data.subType && node.data.subType !== 'none') {
                 get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (node.type === 'drum') {
+            } else if (node.type === 'drum' || node.type === 'unison' || node.type === 'detune' || node.type === 'visualiser') {
                 get().initAudioNode(node.id, node.type);
             }
         });
@@ -2638,5 +3075,8 @@ export const useStore = create<AppState>((set, get) => ({
         // Rebuild audio graph and recalculate adjacency
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
+        nextSnapshot.nodes
+            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .forEach((node) => get().toggleNodePlayback(node.id, true));
     },
 }));

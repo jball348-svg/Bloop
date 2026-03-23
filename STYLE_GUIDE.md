@@ -22,6 +22,8 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Unison | Signal | `border-violet-500` | `text-violet-400` | `bg-violet-500` | `violet` |
 | Detune | Signal | `border-teal-500` | `text-teal-400` | `bg-teal-500` | `teal` |
 | Visualiser | Signal | `border-pink-500` | `text-pink-400` | `bg-pink-500` | `pink` |
+| Pulse | Controller | `border-lime-500` | `text-lime-400` | `bg-lime-500` | `lime` |
+| Step Sequencer | Controller | `border-blue-500` | `text-blue-400` | `bg-blue-500` | `blue` |
 | Tempo | Global | `border-indigo-500` | `text-indigo-400` | n/a | `indigo` |
 | Amplifier | Global | `border-emerald-500` | `text-emerald-400` | n/a | `emerald` |
 
@@ -29,8 +31,6 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 
 Pick the next colour for any new node — each should be visually distinct from its neighbours in the menu.
 
-- `blue-500` — clean blue
-- `lime-500` — bright green
 - `rose-500` — warm red-pink (close to red, use with care)
 - `purple-500` — deep purple (close to violet/indigo, use with care)
 
@@ -80,6 +80,8 @@ Always in the top-left of every node. Hoover state uses the node accent colour.
 | Node | Width |
 |---|---|
 | Controller / Keys | `w-72` (288px) |
+| Pulse | `w-72` (288px) |
+| Step Sequencer | `w-[22rem]` (352px) |
 | Drum | `w-80` (320px) |
 | Generator | `w-60` (240px) |
 | Effect / Chord / ADSR / Speaker | `w-56` (224px) |
@@ -89,7 +91,7 @@ Always in the top-left of every node. Hoover state uses the node accent colour.
 
 ## Menu Colour Coordination
 
-- **Controllers menu** (left): yellow, white, amber, sky
+- **Controllers menu** (left): yellow, white, lime, blue, amber, sky
 - **Signals menu** (top): red, orange, fuchsia, violet, teal, pink
 - **Global menu** (right): indigo, emerald
 - **System menu** (bottom): neutral/slate (New, Save, Load, Presets, Undo, Redo)

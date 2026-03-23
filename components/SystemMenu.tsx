@@ -5,7 +5,7 @@ import { useStore } from '@/store/useStore';
 import { PRESETS } from '@/store/presets';
 
 const SystemMenu = () => {
-    const { nodes, edges, masterVolume, clearCanvas, loadCanvas, undo, redo, canUndo, canRedo } = useStore();
+    const { nodes, edges, masterVolume, clearCanvas, loadCanvas, undo, redo, canUndo, canRedo, signalFlowVisible, toggleSignalFlow } = useStore();
     const [showPresets, setShowPresets] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -106,6 +106,17 @@ const SystemMenu = () => {
                     }`}
                 >
                     Presets
+                </button>
+
+                <button
+                    onClick={toggleSignalFlow}
+                    className={`px-3 py-2 rounded-xl text-[10px] font-bold transition-all text-center ${
+                        signalFlowVisible
+                            ? 'bg-lime-500 text-slate-950 shadow-[0_0_12px_rgba(57,255,20,0.35)]'
+                            : 'bg-slate-700 text-white hover:bg-slate-600 active:scale-95'
+                    }`}
+                >
+                    Signal Flow
                 </button>
 
                 <div className="w-[1px] h-4 bg-slate-700 mx-1" />

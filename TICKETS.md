@@ -43,7 +43,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#17](https://github.com/jball348-svg/Bloop/issues/17) | Controllers Lock Horizontally (Left → Right Flow) | ✅ Closed |
 | [#18](https://github.com/jball348-svg/Bloop/issues/18) | Signal Chain Locks Vertically (Top → Bottom Flow) | ✅ Closed |
 
-### V4 — In Progress 🔵
+### V4 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
@@ -56,13 +56,13 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
 
-### V5 — Roadmap (do not action until v4 complete)
+### V5 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#38](https://github.com/jball348-svg/Bloop/issues/38) | The "Bloop" Pulse Node — Discrete Event Trigger (Bang-style) | 🟣 V5 Roadmap |
-| [#39](https://github.com/jball348-svg/Bloop/issues/39) | Moog-Style Modular Step Sequencer | 🟣 V5 Roadmap |
-| [#40](https://github.com/jball348-svg/Bloop/issues/40) | Signal Flow Visualization — Animated Cable Pulses | 🟣 V5 Roadmap |
+| [#38](https://github.com/jball348-svg/Bloop/issues/38) | The "Bloop" Pulse Node — Discrete Event Trigger (Bang-style) | ✅ Closed |
+| [#39](https://github.com/jball348-svg/Bloop/issues/39) | Moog-Style Modular Step Sequencer | ✅ Closed |
+| [#40](https://github.com/jball348-svg/Bloop/issues/40) | Signal Flow Visualization — Animated Cable Pulses | ✅ Closed |
 
 ### V6 — Roadmap
 
@@ -130,13 +130,13 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 ── V2 Complete ── V3 Complete ──
 
 V4 Core:
-#33 (bugs) → #34 (polish) → ~~#35 (packing)~~ ✅ → #36 (deploy) → #37 (canvas)
+~~#33 (bugs)~~ ✅ → ~~#34 (polish)~~ ✅ → ~~#35 (packing)~~ ✅ → ~~#36 (deploy)~~ ✅ → ~~#37 (canvas)~~ ✅
 
 V4 Deferred Features:
 #23 (Filter) · #29 (Mixer) · #31 (Drum Input)
 
 V5 (requires v4 complete):
-#38 (Pulse) → #39 (Sequencer) → #40 (Signal Flow Vis)
+~~#38 (Pulse)~~ ✅ → ~~#39 (Sequencer)~~ ✅ → ~~#40 (Signal Flow Vis)~~ ✅
 
 V6 (requires v5 complete):
 #41 (Quantizer) → #42 (Sub-menus) → #43 (Mood Pad)

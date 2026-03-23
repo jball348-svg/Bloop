@@ -32,6 +32,9 @@ import EffectNode from '@/components/EffectNode';
 import UnisonNode from '@/components/UnisonNode';
 import DetuneNode from '@/components/DetuneNode';
 import VisualiserNode from '@/components/VisualiserNode';
+import PulseNode from '@/components/PulseNode';
+import StepSequencerNode from '@/components/StepSequencerNode';
+import SignalFlowOverlay from '@/components/SignalFlowOverlay';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
 import AdsrNode from '@/components/AdsrNode';
@@ -49,6 +52,8 @@ import SystemMenu from '@/components/SystemMenu';
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys:        { w: 288, h: 320 },
+    pulse:       { w: 288, h: 280 },
+    stepsequencer: { w: 352, h: 420 },
     chord:      { w: 224, h: 240 },
     adsr:       { w: 224, h: 340 },
     generator:  { w: 240, h: 220 },
@@ -125,6 +130,8 @@ function BloopCanvasInner() {
         unison: UnisonNode,
         detune: DetuneNode,
         visualiser: VisualiserNode,
+        pulse: PulseNode,
+        stepsequencer: StepSequencerNode,
         speaker: SpeakerNode,
         tempo: TempoNode,
         adsr: AdsrNode,
@@ -173,6 +180,12 @@ function BloopCanvasInner() {
         if (type === 'keys') {
             subType = 'keys';
             label = 'Keys';
+        }
+        if (type === 'pulse') {
+            label = 'Pulse';
+        }
+        if (type === 'stepsequencer') {
+            label = 'Sequencer';
         }
         if (type === 'chord') {
             subType = 'major';
@@ -410,6 +423,7 @@ function BloopCanvasInner() {
                 />
                 <Controls position="bottom-right" showInteractive={false} />
             </ReactFlow>
+            <SignalFlowOverlay />
 
             <div
                 id="trash-bin"
