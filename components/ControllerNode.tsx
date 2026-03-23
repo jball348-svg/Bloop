@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
+    getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
@@ -18,23 +19,16 @@ const TONAL_SCALES = [
 
 
 export default function ControllerNode({ id }: { id: string }) {
-    const changeNodeSubType = useStore((state) => state.changeNodeSubType);
     const fireNoteOn = useStore((state) => state.fireNoteOn);
     const fireNoteOff = useStore((state) => state.fireNoteOff);
     const updateArpScale = useStore((state) => state.updateArpScale);
-    const updateOctave = useStore((state) => state.updateOctave);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
         return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
-    const octave = useStore((state) =>
-        state.nodes.find((node) => node.id === id)?.data.octave ?? 4
-    );
-
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
-    const subType = nodeData?.subType || 'none';
     const rootNote = nodeData?.rootNote || 'C';
     const scaleType = nodeData?.scaleType || 'major pentatonic';
 
@@ -87,8 +81,8 @@ export default function ControllerNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-yellow-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-yellow-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-yellow-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-yellow-500/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('controller') : ''
         }`}>
 
             <div className="relative z-10 flex flex-1 flex-col">

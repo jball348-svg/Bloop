@@ -4,6 +4,7 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     CHORD_QUALITY_OPTIONS,
     DEFAULT_CHORD_QUALITY,
+    getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
@@ -27,8 +28,8 @@ export default function ChordNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('chord') : ''
         }`}>
 
             {(!nodeData?.isLocked || nodeData?.isEntry) && (

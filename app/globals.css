@@ -13,6 +13,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
@@ -59,6 +60,10 @@ body {
   background: #1e293b !important;
 }
 
+.react-flow__node {
+  user-select: none;
+}
+
 /* Hide React Flow attribution */
 .react-flow__attribution {
   display: none !important;
@@ -68,4 +73,3 @@ body {
 [id^="__next-ext-"] {
     display: none !important;
 }
-

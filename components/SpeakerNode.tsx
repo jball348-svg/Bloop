@@ -10,7 +10,7 @@ export default function SpeakerNode({ id }: { id: string }) {
     };
 
     return (
-        <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative">
+        <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative select-none">
             <div className="relative z-10 flex flex-col">
                 <div className="flex items-center mb-3">
                     <button

@@ -47,11 +47,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 | # | Title | Status |
 |---|---|---|
-| [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection, N→S gaps | 🔵 V4 Backlog |
-| [#34](https://github.com/jball348-svg/Bloop/issues/34) | V4 Visual Polish — Cable Colours & Snapped-Node Glow Theming | 🔵 V4 Backlog |
+| [#33](https://github.com/jball348-svg/Bloop/issues/33) | V4 Bug Omnibus — Snap, Audio Engine, Drum ADSR, Text Selection, N→S gaps | ✅ Closed |
+| [#34](https://github.com/jball348-svg/Bloop/issues/34) | V4 Visual Polish — Cable Colours & Snapped-Node Glow Theming | ✅ Closed |
 | [#35](https://github.com/jball348-svg/Bloop/issues/35) | Node Packing — Compress Locked Groups into Single Macro-Nodes | ✅ Closed |
-| [#36](https://github.com/jball348-svg/Bloop/issues/36) | Vercel Pipeline Setup & Prototype Deployment | 🔵 V4 Backlog |
-| [#37](https://github.com/jball348-svg/Bloop/issues/37) | Auto-Resizing Canvas Bounds & Infinite Pan | 🔵 V4 Backlog |
+| [#36](https://github.com/jball348-svg/Bloop/issues/36) | Vercel Pipeline Setup & Prototype Deployment | ✅ Closed |
+| [#37](https://github.com/jball348-svg/Bloop/issues/37) | Auto-Resizing Canvas Bounds & Infinite Pan | ✅ Closed |
 | [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
 | [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
 | [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
@@ -115,11 +115,11 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ## V4 Recommended Work Order
 
-1. **#33** Bug Omnibus (stable base first)
-2. **#34** Visual Polish (cable colours & glow)
+1. ~~**#33** Bug Omnibus~~ ✅
+2. ~~**#34** Visual Polish~~ ✅
 3. ~~**#35** Node Packing~~ ✅ Done
-4. **#36** Vercel Deployment
-5. **#37** Auto-Resizing Canvas
+4. ~~**#36** Vercel Deployment~~ ✅
+5. ~~**#37** Auto-Resizing Canvas~~ ✅
 6. **#23**, **#29**, **#31** — hold until v4 core complete
 
 ---

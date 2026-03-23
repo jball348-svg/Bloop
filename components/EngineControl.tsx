@@ -6,15 +6,45 @@ import { useStore } from '@/store/useStore';
 
 export default function EngineControl() {
     const [isStarted, setIsStarted] = useState(false);
+    const [isStarting, setIsStarting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const initializeDefaultNodes = useStore((state) => state.initializeDefaultNodes);
     
     const startEngine = async () => {
-        await Tone.start();
-        Tone.getTransport().start();
-        initializeDefaultNodes();
-        setIsStarted(true);
-        console.log('Audio engine started');
+        setIsStarting(true);
+        setErrorMessage(null);
+
+        try {
+            await Tone.start();
+            const rawContext = Tone.getContext().rawContext;
+            const isAudioRunning = () => Tone.getContext().rawContext.state === 'running';
+
+            for (let attempt = 0; attempt < 3 && !isAudioRunning(); attempt++) {
+                await rawContext.resume();
+                if (isAudioRunning()) {
+                    break;
+                }
+                await new Promise((resolve) => window.setTimeout(resolve, 200));
+            }
+
+            if (!isAudioRunning()) {
+                throw new Error('Audio context could not start');
+            }
+
+            const transport = Tone.getTransport();
+            if (transport.state !== 'started') {
+                transport.start();
+            }
+
+            initializeDefaultNodes();
+            setIsStarted(true);
+        } catch (error) {
+            console.error('Failed to start audio engine:', error);
+            setErrorMessage('Audio is busy or blocked right now. Pause other audio and try again.');
+        } finally {
+            setIsStarting(false);
+        }
     };
 
     if (!isStarted) {
@@ -26,11 +56,17 @@ export default function EngineControl() {
                         Browsers need a little nudge to start the audio engine. 
                         Click below to wake up the synths.
                     </p>
+                    {errorMessage && (
+                        <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-200">
+                            {errorMessage}
+                        </p>
+                    )}
                     <button
                         onClick={startEngine}
-                        className="px-10 py-4 bg-indigo-500 hover:bg-indigo-600 text-white font-black rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20"
+                        disabled={isStarting}
+                        className="px-10 py-4 bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 disabled:text-slate-300 disabled:cursor-wait text-white font-black rounded-xl transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20"
                     >
-                        START AUDIO ENGINE
+                        {isStarting ? 'STARTING...' : 'START AUDIO ENGINE'}
                     </button>
                 </div>
             </div>

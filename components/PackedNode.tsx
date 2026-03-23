@@ -5,6 +5,7 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     AUDIO_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    getAdjacencyGlowClasses,
     useStore,
 } from '@/store/useStore';
 
@@ -41,7 +42,14 @@ export default function PackedNode({ id }: PackedNodeProps) {
 
     const packGroupId = node?.data.packGroupId;
     const clusterNodes = nodes.filter(n => n.data.packGroupId === packGroupId);
-    
+
+    useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isEditing]);
+
     if (clusterNodes.length === 0) return null;
 
     const entryNode = clusterNodes.reduce((a, b) => (SIGNAL_ORDER[a.type] ?? 99) < (SIGNAL_ORDER[b.type] ?? 99) ? a : b);
@@ -52,16 +60,9 @@ export default function PackedNode({ id }: PackedNodeProps) {
     const hasControlOut = ['controller', 'keys', 'chord', 'adsr'].includes(exitNode.type);
     const hasAudioOut = ['generator', 'drum', 'effect', 'unison', 'detune', 'visualiser'].includes(exitNode.type);
 
-    useEffect(() => {
-        if (isEditing && inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-        }
-    }, [isEditing]);
-
     const handleBlur = () => {
         setIsEditing(false);
-        updateNodeValue(id, { packedName: name } as any);
+        updateNodeValue(id, { packedName: name });
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -71,8 +72,8 @@ export default function PackedNode({ id }: PackedNodeProps) {
     };
 
     return (
-        <div className={`bg-slate-800 border-2 border-orange-400 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-orange-400/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-orange-400 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-orange-400/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses(entryNode.type) : ''
         }`}>
             {/* Handles - Rendered conditionally based on cluster capabilities */}
             {hasControlIn && (
@@ -119,7 +120,7 @@ export default function PackedNode({ id }: PackedNodeProps) {
                             onChange={(e) => setName(e.target.value)}
                             onBlur={handleBlur}
                             onKeyDown={handleKeyDown}
-                            className="bg-slate-900/50 border-b border-orange-400 text-[10px] font-black uppercase text-orange-400 text-center focus:outline-none px-1 w-32"
+                            className="nodrag select-text bg-slate-900/50 border-b border-orange-400 text-[10px] font-black uppercase text-orange-400 text-center focus:outline-none px-1 w-32"
                         />
                     ) : (
                         <div 

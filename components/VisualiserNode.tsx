@@ -6,6 +6,7 @@ import * as Tone from 'tone';
 import {
     AUDIO_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
@@ -17,10 +18,6 @@ export default function VisualiserNode({ id }: { id: string }) {
     const audioNodes = useStore((state) => state.audioNodes);
     const edges = useStore((state) => state.edges);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
-
-    if (nodeData?.isPackedVisible) {
-        return <PackedNode id={id} />;
-    }
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -73,7 +70,11 @@ export default function VisualiserNode({ id }: { id: string }) {
                 values.forEach((v, i) => {
                     const x = i * sliceWidth;
                     const y = ((v + 1) / 2) * canvas.height;
-                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
                 });
                 ctx.stroke();
             }
@@ -103,9 +104,13 @@ export default function VisualiserNode({ id }: { id: string }) {
         }
     }, []);
 
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
+
     return (
-        <div className={`bg-slate-800 border-2 border-pink-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-pink-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-pink-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-pink-500/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('visualiser') : ''
         }`}>
 
             <div className="relative z-10 flex flex-1 flex-col">

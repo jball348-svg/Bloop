@@ -4,10 +4,10 @@ import * as Tone from 'tone';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
     CONTROL_INPUT_HANDLE_ID,
-    DEFAULT_TRANSPORT_BPM,
     DRUM_STEP_COUNT,
     type DrumMode,
     type DrumPart,
+    getAdjacencyGlowClasses,
     isAudioEdge,
     isControlEdge,
     useStore,
@@ -107,8 +107,8 @@ export default function DrumNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('drum') : ''
         }`}>
 
             {(!nodeData?.isLocked || nodeData?.isEntry) && (

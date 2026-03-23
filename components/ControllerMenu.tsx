@@ -16,7 +16,7 @@ const ControllerMenu = () => {
     ];
 
     return (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 select-none">
             <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-2xl px-2 py-4 flex flex-col gap-3 shadow-xl">
                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest text-center pb-1">CONTROLLERS</span>
                 {controllerTools.map((tool) => (

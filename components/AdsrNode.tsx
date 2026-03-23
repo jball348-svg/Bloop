@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_INPUT_HANDLE_ID,
     CONTROL_OUTPUT_HANDLE_ID,
+    getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
@@ -120,8 +120,8 @@ export default function AdsrNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('adsr') : ''
         }`}>
 
             <div className="relative z-10 flex flex-1 flex-col">

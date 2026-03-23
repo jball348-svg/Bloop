@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
@@ -14,21 +15,21 @@ export default function EffectNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
-    const subType = nodeData?.subType || 'none';
-
-    if (nodeData?.isPackedVisible) {
-        return <PackedNode id={id} />;
-    }
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
         return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
+    const subType = nodeData?.subType || 'none';
 
     const [mix, setMix] = useState(50);
     const [depth, setDepth] = useState(50);
     const [time, setTime] = useState(50);
     const [isBypassed, setIsBypassed] = useState(false);
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
 
     const handleSubTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         changeNodeSubType(id, 'effect', e.target.value);
@@ -54,8 +55,8 @@ export default function EffectNode({ id }: { id: string }) {
     };
 
     return (
-        <div className={`bg-slate-800 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-fuchsia-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-fuchsia-500/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('effect') : ''
         }`}>
 
             <div className="relative z-10 flex flex-1 flex-col">

@@ -4,6 +4,7 @@ import {
     CONTROL_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
     type WaveShape,
+    getAdjacencyGlowClasses,
     isAudioEdge,
     isControlEdge,
     useStore,
@@ -17,7 +18,6 @@ export default function GeneratorNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
-    const isActive = useStore((state) => state.activeGenerators.has(id));
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -41,15 +41,15 @@ export default function GeneratorNode({ id }: { id: string }) {
 
     useEffect(() => {
         updateNodeValue(id, { mix: 80 });
-    }, [id]);
+    }, [id, updateNodeValue]);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-60 flex flex-col transition-all hover:shadow-red-500/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-60 flex flex-col transition-all hover:shadow-red-500/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('generator') : ''
         }`}>
 
             {/* Input handle for MIDI data from Controller */}

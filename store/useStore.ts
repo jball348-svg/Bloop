@@ -28,6 +28,8 @@ export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
 export const CONTROL_INPUT_HANDLE_ID = 'control-in';
 export const CONTROL_OUTPUT_HANDLE_ID = 'control-out';
+export const AUDIO_SIGNAL_COLOR = '#22d3ee';
+export const CONTROL_SIGNAL_COLOR = '#39ff14';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
 export const CHORD_QUALITY_OPTIONS = [
@@ -92,6 +94,7 @@ type NodeValueUpdate = {
     release?: number;
     depth?: number;
     pitch?: number;
+    packedName?: string;
 };
 
 export type AppNode = Node & {
@@ -386,6 +389,14 @@ const applyAdsrToDownstreamGenerators = (
                     }
                     // Note: Tone.Noise instances don't support envelope settings
                     // They will be controlled by start/stop for amplitude gating
+                } else if (targetNode.type === 'drum') {
+                    const rack = useStore.getState().drumRacks.get(targetNode.id);
+                    if (rack) {
+                        rack.kick.set({ envelope: { attack, decay, sustain, release } });
+                        rack.snare.set({ envelope: { attack, decay, sustain, release } });
+                        rack.hatClosed.set({ envelope: { attack, decay, release } });
+                        rack.hatOpen.set({ envelope: { attack, decay, release } });
+                    }
                 } else {
                     // Continue traversing for other node types
                     findDownstreamGenerators(targetNode.id);
@@ -500,11 +511,11 @@ const getClusterBoundaries = (clusterIds: Set<string>, allNodes: AppNode[]) => {
 };
 
 // Gap threshold within which two nodes are considered "adjacent" (snapped)
-const ADJ_TOUCH_THRESHOLD = 48;
+export const ADJ_TOUCH_THRESHOLD = 48;
 // Y-centres must be within this many px of each other to count as adjacent
-const ADJ_Y_THRESHOLD = 100;
-const ADJ_VERT_THRESHOLD = 48;  // max vertical gap between stacked audio nodes (px)
-const ADJ_X_THRESHOLD = 100;    // max horizontal centre misalignment for vertical snapping (px)
+export const ADJ_Y_THRESHOLD = 100;
+export const ADJ_VERT_THRESHOLD = 48;  // max vertical gap between stacked audio nodes (px)
+export const ADJ_X_THRESHOLD = 100;    // max horizontal centre misalignment for vertical snapping (px)
 
 const AUTO_EDGE_PREFIX = 'auto-';
 const DRUM_PAD_HIGHLIGHT_MS = 120;
@@ -524,6 +535,16 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     visualiser: 2.5,
     speaker: 3,
 };
+
+const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr']);
+
+export const isControlDomainNodeType = (type?: AudioNodeType | string | null) =>
+    Boolean(type) && CONTROL_DOMAIN_TYPES.has(type as AudioNodeType);
+
+export const getAdjacencyGlowClasses = (type?: AudioNodeType | string | null) =>
+    isControlDomainNodeType(type)
+        ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-[#39ff14] shadow-[0_0_24px_rgba(57,255,20,0.25)]'
+        : ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]';
 
 const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr', 'generator', 'drum']);
 const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr']);
@@ -754,8 +775,10 @@ const isValidGraphConnection = (
 };
 
 const getConnectionKind = (
-    connection: Connection,
-    nodes: AppNode[]
+    connection: {
+        sourceHandle?: string | null;
+        targetHandle?: string | null;
+    }
 ): ConnectionKind | null => {
     if (connection.sourceHandle === CONTROL_OUTPUT_HANDLE_ID) return 'control';
     if (connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID) return 'audio';
@@ -766,10 +789,10 @@ const getEdgePresentation = (kind: ConnectionKind) => {
     if (kind === 'control') {
         return {
             style: {
-                stroke: '#fbbf24', // amber-400 — matches controller theme
+                stroke: CONTROL_SIGNAL_COLOR,
                 strokeWidth: 2,
                 strokeDasharray: '6 4',
-                filter: 'drop-shadow(0 0 4px rgba(251,191,36,0.5))',
+                filter: 'drop-shadow(0 0 6px rgba(57,255,20,0.6))',
             },
             data: { kind },
         };
@@ -777,9 +800,9 @@ const getEdgePresentation = (kind: ConnectionKind) => {
     // Audio — existing cyan style
     return {
         style: {
-            stroke: '#22d3ee',
+            stroke: AUDIO_SIGNAL_COLOR,
             strokeWidth: 2.5,
-            filter: 'drop-shadow(0 0 6px #22d3ee)',
+            filter: `drop-shadow(0 0 6px ${AUDIO_SIGNAL_COLOR})`,
         },
         data: { kind },
     };
@@ -1013,7 +1036,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         get().saveSnapshot();
 
-        const kind = getConnectionKind(newConnection, get().nodes);
+        const kind = getConnectionKind(newConnection);
         if (!kind) {
             return;
         }
@@ -1037,7 +1060,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().saveSnapshot();
 
         const { nodes, edges } = get();
-        const kind = getConnectionKind(connection, nodes);
+        const kind = getConnectionKind(connection);
         if (!kind) {
             return;
         }
@@ -1128,11 +1151,34 @@ export const useStore = create<AppState>((set, get) => ({
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
         get().saveSnapshot();
 
-        const { audioNodes, patterns, nodes, edges } = get();
+        const { audioNodes, patterns, nodes, edges, generatorNoteCounts, activeGenerators } = get();
         const wasPlaying = nodes.find((n: AppNode) => n.id === id)?.data.isPlaying || false;
 
         const oldNode = audioNodes.get(id);
         const oldPattern = patterns.get(id);
+
+        if (mainType === 'generator') {
+            const nextGeneratorNoteCounts = new Map(generatorNoteCounts);
+            const nextActiveGenerators = new Set(activeGenerators);
+
+            if (oldNode instanceof Tone.PolySynth) {
+                const heldNotes = [...(nextGeneratorNoteCounts.get(id)?.keys() ?? [])];
+                heldNotes.forEach((note) => oldNode.triggerRelease(note));
+            } else if (oldNode instanceof Tone.Noise) {
+                try {
+                    oldNode.stop();
+                } catch {
+                    // Tone.Noise may already be stopped when rapidly swapping wave shapes.
+                }
+            }
+
+            nextGeneratorNoteCounts.delete(id);
+            nextActiveGenerators.delete(id);
+            set({
+                generatorNoteCounts: nextGeneratorNoteCounts,
+                activeGenerators: nextActiveGenerators,
+            });
+        }
 
         if (oldPattern) {
             oldPattern.stop().dispose();
@@ -1261,6 +1307,16 @@ export const useStore = create<AppState>((set, get) => ({
 
     updateNodeValue: (id: string, value: NodeValueUpdate) => {
         const targetNode = get().nodes.find((candidate: AppNode) => candidate.id === id);
+        if (typeof value.packedName === 'string') {
+            set({
+                nodes: get().nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? { ...node, data: { ...node.data, packedName: value.packedName } }
+                        : node
+                ),
+            });
+        }
+
         if (targetNode?.type === 'speaker' && typeof value.volume === 'number') {
             get().setMasterVolume(value.volume);
             return;
@@ -1564,7 +1620,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     fireNoteOn: (controllerId: string, note: string) => {
-        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts } = get();
+        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts, activeGenerators } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
 
@@ -1581,6 +1637,7 @@ export const useStore = create<AppState>((set, get) => ({
         );
 
         let nextGeneratorNoteCounts = generatorNoteCounts;
+        const nextActiveGenerators = new Set(activeGenerators);
         dispatches.forEach(({ generatorId, note: voicedNote }) => {
             const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
@@ -1590,28 +1647,33 @@ export const useStore = create<AppState>((set, get) => ({
                     generatorId,
                     voicedNote
                 );
-            } else if (targetNode instanceof Tone.Noise) {
-                // Only start if not already active to avoid "Start time must be strictly greater than previous start time" error
-                if (!get().activeGenerators.has(generatorId)) {
-                    targetNode.start();
-                }
-                // For noise, we don't track note counts since noise has no pitch
-                // Just add to active generators for UI feedback
-                const nextActiveGenerators = new Set(get().activeGenerators);
                 nextActiveGenerators.add(generatorId);
-                set({ activeGenerators: nextActiveGenerators });
+            } else if (targetNode instanceof Tone.Noise) {
+                if (nextActiveGenerators.has(generatorId)) {
+                    try {
+                        targetNode.stop();
+                    } catch {
+                        // Ignore redundant stop calls when rapidly retriggering noise.
+                    }
+                }
+                targetNode.start();
+                nextActiveGenerators.add(generatorId);
             }
+        });
+
+        nextGeneratorNoteCounts.forEach((_, generatorId) => {
+            nextActiveGenerators.add(generatorId);
         });
 
         set({
             activeChordVoicings: nextChordVoicings,
             generatorNoteCounts: nextGeneratorNoteCounts,
-            activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+            activeGenerators: nextActiveGenerators,
         });
     },
 
     fireNoteOff: (controllerId: string, note: string) => {
-        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts } = get();
+        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts, activeGenerators } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
         const dispatches = collectNoteDispatches(
@@ -1624,6 +1686,7 @@ export const useStore = create<AppState>((set, get) => ({
         );
 
         let nextGeneratorNoteCounts = generatorNoteCounts;
+        const nextActiveGenerators = new Set(activeGenerators);
         dispatches.forEach(({ generatorId, note: voicedNote }) => {
             const targetNode = audioNodes.get(generatorId);
             if (targetNode instanceof Tone.PolySynth) {
@@ -1633,19 +1696,23 @@ export const useStore = create<AppState>((set, get) => ({
                     generatorId,
                     voicedNote
                 );
+                if (!nextGeneratorNoteCounts.has(generatorId)) {
+                    nextActiveGenerators.delete(generatorId);
+                }
             } else if (targetNode instanceof Tone.Noise) {
                 targetNode.stop();
-                // Remove from active generators for UI feedback
-                const nextActiveGenerators = new Set(get().activeGenerators);
                 nextActiveGenerators.delete(generatorId);
-                set({ activeGenerators: nextActiveGenerators });
             }
+        });
+
+        nextGeneratorNoteCounts.forEach((_, generatorId) => {
+            nextActiveGenerators.add(generatorId);
         });
 
         set({
             activeChordVoicings: nextChordVoicings,
             generatorNoteCounts: nextGeneratorNoteCounts,
-            activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
+            activeGenerators: nextActiveGenerators,
         });
     },
 
@@ -1973,7 +2040,7 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     clearCanvas: () => {
-        const { nodes, audioNodes, drumRacks, patterns, masterOutput } = get();
+        const { audioNodes, drumRacks, patterns, masterOutput } = get();
 
         // Stop and dispose all patterns (arpeggiators etc.)
         patterns.forEach((pattern) => {
@@ -2138,7 +2205,7 @@ export const useStore = create<AppState>((set, get) => ({
                     targetHandle,
                     kind,
                     id: `${AUTO_EDGE_PREFIX}${sourceNode.id}-${targetNode.id}`,
-                } as any);
+                });
             }
         }
 
@@ -2256,7 +2323,7 @@ export const useStore = create<AppState>((set, get) => ({
                 const isTargetIn = clusterIds.has(edge.target);
 
                 if (isSourceIn || isTargetIn) {
-                    const kind = edge.data?.kind || getConnectionKind(edge as any, nodes) || 'audio';
+                    const kind = edge.data?.kind || getConnectionKind(edge) || 'audio';
                     const newSource = isSourceIn ? entryId : edge.source;
                     const newTarget = isTargetIn ? entryId : edge.target;
                     

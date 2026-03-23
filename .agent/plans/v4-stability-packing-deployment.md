@@ -10,26 +10,50 @@ Node Packing (issue #35) is already complete and closed. This plan covers the re
 
 ## Progress
 
-- [ ] Read and understand all four GitHub issues: #33, #34, #36, #37
-- [ ] Milestone 1 — Bug Omnibus (#33): Fix all identified snapping, audio engine, and UX bugs
-- [ ] Milestone 2 — Visual Polish (#34): Control cables → neon green; glow rings follow domain colour
-- [ ] Milestone 3 — Vercel Deployment (#36): Connect repo to Vercel, confirm production build passes
-- [ ] Milestone 4 — Canvas Bounds (#37): Remove hard viewport limits, enable effective infinite pan
-- [ ] Run `npm run build` and `npm run lint` — both must pass
-- [ ] Update TICKETS.md: close #33, #34, #36, #37
-- [ ] Close GitHub issues #33, #34, #36, #37
+- [x] (2026-03-23) Read and understand all four GitHub issues: #33, #34, #36, #37
+- [x] (2026-03-23) Milestone 1 — Bug Omnibus (#33): Fix snapping proximity, generator noise swaps, drum ADSR propagation, audio-engine retry UX, and text-selection bleed
+- [x] (2026-03-23) Milestone 2 — Visual Polish (#34): Control cables → neon green; control-domain glow rings now match the cable domain colour
+- [x] (2026-03-23) Milestone 3 — Vercel Deployment (#36): linked the repo to Vercel, connected GitHub, and deployed production successfully
+- [x] (2026-03-23) Milestone 4 — Canvas Bounds (#37): Expand React Flow bounds and enable practical infinite pan / drag-follow
+- [x] (2026-03-23) Run `npm run build` and `npm run lint` — both pass locally after switching the build script to webpack and removing remote Google font fetches
+- [x] (2026-03-23) Update TICKETS.md: close #33, #34, #36, #37
+- [x] (2026-03-23) Close GitHub issues #33, #34, #36, #37
 
 ## Surprises & Discoveries
 
-[To be filled during implementation.]
+- Observation: The repo had pre-existing hook-order lint violations in multiple node components, plus a stray duplicate `@types/react 2` directory under `node_modules/@types`.
+  Evidence: `npm run lint` initially reported 32 errors across node components; `npm run build` failed until `tsconfig.json` constrained ambient types to `node`, `react`, and `react-dom`.
+- Observation: `next build` with Next 16/Turbopack failed in this environment for infrastructure reasons rather than source-code reasons.
+  Evidence: the original build path panicked with `creating new process` / `binding to a port`; `next build --webpack` completed successfully once the app-level TypeScript errors were fixed.
+- Observation: `next/font/google` made the build depend on live network access.
+  Evidence: webpack build failed with `Failed to fetch Inter from Google Fonts` until the layout switched to a local CSS font stack.
+- Observation: Vercel setup was fully achievable from the local machine once account authentication completed.
+  Evidence: `npx vercel project add bloop`, `npx vercel link --yes --project bloop`, `npx vercel git connect https://github.com/jball348-svg/Bloop.git`, and `npx vercel --prod --yes` all completed successfully.
 
 ## Decision Log
 
-[To be filled during implementation.]
+- Decision: Use the neon green `#39ff14` for control-domain edges and snapped control glows.
+  Rationale: It cleanly separates note/control routing from cyan audio routing on the dark canvas while preserving the dashed-line distinction from the issue spec.
+  Date: 2026-03-23
+- Decision: Add proximity-based snap checks before overlap-only collision handling in `app/page.tsx`.
+  Rationale: This matches the adjacency thresholds already used by `recalculateAdjacency` / `autoWireAdjacentNodes`, fixing the controller/keys snap miss without weakening the existing grid/overlap logic.
+  Date: 2026-03-23
+- Decision: Change the project build script to `next build --webpack` and remove the Google font fetch.
+  Rationale: The goal of #36 is a reliable production build. In this environment, Turbopack failed for process/port reasons and `next/font/google` introduced an avoidable network dependency; both blocked a clean local verification path.
+  Date: 2026-03-23
+- Decision: Keep Vercel project linking as a live external step rather than pretending it is complete.
+  Rationale: The CLI reached an authentication gate that requires the user's Vercel account; the repo work was ready, but the deployment could not be honestly marked complete until that auth/link step finished.
+  Date: 2026-03-23
+- Decision: Create the Vercel project as `bloop` under the `john-fairfax-balls-projects` scope and connect the GitHub remote directly from the CLI.
+  Rationale: This satisfied the issue's deployment requirement without leaving the terminal and produced a reusable linked-project configuration for future automatic `main` deployments.
+  Date: 2026-03-23
+- Decision: Record the first successful production URLs in the plan.
+  Rationale: The plan should stay self-contained and resumable, and the live deployment URL is an important operational artifact for v4.
+  Date: 2026-03-23
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V4 is complete. The canvas now snaps predictably around control and audio chains, control routing is visually distinct, text selection no longer bleeds during drag-heavy workflows, the build/lint baseline is green, and the canvas can expand well beyond the original viewport. Deployment is live on Vercel: `https://bloop-p9babqmqj-john-fairfax-balls-projects.vercel.app` with production alias `https://bloop-ivory-rho.vercel.app`.
 
 ## Context and Orientation
 

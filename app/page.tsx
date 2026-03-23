@@ -16,8 +16,12 @@ import {
     AudioNodeType,
     DEFAULT_TRANSPORT_BPM,
     CONTROL_WIRE_PAIRS,
-    VALID_AUTO_WIRE_PAIRS,
     getNodeAdjacencyAxis,
+    ADJ_TOUCH_THRESHOLD,
+    ADJ_Y_THRESHOLD,
+    ADJ_VERT_THRESHOLD,
+    ADJ_X_THRESHOLD,
+    AUDIO_SIGNAL_COLOR,
 } from '@/store/useStore';
 import GeneratorNode from '@/components/GeneratorNode';
 import ControllerNode from '@/components/ControllerNode';
@@ -82,8 +86,6 @@ function BloopCanvasInner() {
     const sanitizeLegacyTempoEdges = useStore((state) => state.sanitizeLegacyTempoEdges);
     const undo = useStore((state) => state.undo);
     const redo = useStore((state) => state.redo);
-    const canUndo = useStore((state) => state.canUndo);
-    const canRedo = useStore((state) => state.canRedo);
     
     useEffect(() => {
         sanitizeLegacyTempoEdges();
@@ -129,7 +131,11 @@ function BloopCanvasInner() {
     }), []);
 
     const defaultEdgeOptions = useMemo(() => ({
-        style: { stroke: '#22d3ee', strokeWidth: 2.5, filter: 'drop-shadow(0 0 6px #22d3ee)' },
+        style: {
+            stroke: AUDIO_SIGNAL_COLOR,
+            strokeWidth: 2.5,
+            filter: `drop-shadow(0 0 6px ${AUDIO_SIGNAL_COLOR})`,
+        },
         focusable: false,
     }), []);
 
@@ -251,6 +257,50 @@ function BloopCanvasInner() {
                     if (n.id === draggedNode.id || n.type === 'tempo' || n.type === 'speaker') continue;
 
                     const nDims = getDims(n.type);
+                    const axis = getNodeAdjacencyAxis(
+                        draggedNode.type as AudioNodeType,
+                        n.type as AudioNodeType
+                    );
+
+                    if (axis === 'horizontal') {
+                        const gapRight = n.position.x - (x + draggedDims.w);
+                        const gapLeft = x - (n.position.x + nDims.w);
+                        const horizGap = Math.max(gapRight, gapLeft);
+                        const draggedCentreY = y + draggedDims.h / 2;
+                        const nCentreY = n.position.y + nDims.h / 2;
+                        const vertDist = Math.abs(draggedCentreY - nCentreY);
+
+                        if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                            const draggedType = draggedNode.type as AudioNodeType;
+                            const nType = n.type as AudioNodeType;
+                            const draggedIsUpstream = CONTROL_WIRE_PAIRS.has(`${draggedType}->${nType}`);
+
+                            x = draggedIsUpstream
+                                ? snap(n.position.x - draggedDims.w)
+                                : snap(n.position.x + nDims.w);
+                            y = n.position.y;
+                            moved = true;
+                            break;
+                        }
+                    } else if (axis === 'vertical') {
+                        const gapBelow = n.position.y - (y + draggedDims.h);
+                        const gapAbove = y - (n.position.y + nDims.h);
+                        const vertGap = Math.max(gapBelow, gapAbove);
+                        const draggedCentreX = x + draggedDims.w / 2;
+                        const nCentreX = n.position.x + nDims.w / 2;
+                        const horizDist = Math.abs(draggedCentreX - nCentreX);
+
+                        if (vertGap >= 0 && vertGap <= ADJ_VERT_THRESHOLD && horizDist <= ADJ_X_THRESHOLD) {
+                            const draggedCentreY = y + draggedDims.h / 2;
+                            const nCentreY = n.position.y + nDims.h / 2;
+                            y = draggedCentreY >= nCentreY
+                                ? snap(n.position.y + nDims.h)
+                                : snap(n.position.y - draggedDims.h);
+                            x = n.position.x;
+                            moved = true;
+                            break;
+                        }
+                    }
 
                     // Check for actual overlap - nodes must be overlapping, not just close
                     const overlapX = x < n.position.x + nDims.w && x + draggedDims.w > n.position.x;
@@ -265,13 +315,6 @@ function BloopCanvasInner() {
                         // Only snap if there's significant overlap (more than just edge touching)
                         const minOverlapArea = 100; // Minimum 10x10 pixels of overlap
                         if (overlapArea < minOverlapArea) continue;
-
-                        // Determine snap axis for this pair
-                        const axis = getNodeAdjacencyAxis(
-                            draggedNode.type as AudioNodeType,
-                            n.type as AudioNodeType
-                        );
-                        console.log('snap check:', draggedNode.type, 'vs', n.type, '→ axis:', axis);
 
                         if (axis === 'horizontal') {
                             // Use signal flow direction to determine correct left/right placement.
@@ -327,7 +370,7 @@ function BloopCanvasInner() {
     }, [removeNodeAndCleanUp]);
 
     return (
-        <main className="w-screen h-screen relative">
+        <main className="w-screen h-screen relative select-none">
             <SignalMenu />
             <ControllerMenu />
             <GlobalMenu />
@@ -355,6 +398,9 @@ function BloopCanvasInner() {
                 snapToGrid={true}
                 snapGrid={[SNAP_GRID, SNAP_GRID]}
                 minZoom={0.05}
+                translateExtent={[[-100000, -100000], [100000, 100000]]}
+                nodeExtent={[[-100000, -100000], [100000, 100000]]}
+                autoPanOnNodeDrag={true}
             >
                 <Background
                     variant={BackgroundVariant.Dots}

@@ -18,7 +18,7 @@ const SignalMenu = () => {
     ];
 
     return (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 select-none">
             <div className="bg-slate-800/90 backdrop-blur border border-slate-700 rounded-full px-4 py-2 flex flex-row gap-3 shadow-xl items-center">
                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest text-center">SIGNALS</span>
                 {signalTools.map((tool) => (

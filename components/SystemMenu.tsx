@@ -49,7 +49,7 @@ const SystemMenu = () => {
     };
 
     return (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 select-none">
             {showPresets && (
                 <div className="bg-slate-800/95 backdrop-blur border border-slate-700 rounded-2xl p-2 shadow-2xl flex flex-col gap-1 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <div className="px-3 py-1 text-[9px] font-black uppercase text-slate-500 tracking-widest text-center border-b border-slate-700/50 mb-1">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
+    getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
@@ -108,8 +109,8 @@ export default function KeysNode({ id }: { id: string }) {
     }
 
     return (
-        <div className={`bg-slate-800 border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative${
-            isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''
+        <div className={`bg-slate-800 border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative select-none${
+            isAdjacent ? getAdjacencyGlowClasses('keys') : ''
         }`}>
 
             <div className="relative z-10 flex flex-1 flex-col">

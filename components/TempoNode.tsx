@@ -87,7 +87,7 @@ export default function TempoNode({ id }: { id: string }) {
     };
 
     return (
-        <div className="bg-slate-800 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative">
+        <div className="bg-slate-800 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative select-none">
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-4 mb-3">
@@ -129,7 +129,7 @@ export default function TempoNode({ id }: { id: string }) {
                                 onChange={handleInputChange}
                                 onBlur={handleInputBlur}
                                 onKeyDown={handleInputKeyDown}
-                                className="nodrag w-20 rounded-lg border border-indigo-500/30 bg-slate-800 px-2 py-1 text-right text-sm font-bold text-indigo-300 outline-none transition-colors focus:border-indigo-400"
+                                className="nodrag select-text w-20 rounded-lg border border-indigo-500/30 bg-slate-800 px-2 py-1 text-right text-sm font-bold text-indigo-300 outline-none transition-colors focus:border-indigo-400"
                             />
                         </div>
                         <input
