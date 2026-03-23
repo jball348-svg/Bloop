@@ -7,6 +7,7 @@ import {
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 export default function EffectNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
@@ -14,6 +15,10 @@ export default function EffectNode({ id }: { id: string }) {
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
     const subType = nodeData?.subType || 'none';
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;

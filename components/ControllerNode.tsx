@@ -9,6 +9,7 @@ import {
 import { Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 const TONAL_SCALES = [
     'major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian',
@@ -80,6 +81,10 @@ export default function ControllerNode({ id }: { id: string }) {
         };
     }, [isPlaying, rootNote, scaleType, id, fireNoteOn, fireNoteOff]);
 
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
 
     return (
         <div className={`bg-slate-800 border-2 border-yellow-500 rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-yellow-500/20 group relative${

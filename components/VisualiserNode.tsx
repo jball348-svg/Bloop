@@ -10,12 +10,17 @@ import {
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 export default function VisualiserNode({ id }: { id: string }) {
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const audioNodes = useStore((state) => state.audioNodes);
     const edges = useStore((state) => state.edges);
     const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;

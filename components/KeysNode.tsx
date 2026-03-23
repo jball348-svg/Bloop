@@ -7,6 +7,7 @@ import {
 } from '@/store/useStore';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 const buildKeyMap = (oct: number): Record<string, string> => ({
     'a': `C${oct}`, 'w': `C#${oct}`, 's': `D${oct}`,
@@ -101,6 +102,10 @@ export default function KeysNode({ id }: { id: string }) {
             fireNoteOff(id, note);
         }
     };
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
 
     return (
         <div className={`bg-slate-800 border-2 border-white rounded-2xl p-3 shadow-2xl text-white w-72 flex flex-col transition-all hover:shadow-white/20 group relative${

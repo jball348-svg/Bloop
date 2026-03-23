@@ -9,6 +9,7 @@ import {
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
 
@@ -41,6 +42,10 @@ export default function GeneratorNode({ id }: { id: string }) {
     useEffect(() => {
         updateNodeValue(id, { mix: 80 });
     }, [id]);
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
 
     return (
         <div className={`bg-slate-800 border-2 border-red-500 rounded-2xl p-3 shadow-2xl text-white w-60 flex flex-col transition-all hover:shadow-red-500/20 group relative${

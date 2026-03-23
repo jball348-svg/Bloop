@@ -13,6 +13,7 @@ import {
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 const DRUM_PART_CONFIG: Array<{ part: DrumPart; label: string; key: string }> = [
     { part: 'kick', label: 'Kick', key: 'A' },
@@ -100,6 +101,10 @@ export default function DrumNode({ id }: { id: string }) {
     useEffect(() => {
         updateNodeValue(id, { mix: 80 });
     }, [id, updateNodeValue]);
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
 
     return (
         <div className={`bg-slate-800 border-2 border-orange-500 rounded-2xl p-3 shadow-2xl text-white w-80 flex flex-col transition-all hover:shadow-orange-500/20 group relative${

@@ -7,6 +7,7 @@ import {
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 interface AdsrSliderProps {
     label: string;
@@ -114,6 +115,10 @@ export default function AdsrNode({ id }: { id: string }) {
         updateNodeValue(id, { release: value });
     };
     
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
+
     return (
         <div className={`bg-slate-800 border-2 border-amber-700 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-amber-700/20 group relative${
             isAdjacent ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]' : ''

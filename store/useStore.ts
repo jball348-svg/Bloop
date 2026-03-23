@@ -52,6 +52,8 @@ export type DrumPart = (typeof DRUM_PARTS)[number];
 export type DrumPattern = Record<DrumPart, boolean[]>;
 export type AppEdgeData = {
     kind?: ConnectionKind;
+    originalSource?: string;
+    originalTarget?: string;
 };
 export type AppEdge = Edge<AppEdgeData>;
 type DisposablePattern = {
@@ -112,6 +114,10 @@ export type AppNode = Node & {
         isLocked?: boolean;
         isEntry?: boolean;
         isExit?: boolean;
+        isPacked?: boolean;
+        packedName?: string;
+        isPackedVisible?: boolean;
+        packGroupId?: string;
     };
     type: AudioNodeType;
 };
@@ -246,7 +252,8 @@ const collectNoteDispatches = (
     edges
         .filter((edge) => isControlEdge(edge) && edge.source === sourceId)
         .forEach((edge) => {
-            const targetNode = nodesById.get(edge.target);
+            const actualTargetId = edge.data?.originalTarget || edge.target;
+            const targetNode = nodesById.get(actualTargetId);
 
             if (!targetNode) {
                 return;
@@ -516,6 +523,27 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     effect: 2,
     visualiser: 2.5,
     speaker: 3,
+};
+
+const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr', 'generator', 'drum']);
+const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'chord', 'adsr']);
+const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'unison', 'detune', 'visualiser', 'speaker']);
+const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'drum', 'effect', 'unison', 'detune', 'visualiser']);
+
+const getClusterSignalEntry = (clusterIds: Set<string>, nodes: AppNode[], kind: ConnectionKind): string | null => {
+    const clusterNodes = nodes.filter(n => clusterIds.has(n.id));
+    const validTypes = kind === 'control' ? CONTROL_INPUT_TYPES : AUDIO_INPUT_TYPES;
+    const candidates = clusterNodes.filter(n => validTypes.has(n.type));
+    if (candidates.length === 0) return null;
+    return candidates.reduce((a, b) => (SIGNAL_ORDER[a.type] ?? 99) < (SIGNAL_ORDER[b.type] ?? 99) ? a : b).id;
+};
+
+const getClusterSignalExit = (clusterIds: Set<string>, nodes: AppNode[], kind: ConnectionKind): string | null => {
+    const clusterNodes = nodes.filter(n => clusterIds.has(n.id));
+    const validTypes = kind === 'control' ? CONTROL_OUTPUT_TYPES : AUDIO_OUTPUT_TYPES;
+    const candidates = clusterNodes.filter(n => validTypes.has(n.type));
+    if (candidates.length === 0) return null;
+    return candidates.reduce((a, b) => (SIGNAL_ORDER[a.type] ?? -1) > (SIGNAL_ORDER[b.type] ?? -1) ? a : b).id;
 };
 
 export const VALID_AUTO_WIRE_PAIRS = new Set([
@@ -798,6 +826,8 @@ type AppState = {
     triggerNoteOff: (id: string, note: string) => void;
     fireNoteOn: (controllerId: string, note: string) => void;
     fireNoteOff: (controllerId: string, note: string) => void;
+    packGroup: (id: string) => void;
+    unpackGroup: (id: string) => void;
     toggleNodePlayback: (id: string, isPlaying: boolean) => void;
     addNode: (node: AppNode) => void;
     removeNodeAndCleanUp: (id: string) => void;
@@ -1006,16 +1036,38 @@ export const useStore = create<AppState>((set, get) => ({
 
         get().saveSnapshot();
 
-        const kind = getConnectionKind(connection, get().nodes);
+        const { nodes, edges } = get();
+        const kind = getConnectionKind(connection, nodes);
         if (!kind) {
             return;
+        }
+
+        let originalSource: string | undefined;
+        let originalTarget: string | undefined;
+
+        const sourceNode = nodes.find(n => n.id === connection.source);
+        const targetNode = nodes.find(n => n.id === connection.target);
+
+        if (sourceNode?.data.isPacked) {
+            const clusterIds = new Set(nodes.filter(n => n.data.packGroupId === sourceNode.data.packGroupId).map(n => n.id));
+            originalSource = getClusterSignalExit(clusterIds, nodes, kind) || undefined;
+        }
+
+        if (targetNode?.data.isPacked) {
+            const clusterIds = new Set(nodes.filter(n => n.data.packGroupId === targetNode.data.packGroupId).map(n => n.id));
+            originalTarget = getClusterSignalEntry(clusterIds, nodes, kind) || undefined;
         }
 
         set({
             edges: addEdge({
                 ...connection,
                 ...getEdgePresentation(kind),
-            }, get().edges),
+                data: {
+                    kind,
+                    originalSource,
+                    originalTarget,
+                },
+            }, edges),
         });
         get().autoWireAdjacentNodes();
     },
@@ -1872,12 +1924,14 @@ export const useStore = create<AppState>((set, get) => ({
                     return;
                 }
 
-                const sourceNode = audioNodes.get(edge.source);
-                const targetNode = audioNodes.get(edge.target);
+                const actualSourceId = edge.data?.originalSource || edge.source;
+                const actualTargetId = edge.data?.originalTarget || edge.target;
+                const sourceNode = audioNodes.get(actualSourceId);
+                const targetNode = audioNodes.get(actualTargetId);
 
                 if (sourceNode && targetNode) {
                     sourceNode.connect(targetNode);
-                    routedSourceIds.add(edge.source);
+                    routedSourceIds.add(actualSourceId);
                 }
             });
 
@@ -2160,6 +2214,124 @@ export const useStore = create<AppState>((set, get) => ({
         set({ adjacentNodeIds: new Set(adjacent) });
         // Auto-wire runs after adjacency so it sees the fresh adjacent set
         get().autoWireAdjacentNodes();
+    },
+
+    packGroup: (id: string) => {
+        const { nodes, edges } = get();
+        const startNode = nodes.find(n => n.id === id);
+        if (!startNode || !startNode.data.isLocked) return;
+
+        get().saveSnapshot();
+
+        const clusterIds = getClusterNodeIds(id, nodes);
+        const { entryId } = getClusterBoundaries(clusterIds, nodes);
+        if (!entryId) return;
+
+        const packGroupId = entryId;
+
+        set({
+            nodes: nodes.map(node => {
+                if (!clusterIds.has(node.id)) return node;
+                const isVisible = node.id === entryId;
+                return {
+                    ...node,
+                    hidden: !isVisible,
+                    data: {
+                        ...node.data,
+                        isPacked: true,
+                        isPackedVisible: isVisible,
+                        packGroupId,
+                        packedName: isVisible ? (node.data.packedName || 'Packed Patch') : node.data.packedName,
+                    }
+                };
+            }),
+            edges: edges.map(edge => {
+                const isInternal = clusterIds.has(edge.source) && clusterIds.has(edge.target);
+                
+                if (isInternal) {
+                    return { ...edge, hidden: true };
+                }
+
+                const isSourceIn = clusterIds.has(edge.source);
+                const isTargetIn = clusterIds.has(edge.target);
+
+                if (isSourceIn || isTargetIn) {
+                    const kind = edge.data?.kind || getConnectionKind(edge as any, nodes) || 'audio';
+                    const newSource = isSourceIn ? entryId : edge.source;
+                    const newTarget = isTargetIn ? entryId : edge.target;
+                    
+                    return {
+                        ...edge,
+                        source: newSource,
+                        target: newTarget,
+                        data: {
+                            ...edge.data,
+                            kind,
+                            originalSource: isSourceIn ? (edge.data?.originalSource || edge.source) : edge.data?.originalSource,
+                            originalTarget: isTargetIn ? (edge.data?.originalTarget || edge.target) : edge.data?.originalTarget
+                        }
+                    };
+                }
+
+                return edge;
+            })
+        });
+
+        get().rebuildAudioGraph();
+    },
+
+    unpackGroup: (id: string) => {
+        const { nodes, edges } = get();
+        const startNode = nodes.find(n => n.id === id);
+        if (!startNode || !startNode.data.isPacked) return;
+
+        get().saveSnapshot();
+
+        const packGroupId = startNode.data.packGroupId;
+        const clusterIds = new Set(nodes.filter(n => n.data.packGroupId === packGroupId).map(n => n.id));
+
+        set({
+            nodes: nodes.map(node => {
+                if (!clusterIds.has(node.id)) return node;
+                return {
+                    ...node,
+                    hidden: false,
+                    data: {
+                        ...node.data,
+                        isPacked: false,
+                        isPackedVisible: false,
+                        packGroupId: undefined,
+                    }
+                };
+            }),
+            edges: edges.map(edge => {
+                const wasSourceRedirected = edge.data?.originalSource && edge.source === packGroupId;
+                const wasTargetRedirected = edge.data?.originalTarget && edge.target === packGroupId;
+
+                if (wasSourceRedirected || wasTargetRedirected) {
+                    return {
+                        ...edge,
+                        source: edge.data?.originalSource || edge.source,
+                        target: edge.data?.originalTarget || edge.target,
+                        data: {
+                            ...edge.data,
+                            originalSource: undefined,
+                            originalTarget: undefined
+                        }
+                    };
+                }
+
+                // Restore visibility for internal edges (auto-edges stay hidden by recalculateAdjacency if needed)
+                if (clusterIds.has(edge.source) && clusterIds.has(edge.target)) {
+                     const isAuto = edge.id.startsWith(AUTO_EDGE_PREFIX) || get().autoEdgeIds.has(edge.id);
+                     return { ...edge, hidden: isAuto };
+                }
+
+                return edge;
+            })
+        });
+
+        get().rebuildAudioGraph();
     },
 
     toggleNodeLock: (id: string) => {

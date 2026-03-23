@@ -8,6 +8,7 @@ import {
     useStore,
 } from '@/store/useStore';
 import LockButton from './LockButton';
+import PackedNode from './PackedNode';
 
 export default function ChordNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
@@ -20,6 +21,10 @@ export default function ChordNode({ id }: { id: string }) {
     });
 
     const quality = nodeData?.subType || DEFAULT_CHORD_QUALITY;
+
+    if (nodeData?.isPackedVisible) {
+        return <PackedNode id={id} />;
+    }
 
     return (
         <div className={`bg-slate-800 border-2 border-sky-500 rounded-2xl p-3 shadow-2xl text-white w-56 flex flex-col transition-all hover:shadow-sky-500/20 group relative${
