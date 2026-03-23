@@ -64,13 +64,13 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#39](https://github.com/jball348-svg/Bloop/issues/39) | Moog-Style Modular Step Sequencer | ✅ Closed |
 | [#40](https://github.com/jball348-svg/Bloop/issues/40) | Signal Flow Visualization — Animated Cable Pulses | ✅ Closed |
 
-### V6 — Roadmap
+### V6 — Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#41](https://github.com/jball348-svg/Bloop/issues/41) | Music Theory Engine — Quantizer / Scale Enforcer Node | 🟣 V6 Roadmap |
-| [#42](https://github.com/jball348-svg/Bloop/issues/42) | Node Menu Sub-divisions — Generators, Modulators, Controllers, Triggers | 🟣 V6 Roadmap |
-| [#43](https://github.com/jball348-svg/Bloop/issues/43) | XY Mood Pad — Intuitive Non-Musical Controller | 🟣 V6 Roadmap |
+| [#41](https://github.com/jball348-svg/Bloop/issues/41) | Music Theory Engine — Quantizer / Scale Enforcer Node | ✅ Closed |
+| [#42](https://github.com/jball348-svg/Bloop/issues/42) | Node Menu Sub-divisions — Generators, Modulators, Controllers, Triggers | ✅ Closed |
+| [#43](https://github.com/jball348-svg/Bloop/issues/43) | XY Mood Pad — Intuitive Non-Musical Controller | ✅ Closed |
 
 ### V7 — Roadmap
 
@@ -139,7 +139,7 @@ V5 (requires v4 complete):
 ~~#38 (Pulse)~~ ✅ → ~~#39 (Sequencer)~~ ✅ → ~~#40 (Signal Flow Vis)~~ ✅
 
 V6 (requires v5 complete):
-#41 (Quantizer) → #42 (Sub-menus) → #43 (Mood Pad)
+~~#41 (Quantizer)~~ ✅ → ~~#42 (Sub-menus)~~ ✅ → ~~#43 (Mood Pad)~~ ✅
 
 V7 (requires v6 complete):
 #44 (Sampler) → #45 (Sample Manip) → #46 (Drum Machine Rebuild)

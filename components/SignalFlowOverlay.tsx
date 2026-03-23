@@ -20,9 +20,11 @@ import {
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys: { w: 288, h: 320 },
+    moodpad: { w: 320, h: 416 },
     pulse: { w: 288, h: 280 },
     stepsequencer: { w: 352, h: 420 },
     chord: { w: 224, h: 240 },
+    quantizer: { w: 240, h: 272 },
     adsr: { w: 224, h: 340 },
     generator: { w: 240, h: 220 },
     drum: { w: 320, h: 360 },

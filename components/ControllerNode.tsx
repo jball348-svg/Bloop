@@ -3,6 +3,7 @@ import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
+    TONAL_SCALE_OPTIONS,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
@@ -11,12 +12,6 @@ import { Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
 import PackedNode from './PackedNode';
-
-const TONAL_SCALES = [
-    'major', 'minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'locrian',
-    'major pentatonic', 'minor pentatonic', 'blues', 'chromatic'
-];
-
 
 export default function ControllerNode({ id }: { id: string }) {
     const fireNoteOn = useStore((state) => state.fireNoteOn);
@@ -123,7 +118,7 @@ export default function ControllerNode({ id }: { id: string }) {
                                         onChange={(e) => updateArpScale(id, rootNote, e.target.value)}
                                         className="nodrag bg-slate-800 text-[10px] text-yellow-300 border-none outline-none rounded p-1"
                                     >
-                                        {TONAL_SCALES.map(s => <option key={s} value={s}>{s}</option>)}
+                                        {TONAL_SCALE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                     </select>
                                 </div>
                             </div>

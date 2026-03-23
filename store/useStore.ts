@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import * as Tone from 'tone';
-import { Note } from '@tonaljs/tonal';
+import { Midi, Note, Scale } from '@tonaljs/tonal';
 import {
     Connection,
     Edge,
@@ -39,6 +39,19 @@ export const TRANSPORT_RATE_OPTIONS = [
     { value: '8n', label: '1/8' },
     { value: '16n', label: '1/16' },
 ] as const;
+export const TONAL_SCALE_OPTIONS = [
+    'major',
+    'minor',
+    'dorian',
+    'phrygian',
+    'lydian',
+    'mixolydian',
+    'locrian',
+    'major pentatonic',
+    'minor pentatonic',
+    'blues',
+    'chromatic',
+] as const;
 export const CHORD_QUALITY_OPTIONS = [
     { value: 'major', label: 'Major' },
     { value: 'minor', label: 'Minor' },
@@ -68,7 +81,9 @@ export type AudioNodeType =
     | 'detune'
     | 'visualiser'
     | 'pulse'
-    | 'stepsequencer';
+    | 'stepsequencer'
+    | 'quantizer'
+    | 'moodpad';
 export type ConnectionKind = 'audio' | 'tempo' | 'control';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type DrumMode = 'hits' | 'grid';
@@ -100,6 +115,10 @@ type DrumRack = {
 };
 type ActiveChordVoicing = {
     notes: string[];
+    count: number;
+};
+type ActiveQuantizedNote = {
+    note: string;
     count: number;
 };
 type NodeValueUpdate = {
@@ -166,6 +185,9 @@ export type AppNode = Node & {
         sequenceSync?: boolean;
         sequenceRate?: TransportRate;
         sequenceIntervalMs?: number;
+        bypass?: boolean;
+        moodX?: number;
+        moodY?: number;
     };
     type: AudioNodeType;
 };
@@ -189,6 +211,9 @@ const CHORD_INTERVALS: Record<ChordQuality, string[]> = {
 
 const getChordVoicingKey = (chordId: string, rootNote: string) =>
     `${chordId}::${rootNote}`;
+
+const getQuantizedNoteKey = (quantizerId: string, sourceNote: string) =>
+    `${quantizerId}::${sourceNote}`;
 
 const buildChordVoicing = (rootNote: string, quality?: string) => {
     const intervals =
@@ -250,6 +275,97 @@ const consumeChordVoicing = (
     return existingVoicing.notes;
 };
 
+export const quantizeNote = (
+    note: string,
+    root = 'C',
+    scaleType = 'major'
+) => {
+    const sourceMidi = Midi.toMidi(note);
+    if (sourceMidi === null) {
+        return note;
+    }
+
+    const scaleNotes = Scale.get(`${root} ${scaleType}`).notes;
+    if (scaleNotes.length === 0) {
+        return note;
+    }
+
+    const sourceOctave = Math.floor(sourceMidi / 12) - 1;
+    let bestMidi: number | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (let octave = sourceOctave - 1; octave <= sourceOctave + 1; octave += 1) {
+        scaleNotes.forEach((scaleNote) => {
+            const candidateMidi = Midi.toMidi(`${scaleNote}${octave}`);
+            if (candidateMidi === null) {
+                return;
+            }
+
+            const distance = Math.abs(candidateMidi - sourceMidi);
+            if (
+                distance < bestDistance ||
+                (distance === bestDistance && (bestMidi === null || candidateMidi < bestMidi))
+            ) {
+                bestMidi = candidateMidi;
+                bestDistance = distance;
+            }
+        });
+    }
+
+    return bestMidi === null
+        ? note
+        : Midi.midiToNoteName(bestMidi, { sharps: true });
+};
+
+const rememberQuantizedNote = (
+    quantizedNotes: Map<string, ActiveQuantizedNote>,
+    quantizerId: string,
+    sourceNote: string,
+    nextNote: string
+) => {
+    const quantizedKey = getQuantizedNoteKey(quantizerId, sourceNote);
+    const existingNote = quantizedNotes.get(quantizedKey);
+
+    if (existingNote) {
+        quantizedNotes.set(quantizedKey, {
+            ...existingNote,
+            count: existingNote.count + 1,
+        });
+        return existingNote.note;
+    }
+
+    quantizedNotes.set(quantizedKey, {
+        note: nextNote,
+        count: 1,
+    });
+    return nextNote;
+};
+
+const consumeQuantizedNote = (
+    quantizedNotes: Map<string, ActiveQuantizedNote>,
+    quantizerId: string,
+    sourceNote: string,
+    fallbackNote: string
+) => {
+    const quantizedKey = getQuantizedNoteKey(quantizerId, sourceNote);
+    const existingNote = quantizedNotes.get(quantizedKey);
+
+    if (!existingNote) {
+        return fallbackNote;
+    }
+
+    if (existingNote.count <= 1) {
+        quantizedNotes.delete(quantizedKey);
+    } else {
+        quantizedNotes.set(quantizedKey, {
+            ...existingNote,
+            count: existingNote.count - 1,
+        });
+    }
+
+    return existingNote.note;
+};
+
 const incrementGeneratorNoteCount = (
     noteCounts: Map<string, Map<string, number>>,
     generatorId: string,
@@ -292,6 +408,7 @@ const collectNoteDispatches = (
     nodesById: Map<string, AppNode>,
     edges: AppEdge[],
     chordVoicings: Map<string, ActiveChordVoicing>,
+    quantizedNotes: Map<string, ActiveQuantizedNote>,
     rememberVoicings: boolean,
     visited = new Set<string>()
 ): NoteDispatch[] => {
@@ -321,8 +438,44 @@ const collectNoteDispatches = (
                         nodesById,
                         edges,
                         chordVoicings,
+                        quantizedNotes,
                         rememberVoicings,
                         visited
+                    )
+                );
+                return;
+            }
+
+            if (targetNode.type === 'quantizer') {
+                const visitKey = `${sourceId}->${targetNode.id}:${note}`;
+                if (visited.has(visitKey)) {
+                    return;
+                }
+
+                const nextVisited = new Set(visited);
+                nextVisited.add(visitKey);
+
+                const quantized = quantizeNote(
+                    note,
+                    targetNode.data.rootNote ?? 'C',
+                    targetNode.data.scaleType ?? 'major'
+                );
+                const nextNote = targetNode.data.bypass
+                    ? note
+                    : rememberVoicings
+                        ? rememberQuantizedNote(quantizedNotes, targetNode.id, note, quantized)
+                        : consumeQuantizedNote(quantizedNotes, targetNode.id, note, quantized);
+
+                dispatches.push(
+                    ...collectNoteDispatches(
+                        targetNode.id,
+                        nextNote,
+                        nodesById,
+                        edges,
+                        chordVoicings,
+                        quantizedNotes,
+                        rememberVoicings,
+                        nextVisited
                     )
                 );
                 return;
@@ -352,6 +505,7 @@ const collectNoteDispatches = (
                         nodesById,
                         edges,
                         chordVoicings,
+                        quantizedNotes,
                         rememberVoicings,
                         nextVisited
                     )
@@ -457,9 +611,11 @@ const applyAdsrToDownstreamGenerators = (
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys: { w: 288, h: 320 },
+    moodpad: { w: 320, h: 416 },
     pulse: { w: 288, h: 280 },
     stepsequencer: { w: 352, h: 420 },
     chord: { w: 224, h: 240 },
+    quantizer: { w: 240, h: 272 },
     adsr: { w: 224, h: 340 },
     generator: { w: 240, h: 220 },
     drum: { w: 320, h: 360 },
@@ -573,9 +729,11 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
     controller: 0,
     keys: 0,
+    moodpad: 0,
     pulse: 0,
     stepsequencer: 0.25,
     chord: 0.5,
+    quantizer: 0.65,
     adsr: 0.75,
     generator: 1,
     drum: 1,
@@ -586,7 +744,7 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     speaker: 3,
 };
 
-const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'pulse', 'stepsequencer', 'chord', 'adsr']);
+const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
 
 export const isControlDomainNodeType = (type?: AudioNodeType | string | null) =>
     Boolean(type) && CONTROL_DOMAIN_TYPES.has(type as AudioNodeType);
@@ -596,8 +754,8 @@ export const getAdjacencyGlowClasses = (type?: AudioNodeType | string | null) =>
         ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-[#39ff14] shadow-[0_0_24px_rgba(57,255,20,0.25)]'
         : ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]';
 
-const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'adsr', 'generator', 'drum']);
-const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'pulse', 'stepsequencer', 'chord', 'adsr']);
+const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'drum']);
+const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
 const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'unison', 'detune', 'visualiser', 'speaker']);
 const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'drum', 'effect', 'unison', 'detune', 'visualiser']);
 
@@ -618,6 +776,15 @@ const getClusterSignalExit = (clusterIds: Set<string>, nodes: AppNode[], kind: C
 };
 
 export const VALID_AUTO_WIRE_PAIRS = new Set([
+    'controller->quantizer',
+    'keys->quantizer',
+    'moodpad->quantizer',
+    'moodpad->chord',
+    'moodpad->adsr',
+    'moodpad->generator',
+    'pulse->quantizer',
+    'pulse->chord',
+    'pulse->adsr',
     'pulse->stepsequencer',
     'pulse->generator',
     'controller->chord',
@@ -627,11 +794,15 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'keys->adsr',
     'keys->generator',
     'keys->drum',
+    'quantizer->chord',
+    'quantizer->adsr',
+    'quantizer->generator',
     'chord->adsr',
     'chord->generator',
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
+    'stepsequencer->quantizer',
     'stepsequencer->chord',
     'stepsequencer->adsr',
     'stepsequencer->generator',
@@ -662,6 +833,15 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
 ]);
 
 export const CONTROL_WIRE_PAIRS = new Set([
+    'controller->quantizer',
+    'keys->quantizer',
+    'moodpad->quantizer',
+    'moodpad->chord',
+    'moodpad->adsr',
+    'moodpad->generator',
+    'pulse->quantizer',
+    'pulse->chord',
+    'pulse->adsr',
     'pulse->stepsequencer',
     'pulse->generator',
     'controller->chord',
@@ -671,11 +851,15 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'keys->adsr',
     'keys->generator',
     'keys->drum',
+    'quantizer->chord',
+    'quantizer->adsr',
+    'quantizer->generator',
     'chord->adsr',
     'chord->generator',
     'adsr->chord',
     'adsr->generator',
     'adsr->drum',
+    'stepsequencer->quantizer',
     'stepsequencer->chord',
     'stepsequencer->adsr',
     'stepsequencer->generator',
@@ -928,6 +1112,7 @@ type AppState = {
     drumRacks: Map<string, DrumRack>;
     patterns: Map<string, DisposablePattern>;
     activeChordVoicings: Map<string, ActiveChordVoicing>;
+    activeQuantizedNotes: Map<string, ActiveQuantizedNote>;
     generatorNoteCounts: Map<string, Map<string, number>>;
     activeGenerators: Set<string>;
     activeDrumPads: Set<string>;
@@ -998,6 +1183,7 @@ export const useStore = create<AppState>((set, get) => ({
     drumRacks: new Map(),
     patterns: new Map(),
     activeChordVoicings: new Map(),
+    activeQuantizedNotes: new Map(),
     generatorNoteCounts: new Map(),
     activeGenerators: new Set(),
     activeDrumPads: new Set(),
@@ -1267,8 +1453,10 @@ export const useStore = create<AppState>((set, get) => ({
             type === 'chord' ||
             type === 'adsr' ||
             type === 'keys' ||
+            type === 'moodpad' ||
             type === 'pulse' ||
-            type === 'stepsequencer'
+            type === 'stepsequencer' ||
+            type === 'quantizer'
         ) {
             return;
         }
@@ -1866,15 +2054,20 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     firePulse: (pulseId: string, intervalMs = 125) => {
-        const { edges, nodes, audioNodes } = get();
+        const { edges, nodes } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const pulseNode = nodesById.get(pulseId);
         if (!pulseNode) {
             return;
         }
 
-        const pulseColor = pulseNode.data.isPackedVisible ? '#d946ef' : undefined;
-        get().emitSignalFlow(pulseId, 'control', pulseColor);
+        const note = pulseNode.data.pulseNote ?? DEFAULT_PULSE_NOTE;
+        const gateDuration = Math.min(Math.max(intervalMs * 0.4, 80), 240);
+
+        get().fireNoteOn(pulseId, note);
+        window.setTimeout(() => {
+            get().fireNoteOff(pulseId, note);
+        }, gateDuration);
 
         edges
             .filter((edge) => isControlEdge(edge) && edge.source === pulseId)
@@ -1887,29 +2080,6 @@ export const useStore = create<AppState>((set, get) => ({
 
                 if (targetNode.type === 'stepsequencer') {
                     get().advanceSequencerStep(targetNode.id, intervalMs);
-                    return;
-                }
-
-                if (targetNode.type === 'generator') {
-                    const note = pulseNode.data.pulseNote ?? DEFAULT_PULSE_NOTE;
-                    const targetAudioNode = audioNodes.get(targetNode.id);
-
-                    if (targetAudioNode instanceof Tone.PolySynth) {
-                        get().triggerNoteOn(targetNode.id, note);
-                        window.setTimeout(() => {
-                            get().triggerNoteOff(targetNode.id, note);
-                        }, Math.min(Math.max(intervalMs * 0.4, 80), 240));
-                    } else if (targetAudioNode instanceof Tone.Noise) {
-                        try {
-                            targetAudioNode.stop();
-                        } catch {
-                            // Ignore redundant stop calls when pulse retriggers noise.
-                        }
-                        get().triggerNoteOn(targetNode.id, note);
-                        window.setTimeout(() => {
-                            get().triggerNoteOff(targetNode.id, note);
-                        }, Math.min(Math.max(intervalMs * 0.4, 80), 240));
-                    }
                 }
             });
     },
@@ -1954,9 +2124,10 @@ export const useStore = create<AppState>((set, get) => ({
     },
 
     fireNoteOn: (controllerId: string, note: string) => {
-        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts, activeGenerators } = get();
+        const { edges, nodes, audioNodes, activeChordVoicings, activeQuantizedNotes, generatorNoteCounts, activeGenerators } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
+        const nextQuantizedNotes = new Map(activeQuantizedNotes);
         const sourceNode = nodesById.get(controllerId);
         const controlColor = sourceNode?.data.isPackedVisible ? '#d946ef' : undefined;
 
@@ -1971,6 +2142,7 @@ export const useStore = create<AppState>((set, get) => ({
             nodesById,
             edges,
             nextChordVoicings,
+            nextQuantizedNotes,
             true
         );
 
@@ -2007,21 +2179,24 @@ export const useStore = create<AppState>((set, get) => ({
 
         set({
             activeChordVoicings: nextChordVoicings,
+            activeQuantizedNotes: nextQuantizedNotes,
             generatorNoteCounts: nextGeneratorNoteCounts,
             activeGenerators: nextActiveGenerators,
         });
     },
 
     fireNoteOff: (controllerId: string, note: string) => {
-        const { edges, nodes, audioNodes, activeChordVoicings, generatorNoteCounts, activeGenerators } = get();
+        const { edges, nodes, audioNodes, activeChordVoicings, activeQuantizedNotes, generatorNoteCounts, activeGenerators } = get();
         const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
         const nextChordVoicings = new Map(activeChordVoicings);
+        const nextQuantizedNotes = new Map(activeQuantizedNotes);
         const dispatches = collectNoteDispatches(
             controllerId,
             note,
             nodesById,
             edges,
             nextChordVoicings,
+            nextQuantizedNotes,
             false
         );
 
@@ -2051,6 +2226,7 @@ export const useStore = create<AppState>((set, get) => ({
 
         set({
             activeChordVoicings: nextChordVoicings,
+            activeQuantizedNotes: nextQuantizedNotes,
             generatorNoteCounts: nextGeneratorNoteCounts,
             activeGenerators: nextActiveGenerators,
         });
@@ -2275,6 +2451,27 @@ export const useStore = create<AppState>((set, get) => ({
                                                 isPlaying: node.data.isPlaying ?? false,
                                             },
                                         }
+                                        : node.type === 'quantizer'
+                                            ? {
+                                                ...node,
+                                                data: {
+                                                    ...node.data,
+                                                    label: node.data.label || 'Quantizer',
+                                                    rootNote: node.data.rootNote ?? 'C',
+                                                    scaleType: node.data.scaleType ?? 'major',
+                                                    bypass: node.data.bypass ?? false,
+                                                },
+                                            }
+                                            : node.type === 'moodpad'
+                                                ? {
+                                                    ...node,
+                                                    data: {
+                                                        ...node.data,
+                                                        label: node.data.label || 'Mood Pad',
+                                                        moodX: node.data.moodX ?? 0.35,
+                                                        moodY: node.data.moodY ?? 0.55,
+                                                    },
+                                                }
                                 : node;
 
         set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
@@ -2310,23 +2507,61 @@ export const useStore = create<AppState>((set, get) => ({
         const { nodes, edges } = get();
         const removedNode = nodes.find((node: AppNode) => node.id === id);
 
-        if (removedNode?.type === 'chord') {
-            const { audioNodes, activeChordVoicings, generatorNoteCounts } = get();
+        if (removedNode?.type === 'chord' || removedNode?.type === 'quantizer') {
+            const { audioNodes, activeChordVoicings, activeQuantizedNotes, generatorNoteCounts } = get();
             const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
             const nextChordVoicings = new Map(activeChordVoicings);
+            const nextQuantizedNotes = new Map(activeQuantizedNotes);
             let nextGeneratorNoteCounts = generatorNoteCounts;
 
-            [...activeChordVoicings.entries()]
-                .filter(([voicingKey]) => voicingKey.startsWith(`${id}::`))
-                .forEach(([voicingKey, voicing]) => {
-                    for (let iteration = 0; iteration < voicing.count; iteration++) {
-                        voicing.notes.forEach((voicedNote) => {
+            if (removedNode.type === 'chord') {
+                [...activeChordVoicings.entries()]
+                    .filter(([voicingKey]) => voicingKey.startsWith(`${id}::`))
+                    .forEach(([voicingKey, voicing]) => {
+                        for (let iteration = 0; iteration < voicing.count; iteration++) {
+                            voicing.notes.forEach((voicedNote) => {
+                                const dispatches = collectNoteDispatches(
+                                    id,
+                                    voicedNote,
+                                    nodesById,
+                                    edges,
+                                    nextChordVoicings,
+                                    nextQuantizedNotes,
+                                    false
+                                );
+
+                                dispatches.forEach(({ generatorId, note }) => {
+                                    const targetNode = audioNodes.get(generatorId);
+                                    if (targetNode instanceof Tone.PolySynth) {
+                                        targetNode.triggerRelease(note);
+                                        nextGeneratorNoteCounts = decrementGeneratorNoteCount(
+                                            nextGeneratorNoteCounts,
+                                            generatorId,
+                                            note
+                                        );
+                                    } else if (targetNode instanceof Tone.Noise) {
+                                        targetNode.stop();
+                                    }
+                                });
+                            });
+                        }
+
+                        nextChordVoicings.delete(voicingKey);
+                    });
+            }
+
+            if (removedNode.type === 'quantizer') {
+                [...activeQuantizedNotes.entries()]
+                    .filter(([quantizedKey]) => quantizedKey.startsWith(`${id}::`))
+                    .forEach(([quantizedKey, quantizedNote]) => {
+                        for (let iteration = 0; iteration < quantizedNote.count; iteration++) {
                             const dispatches = collectNoteDispatches(
                                 id,
-                                voicedNote,
+                                quantizedNote.note,
                                 nodesById,
                                 edges,
                                 nextChordVoicings,
+                                nextQuantizedNotes,
                                 false
                             );
 
@@ -2339,16 +2574,19 @@ export const useStore = create<AppState>((set, get) => ({
                                         generatorId,
                                         note
                                     );
+                                } else if (targetNode instanceof Tone.Noise) {
+                                    targetNode.stop();
                                 }
                             });
-                        });
-                    }
+                        }
 
-                    nextChordVoicings.delete(voicingKey);
-                });
+                        nextQuantizedNotes.delete(quantizedKey);
+                    });
+            }
 
             set({
                 activeChordVoicings: nextChordVoicings,
+                activeQuantizedNotes: nextQuantizedNotes,
                 generatorNoteCounts: nextGeneratorNoteCounts,
                 activeGenerators: new Set(nextGeneratorNoteCounts.keys()),
             });
@@ -2501,6 +2739,7 @@ export const useStore = create<AppState>((set, get) => ({
             drumRacks: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
+            activeQuantizedNotes: new Map(),
             generatorNoteCounts: new Map(),
             activeGenerators: new Set(),
             activeDrumPads: new Set(),
@@ -2983,6 +3222,7 @@ export const useStore = create<AppState>((set, get) => ({
             drumRacks: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
+            activeQuantizedNotes: new Map(),
             generatorNoteCounts: new Map(),
             activeGenerators: new Set(),
             activeDrumPads: new Set(),
@@ -3057,6 +3297,7 @@ export const useStore = create<AppState>((set, get) => ({
             drumRacks: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
+            activeQuantizedNotes: new Map(),
             generatorNoteCounts: new Map(),
             activeGenerators: new Set(),
             activeDrumPads: new Set(),

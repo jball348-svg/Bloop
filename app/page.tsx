@@ -35,6 +35,8 @@ import VisualiserNode from '@/components/VisualiserNode';
 import PulseNode from '@/components/PulseNode';
 import StepSequencerNode from '@/components/StepSequencerNode';
 import SignalFlowOverlay from '@/components/SignalFlowOverlay';
+import QuantizerNode from '@/components/QuantizerNode';
+import MoodPadNode from '@/components/MoodPadNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
 import AdsrNode from '@/components/AdsrNode';
@@ -52,9 +54,11 @@ import SystemMenu from '@/components/SystemMenu';
 const NODE_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys:        { w: 288, h: 320 },
+    moodpad:     { w: 320, h: 416 },
     pulse:       { w: 288, h: 280 },
     stepsequencer: { w: 352, h: 420 },
     chord:      { w: 224, h: 240 },
+    quantizer:  { w: 240, h: 272 },
     adsr:       { w: 224, h: 340 },
     generator:  { w: 240, h: 220 },
     drum:       { w: 320, h: 360 },
@@ -130,6 +134,8 @@ function BloopCanvasInner() {
         unison: UnisonNode,
         detune: DetuneNode,
         visualiser: VisualiserNode,
+        quantizer: QuantizerNode,
+        moodpad: MoodPadNode,
         pulse: PulseNode,
         stepsequencer: StepSequencerNode,
         speaker: SpeakerNode,
@@ -181,6 +187,9 @@ function BloopCanvasInner() {
             subType = 'keys';
             label = 'Keys';
         }
+        if (type === 'moodpad') {
+            label = 'Mood Pad';
+        }
         if (type === 'pulse') {
             label = 'Pulse';
         }
@@ -190,6 +199,9 @@ function BloopCanvasInner() {
         if (type === 'chord') {
             subType = 'major';
             label = 'Chord';
+        }
+        if (type === 'quantizer') {
+            label = 'Quantizer';
         }
         if (type === 'adsr') {
             label = 'ADSR';

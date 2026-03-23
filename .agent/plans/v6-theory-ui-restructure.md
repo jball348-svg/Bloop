@@ -12,24 +12,37 @@ GitHub issues: #41 (Quantizer), #42 (Menu Sub-divisions), #43 (XY Mood Pad).
 
 ## Progress
 
-- [ ] Read GitHub issues #41, #42, #43 in full
-- [ ] Milestone 1 — Quantizer Node (#41): scale/key enforcer as an explicit node
-- [ ] Milestone 2 — Menu Sub-divisions (#42): nested sub-categories in Signal and Controller menus
-- [ ] Milestone 3 — XY Mood Pad (#43): 2D controller pad with evocative axis labels
-- [ ] npm run build and npm run lint pass
-- [ ] Update TICKETS.md, close GitHub issues #41, #42, #43
+- [x] (2026-03-23) Read GitHub issues #41, #42, #43 in full
+- [x] (2026-03-23) Milestone 1 — Quantizer Node (#41): add a purple quantizer node, scale-aware note snapping, and persisted release mappings for transformed notes
+- [x] (2026-03-23) Milestone 2 — Menu Sub-divisions (#42): split Signal and Controller menus into tabbed sub-categories and place all current nodes in the right groups
+- [x] (2026-03-23) Milestone 3 — XY Mood Pad (#43): add a rose mood-pad controller with pointer-safe chord triggering and touch support
+- [x] (2026-03-23) npm run build and npm run lint pass
+- [x] (2026-03-23) Update TICKETS.md, close GitHub issues #41, #42, #43
 
 ## Surprises & Discoveries
 
-[To be filled.]
+- Observation: Quantization needed its own release bookkeeping just like the Chord node.
+  Evidence: if a held note was quantized and the scale changed before note-off, recomputing the target pitch on release could miss the originally triggered generator note and leave it hanging.
+- Observation: Quantizer behaves best as a signal-menu node with control-domain wiring.
+  Evidence: the user discovers it alongside modulators in the top menu, but the actual routing remains left-to-right note-event flow with neon-green control cables.
+- Observation: packed-node and overlay helpers had their own local node registries.
+  Evidence: adding Mood Pad and Quantizer required updating `PackedNode.tsx` and `SignalFlowOverlay.tsx` separately from the main store/page registries to keep packing and signal visualisation accurate.
 
 ## Decision Log
 
-[To be filled.]
+- Decision: Assign `purple-500` to Quantizer and `rose-500` to Mood Pad.
+  Rationale: These were the last unused registry colours, and they clearly separate theory assistance from the more tactile mood controller.
+  Date: 2026-03-23
+- Decision: Keep Quantizer on the control signal path even though it is surfaced in the Signal menu.
+  Rationale: it transforms note events rather than audio, so preserving control handles and control-domain adjacency keeps routing semantics correct while still matching the desired menu taxonomy.
+  Date: 2026-03-23
+- Decision: Make Mood Pad emit short-lived curated voicings instead of raw continuous pitch values.
+  Rationale: discrete harmonic palettes keep the pad sounding musical in isolation, reduce event spam during dragging, and still pair naturally with a downstream Quantizer.
+  Date: 2026-03-23
 
 ## Outcomes & Retrospective
 
-[To be written at completion.]
+V6 is complete. Bloop now has an explicit harmony-safety node, faster menu navigation via category tabs, and a playful Mood Pad controller that works with both mouse and touch input. The store-level note routing remains the source of truth, and both `npm run lint` and `npm run build` pass on the completed milestone.
 
 ## Context and Orientation
 
