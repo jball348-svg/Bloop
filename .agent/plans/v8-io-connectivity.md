@@ -18,7 +18,7 @@ GitHub issues: #47 (MIDI Input), #48 (Live Audio Input), #49 (Session Export).
 - [x] (2026-03-23) Milestone 3 — Session Export (#49): added System menu recording controls, timer/error states, and browser download export.
 - [x] (2026-03-23) `npm run build` and `npm run lint` pass on the integrated v8/v9/v10 branch state.
 - [x] (2026-03-23) Vercel alias status re-verified as healthy; no v4 deployment repair was required during v8.
-- [ ] (2026-03-23) Update `TICKETS.md`, close GitHub issues #47, #48, and #49, and land the milestone commit.
+- [x] (2026-03-23) Update `TICKETS.md`, close GitHub issues #47, #48, and #49, and land the milestone commit.
 
 ## Surprises & Discoveries
 

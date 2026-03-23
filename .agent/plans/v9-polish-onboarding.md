@@ -17,7 +17,7 @@ GitHub issues: #50 (Onboarding), #51 (Theming), #52 (Presets + Visualiser).
 - [x] (2026-03-23) Milestone 2 — Theming (#51): added persisted preferences store, light/dark/system mode, accent override palette, and themed node/menu chrome.
 - [x] (2026-03-23) Milestone 3 — Presets & Visualiser (#52): expanded presets to categorized library with reward-aware locks and rebuilt Visualiser modes with VU + XY input.
 - [x] (2026-03-23) `npm run build` and `npm run lint` pass on the integrated v8/v9/v10 branch state.
-- [ ] (2026-03-23) Update `TICKETS.md`, close GitHub issues #50, #51, and #52, and land the milestone commit.
+- [x] (2026-03-23) Update `TICKETS.md`, close GitHub issues #50, #51, and #52, and land the milestone commit.
 
 ## Surprises & Discoveries
 

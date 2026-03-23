@@ -18,7 +18,7 @@ GitHub issues: #53 (Campaign Mode).
 - [x] (2026-03-23) Milestone 3 — Level content: authored five beginner levels covering generator, reverb, keys, arp playback, and full chain building.
 - [x] (2026-03-23) Milestone 4 — Reward system: wired level completion to preset/skin unlock persistence and the v9 appearance/preset surfaces.
 - [x] (2026-03-23) `npm run build` and `npm run lint` pass on the integrated v8/v9/v10 branch state.
-- [ ] (2026-03-23) Update `TICKETS.md`, close GitHub issue #53, and land the milestone commit.
+- [x] (2026-03-23) Update `TICKETS.md`, close GitHub issue #53, and land the milestone commit.
 
 ## Surprises & Discoveries
 
