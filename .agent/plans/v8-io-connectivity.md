@@ -85,6 +85,14 @@ Add recording state to the store: `isRecording: boolean`, `startRecording(): voi
 
 It appears a number of tickets and features were missed in the v4 implementation. Review the v4 tickets and implement any missing functionality.
 
+Additional new ticket open right now - vercel deployment not working, fix before closing v8.
+
+Vercel returning this;
+
+404: NOT_FOUND
+Code: NOT_FOUND
+ID: lhr1::ln8tf-1774275514692-15275fb28d04
+
 ## Concrete Steps
 
     npm run dev
