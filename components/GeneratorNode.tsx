@@ -11,6 +11,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
 const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
@@ -35,10 +36,9 @@ export default function GeneratorNode({ id }: { id: string }) {
         updateNodeValue(id, { waveShape: e.target.value as WaveShape });
     };
 
-    const handleMixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setMix(val);
-        updateNodeValue(id, { mix: val });
+    const setMixValue = (value: number) => {
+        setMix(value);
+        updateNodeValue(id, { mix: value });
     };
 
     useEffect(() => {
@@ -86,20 +86,10 @@ export default function GeneratorNode({ id }: { id: string }) {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-end">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mix</label>
-                                <span className="text-[10px] font-mono text-red-400 font-bold">{mix}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={mix}
-                                onChange={handleMixChange}
-                                className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500"
-                            />
-                        </div>
+                        <NodeMixControl
+                            value={mix}
+                            onChange={setMixValue}
+                        />
 
                         <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wave Shape</label>

@@ -102,6 +102,19 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 |---|---|---|
 | [#53](https://github.com/jball348-svg/Bloop/issues/53) | Campaign Mode — Gamified Synthesis Puzzles with Reward System | ✅ Closed |
 
+### V11 — Post-v10 UAT Follow-up 🔵
+
+| # | Title | Status |
+|---|---|---|
+| [#60](https://github.com/jball348-svg/Bloop/issues/60) | Post-v10 UAT - Audio Bootstrap and Mandatory Intro Simplification | ✅ Closed |
+| [#61](https://github.com/jball348-svg/Bloop/issues/61) | Post-v10 UAT - System Menu Layout Cleanup and Tutorial Rename | ✅ Closed |
+| [#62](https://github.com/jball348-svg/Bloop/issues/62) | Post-v10 UAT - Promote MIDI In, Audio In, and Recorder into Global Utilities | ✅ Closed |
+| [#63](https://github.com/jball348-svg/Bloop/issues/63) | Post-v10 UAT - Always-Visible Node Menus and Dedicated Bloop Control | ✅ Closed |
+| [#64](https://github.com/jball348-svg/Bloop/issues/64) | Post-v10 UAT - Module Readability and Mix-Control Consistency Pass | ✅ Closed |
+| [#65](https://github.com/jball348-svg/Bloop/issues/65) | Post-v10 UAT - Accessible Theme Redesign and Simpler Appearance Settings | ✅ Closed |
+| [#66](https://github.com/jball348-svg/Bloop/issues/66) | Post-v10 UAT - Presets Library Overhaul | 🟣 V11 Backlog |
+| [#67](https://github.com/jball348-svg/Bloop/issues/67) | Post-v10 UAT - Snapping, Adjacency, and Overlap Resolution Rewrite | 🟡 Validation Pass |
+
 ### Superseded / Closed
 
 | # | Title | Status |
@@ -113,7 +126,20 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ---
 
-## V4 Recommended Work Order
+## V11 Recommended Work Order
+
+1. ~~**#60** Audio Bootstrap and Mandatory Intro Simplification~~ ✅
+2. ~~**#62** Promote MIDI In, Audio In, and Recorder into Global Utilities~~ ✅
+3. ~~**#63** Always-Visible Node Menus and Dedicated Bloop Control~~ ✅
+4. ~~**#65** Accessible Theme Redesign and Simpler Appearance Settings~~ ✅
+5. ~~**#61** System Menu Layout Cleanup and Tutorial Rename~~ ✅
+6. ~~**#64** Module Readability and Mix-Control Consistency Pass~~ ✅
+7. **#67** Snapping, Adjacency, and Overlap Resolution Rewrite — measured-dimension hardening landed; keep open for manual UAT
+8. **#66** Presets Library Overhaul
+
+---
+
+## Historical V4 Work Order
 
 1. ~~**#33** Bug Omnibus~~ ✅
 2. ~~**#34** Visual Polish~~ ✅
@@ -152,6 +178,14 @@ V9 (requires v8 complete):
 
 V10 (requires v9 complete):
 ~~#53 (Campaign Mode)~~ ✅
+
+V11 (post-v10 UAT follow-up):
+#60 (bootstrap/intro)
+#62 (global utilities) → #63 (menus + Bloop)
+#65 (theme) ─┐
+#62 (global utilities) ─┼→ #61 (system menu cleanup) → #66 (presets overhaul)
+#63 (menu taxonomy) ────┘
+#64 (module UX consistency) → #67 (snapping rewrite)
 ```
 
 ---
@@ -159,7 +193,7 @@ V10 (requires v9 complete):
 ## How to Update This File
 
 When you close a ticket:
-1. Change its status in the table from `🔵 V4 Backlog` / `🟣 Vx Roadmap` to `✅ Closed`
+1. Change its status in the table from the current backlog marker (for example `🔵 Backlog` / `🟣 V11 Backlog`) to `✅ Closed`
 2. Strike through its entry in the Work Order section using `~~text~~`
 3. Commit this file in the same PR as the work
 

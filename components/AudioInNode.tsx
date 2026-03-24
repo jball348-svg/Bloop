@@ -10,6 +10,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
 export default function AudioInNode({ id }: { id: string }) {
@@ -157,26 +158,11 @@ export default function AudioInNode({ id }: { id: string }) {
                         {status === 'active' ? 'Disable Microphone' : 'Enable Microphone'}
                     </button>
 
-                    <div className="flex flex-col gap-2">
-                        <div className="flex justify-between items-end">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                Input Gain
-                            </label>
-                            <span className="text-[10px] font-mono font-bold text-slate-200">
-                                {inputGain}%
-                            </span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={inputGain}
-                            onChange={(event) =>
-                                updateNodeValue(id, { inputGain: Number.parseFloat(event.target.value) })
-                            }
-                            className="nodrag w-full h-1 rounded-lg appearance-none cursor-pointer bg-slate-700 accent-slate-300"
-                        />
-                    </div>
+                    <NodeMixControl
+                        value={inputGain}
+                        label="Mix"
+                        onChange={(value) => updateNodeValue(id, { inputGain: value })}
+                    />
 
                     <div className="flex flex-col gap-2">
                         <div className="flex justify-between items-end">

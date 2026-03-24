@@ -13,27 +13,29 @@
   --text-muted: #94a3b8;
   --text-subtle: #64748b;
   --canvas-dot: #1e293b;
+  --canvas-wash: radial-gradient(circle at top, rgba(34, 211, 238, 0.08), transparent 34%), linear-gradient(180deg, #020617 0%, #08111f 100%);
   --control-panel: rgba(15, 23, 42, 0.9);
   --control-panel-border: rgba(51, 65, 85, 0.9);
   --handle-border: #020617;
 }
 
 html.light {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --surface-primary: #ffffff;
-  --surface-secondary: #e2e8f0;
-  --surface-tertiary: #cbd5e1;
-  --surface-raised: #94a3b8;
-  --border-primary: #cbd5e1;
-  --border-secondary: #94a3b8;
-  --text-primary: #0f172a;
-  --text-muted: #475569;
-  --text-subtle: #64748b;
-  --canvas-dot: #cbd5e1;
-  --control-panel: rgba(255, 255, 255, 0.92);
-  --control-panel-border: rgba(203, 213, 225, 0.95);
-  --handle-border: #e2e8f0;
+  --background: #f4eee3;
+  --foreground: #231f18;
+  --surface-primary: #f8f3e9;
+  --surface-secondary: #e8dfd1;
+  --surface-tertiary: #d7ccbb;
+  --surface-raised: #b7aa93;
+  --border-primary: #cfc3b0;
+  --border-secondary: #b19f87;
+  --text-primary: #231f18;
+  --text-muted: #645a4d;
+  --text-subtle: #887d6d;
+  --canvas-dot: #d7ccbc;
+  --canvas-wash: radial-gradient(circle at top, rgba(255, 255, 255, 0.72), transparent 38%), linear-gradient(180deg, #f6f0e5 0%, #e7ddcd 100%);
+  --control-panel: rgba(248, 243, 233, 0.9);
+  --control-panel-border: rgba(207, 195, 176, 0.95);
+  --handle-border: #ede4d5;
 }
 
 @theme inline {
@@ -42,7 +44,7 @@ html.light {
 }
 
 body {
-  background: var(--background);
+  background: var(--canvas-wash);
   color: var(--text-primary);
   font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
   overflow: hidden;
@@ -69,7 +71,7 @@ body {
 }
 
 .react-flow__background {
-  background-color: var(--background);
+  background: transparent;
 }
 
 .react-flow__controls {
@@ -84,11 +86,12 @@ body {
   background: transparent !important;
   border-bottom: none !important;
   border-right: none !important;
-  fill: #94a3b8 !important;
+  fill: var(--text-muted) !important;
+  color: var(--text-muted) !important;
 }
 
 .react-flow__controls-button:hover {
-  background: var(--surface-primary) !important;
+  background: color-mix(in srgb, var(--surface-primary) 88%, transparent) !important;
 }
 
 .react-flow__node {

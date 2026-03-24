@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { usePreferencesStore } from '@/store/usePreferencesStore';
 
@@ -39,12 +39,35 @@ const ONBOARDING_STEPS = [
 ] as const;
 
 function OnboardingDialog() {
+    const engineStarted = useStore((state) => state.engineStarted);
+    const engineError = useStore((state) => state.engineError);
+    const startAudioEngine = useStore((state) => state.startAudioEngine);
+    const onboardingSeen = usePreferencesStore((state) => state.onboardingSeen);
     const completeOnboarding = usePreferencesStore((state) => state.completeOnboarding);
     const closeOnboarding = usePreferencesStore((state) => state.closeOnboarding);
     const [stepIndex, setStepIndex] = useState(0);
+    const [isFinishing, setIsFinishing] = useState(false);
 
     const step = ONBOARDING_STEPS[stepIndex] ?? ONBOARDING_STEPS[0];
     const isLastStep = stepIndex === ONBOARDING_STEPS.length - 1;
+    const isFirstRunBlocking = !engineStarted && !onboardingSeen;
+
+    const finishIntro = async () => {
+        setIsFinishing(true);
+
+        try {
+            if (!engineStarted) {
+                const started = await startAudioEngine();
+                if (!started) {
+                    return;
+                }
+            }
+
+            completeOnboarding();
+        } finally {
+            setIsFinishing(false);
+        }
+    };
 
     return (
         <div
@@ -64,14 +87,22 @@ function OnboardingDialog() {
                         className="p-5 md:p-6"
                         style={{ backgroundColor: 'color-mix(in srgb, var(--surface-secondary) 88%, transparent)' }}
                     >
-                        <Image
-                            src={step.media}
-                            alt={step.title}
-                            width={1280}
-                            height={720}
-                            className="h-full min-h-[18rem] w-full rounded-[1.5rem] border object-cover"
-                            style={{ borderColor: 'var(--border-primary)' }}
-                        />
+                        <div
+                            className="flex min-h-[18rem] items-center justify-center rounded-[1.5rem] border p-4 md:min-h-[22rem]"
+                            style={{
+                                borderColor: 'var(--border-primary)',
+                                backgroundColor: 'color-mix(in srgb, var(--surface-primary) 92%, transparent)',
+                            }}
+                        >
+                            <Image
+                                src={step.media}
+                                alt={step.title}
+                                width={1280}
+                                height={720}
+                                className="h-full w-full object-contain"
+                                sizes="(max-width: 768px) 100vw, 55vw"
+                            />
+                        </div>
                     </div>
 
                     <div className="flex flex-col justify-between gap-6 p-6 md:p-8">
@@ -84,14 +115,20 @@ function OnboardingDialog() {
                                         color: 'var(--text-muted)',
                                     }}
                                 >
-                                    Quick Start {stepIndex + 1}/{ONBOARDING_STEPS.length}
+                                    Intro
                                 </span>
                                 <button
-                                    onClick={closeOnboarding}
+                                    onClick={() => {
+                                        if (isFirstRunBlocking) {
+                                            void finishIntro();
+                                            return;
+                                        }
+                                        closeOnboarding();
+                                    }}
                                     className="rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] transition-opacity hover:opacity-80"
                                     style={{ color: 'var(--text-muted)' }}
                                 >
-                                    Close
+                                    {isFirstRunBlocking ? 'Skip' : 'Close'}
                                 </button>
                             </div>
 
@@ -120,30 +157,23 @@ function OnboardingDialog() {
                                     />
                                 ))}
                             </div>
-
-                            <div
-                                className="rounded-[1.25rem] border p-4 text-sm leading-6"
-                                style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--surface-secondary) 86%, transparent)',
-                                    borderColor: 'var(--border-primary)',
-                                    color: 'var(--text-muted)',
-                                }}
-                            >
-                                The intro melody will stop when you close this guide. Reopen it any time from the System menu.
-                            </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <button
-                                onClick={completeOnboarding}
-                                className="rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] transition-opacity hover:opacity-80"
+                        {engineError && (
+                            <div
+                                className="rounded-[1.25rem] border px-4 py-3 text-sm leading-6"
                                 style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--surface-secondary) 86%, transparent)',
-                                    color: 'var(--text-muted)',
+                                    borderColor: 'rgba(251, 113, 133, 0.32)',
+                                    backgroundColor: 'rgba(251, 113, 133, 0.08)',
+                                    color: 'var(--text-primary)',
                                 }}
                             >
-                                Skip Intro
-                            </button>
+                                {engineError}
+                            </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div />
 
                             <div className="flex items-center gap-2">
                                 <button
@@ -160,15 +190,16 @@ function OnboardingDialog() {
                                 <button
                                     onClick={() => {
                                         if (isLastStep) {
-                                            completeOnboarding();
+                                            void finishIntro();
                                             return;
                                         }
                                         setStepIndex((current) => Math.min(ONBOARDING_STEPS.length - 1, current + 1));
                                     }}
+                                    disabled={isFinishing}
                                     className="rounded-full px-5 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-950 transition-transform hover:scale-[1.02] active:scale-[0.98]"
                                     style={{ backgroundColor: '#22d3ee' }}
                                 >
-                                    {isLastStep ? 'Start Blooping' : 'Next'}
+                                    {isLastStep ? (isFinishing ? 'Starting...' : 'Bloop!') : 'Next'}
                                 </button>
                             </div>
                         </div>
@@ -181,23 +212,12 @@ function OnboardingDialog() {
 
 export default function OnboardingModal() {
     const onboardingOpen = usePreferencesStore((state) => state.onboardingOpen);
-    const playOnboardingIntro = useStore((state) => state.playOnboardingIntro);
-    const stopOnboardingIntro = useStore((state) => state.stopOnboardingIntro);
+    const onboardingSeen = usePreferencesStore((state) => state.onboardingSeen);
+    const engineStarted = useStore((state) => state.engineStarted);
 
-    useEffect(() => {
-        if (!onboardingOpen) {
-            stopOnboardingIntro();
-            return;
-        }
+    const shouldShow = onboardingOpen || (!onboardingSeen && !engineStarted);
 
-        playOnboardingIntro();
-
-        return () => {
-            stopOnboardingIntro();
-        };
-    }, [onboardingOpen, playOnboardingIntro, stopOnboardingIntro]);
-
-    if (!onboardingOpen) {
+    if (!shouldShow) {
         return null;
     }
 

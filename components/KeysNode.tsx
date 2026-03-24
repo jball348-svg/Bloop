@@ -123,7 +123,7 @@ export default function KeysNode({ id }: { id: string }) {
                 <div className="flex flex-1 flex-col justify-between">
                     <div className="flex justify-between items-center mb-3">
                         <button
-                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-white hover:text-black hover:border-white flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
+                            className="nodrag relative flex-shrink-0 mr-1.5 w-3.5 h-3.5 rounded-full bg-slate-800/90 border border-slate-600/50 text-slate-400 hover:bg-slate-100 hover:text-slate-950 hover:border-white flex items-center justify-center text-[8px] z-20 transition-all hover:scale-110 backdrop-blur-sm"
                             style={{ boxShadow: `0 0 6px rgba(255, 255, 255, 0.3)` }}
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -145,11 +145,20 @@ export default function KeysNode({ id }: { id: string }) {
                                 <button
                                     key={oct}
                                     onClick={() => updateOctave(id, oct)}
-                                    className={`nodrag w-6 h-6 text-[10px] font-bold rounded transition-colors ${
+                                    className="nodrag h-6 w-6 rounded border text-[10px] font-bold transition-colors"
+                                    style={
                                         octave === oct
-                                            ? 'bg-white text-black'
-                                            : 'bg-white/10 text-white/60 hover:bg-white/20'
-                                    }`}
+                                            ? {
+                                                backgroundColor: '#f8fafc',
+                                                borderColor: '#ffffff',
+                                                color: '#0f172a',
+                                            }
+                                            : {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                                                borderColor: 'rgba(255, 255, 255, 0.12)',
+                                                color: 'rgba(248, 250, 252, 0.7)',
+                                            }
+                                    }
                                 >
                                     {oct}
                                 </button>
@@ -163,9 +172,12 @@ export default function KeysNode({ id }: { id: string }) {
                                         onMouseDown={async () => { await Tone.start(); handleMouseDown(key, keyMap[key]); }}
                                         onMouseUp={() => handleMouseUp(key, keyMap[key])}
                                         onMouseLeave={() => handleMouseUp(key, keyMap[key])}
-                                        className={`w-7 h-24 border border-white/20 flex items-end justify-center pb-2 text-[10px] font-bold rounded-b-md cursor-pointer transition-colors ${
-                                            activeKeys.has(key) ? 'bg-white text-black border-white' : 'bg-white text-black/60'
-                                        }`}
+                                        className="flex h-24 w-7 cursor-pointer items-end justify-center rounded-b-md border pb-2 text-[10px] font-bold transition-colors"
+                                        style={{
+                                            backgroundColor: activeKeys.has(key) ? '#e2e8f0' : '#f8fafc',
+                                            color: activeKeys.has(key) ? '#0f172a' : '#334155',
+                                            borderColor: activeKeys.has(key) ? '#ffffff' : 'rgba(148, 163, 184, 0.38)',
+                                        }}
                                     >
                                         {key.toUpperCase()}
                                     </div>
@@ -178,10 +190,13 @@ export default function KeysNode({ id }: { id: string }) {
                                         onMouseDown={async () => { await Tone.start(); handleMouseDown(key, keyMap[key]); }}
                                         onMouseUp={() => handleMouseUp(key, keyMap[key])}
                                         onMouseLeave={() => handleMouseUp(key, keyMap[key])}
-                                        style={{ left: `${offset}px` }}
-                                        className={`absolute w-5 h-16 border border-white/20 flex items-end justify-center pb-2 text-[8px] font-bold rounded-b-sm cursor-pointer pointer-events-auto transition-colors z-20 ${
-                                            activeKeys.has(key) ? 'bg-slate-200 text-black border-white' : 'bg-black text-white/60'
-                                        }`}
+                                        style={{
+                                            left: `${offset}px`,
+                                            backgroundColor: activeKeys.has(key) ? '#e2e8f0' : '#0f172a',
+                                            color: activeKeys.has(key) ? '#0f172a' : 'rgba(248, 250, 252, 0.78)',
+                                            borderColor: activeKeys.has(key) ? '#ffffff' : 'rgba(148, 163, 184, 0.28)',
+                                        }}
+                                        className="absolute z-20 flex h-16 w-5 cursor-pointer items-end justify-center rounded-b-sm border pb-2 text-[8px] font-bold pointer-events-auto transition-colors"
                                     >
                                         {key.toUpperCase()}
                                     </div>

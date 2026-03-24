@@ -14,6 +14,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
 const DRUM_PART_CONFIG: Array<{ part: DrumPart; label: string; key: string }> = [
@@ -94,10 +95,9 @@ export default function DrumNode({ id }: { id: string }) {
         setDrumMode(id, event.target.value as DrumMode);
     };
 
-    const handleMixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setMix(val);
-        updateNodeValue(id, { mix: val });
+    const setMixValue = (value: number) => {
+        setMix(value);
+        updateNodeValue(id, { mix: value });
     };
 
     useEffect(() => {
@@ -159,18 +159,6 @@ export default function DrumNode({ id }: { id: string }) {
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-1">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase">Mix</span>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={mix}
-                                onChange={handleMixChange}
-                                className="nodrag w-14 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                            />
-                            <span className="text-[9px] font-mono text-orange-400 w-6 text-right">{mix}</span>
-                        </div>
                         {drumMode === 'grid' && (
                             <button
                                 onClick={async () => {
@@ -187,6 +175,13 @@ export default function DrumNode({ id }: { id: string }) {
                             </button>
                         )}
                     </div>
+                </div>
+
+                <div className="mb-3">
+                    <NodeMixControl
+                        value={mix}
+                        onChange={setMixValue}
+                    />
                 </div>
 
                 {drumMode === 'hits' && (

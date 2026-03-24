@@ -97,7 +97,8 @@ export type DrumPattern = Record<DrumPart, boolean[]>;
 export type SequencerStep = {
     enabled: boolean;
     note: string;
-    gate: number;
+    mix?: number;
+    gate?: number;
 };
 export type AdvancedDrumTrackData = {
     label: string;
@@ -664,9 +665,19 @@ const applyAdsrToDownstreamGenerators = (
     findDownstreamGenerators(adsrId);
 };
 
-// Rendered pixel widths/heights per node type (must stay in sync with Tailwind classes)
-// GeneratorNode uses w-60 = 240px; most others use w-56 = 224px
-const NODE_DIMS: Record<string, { w: number; h: number }> = {
+type CanvasDimsSource = {
+    type: string;
+    width?: number | null;
+    height?: number | null;
+    measured?: {
+        width?: number | null;
+        height?: number | null;
+    };
+};
+
+// Fallback rendered pixel widths/heights per node type.
+// Runtime dimensions from React Flow take precedence whenever they are available.
+export const NODE_CANVAS_DIMS: Record<string, { w: number; h: number }> = {
     controller: { w: 288, h: 320 },
     keys: { w: 288, h: 320 },
     midiin: { w: 256, h: 240 },
@@ -688,8 +699,27 @@ const NODE_DIMS: Record<string, { w: number; h: number }> = {
     speaker: { w: 224, h: 200 },
     tempo: { w: 256, h: 240 },
 };
-const DEFAULT_DIMS = { w: 224, h: 220 };
-const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
+export const DEFAULT_NODE_CANVAS_DIMS = { w: 224, h: 220 };
+
+export const getNodeCanvasDims = (source: CanvasDimsSource | string) => {
+    if (typeof source === 'string') {
+        return NODE_CANVAS_DIMS[source] ?? DEFAULT_NODE_CANVAS_DIMS;
+    }
+
+    const measuredWidth = source.measured?.width ?? source.width;
+    const measuredHeight = source.measured?.height ?? source.height;
+
+    if (
+        typeof measuredWidth === 'number' &&
+        measuredWidth > 0 &&
+        typeof measuredHeight === 'number' &&
+        measuredHeight > 0
+    ) {
+        return { w: measuredWidth, h: measuredHeight };
+    }
+
+    return NODE_CANVAS_DIMS[source.type] ?? DEFAULT_NODE_CANVAS_DIMS;
+};
 
 // Cluster / Locking Helpers
 export const getNodeAdjacencyAxis = (
@@ -713,13 +743,13 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
         const currentNode = allNodes.find(n => n.id === currentId);
         if (!currentNode) continue;
 
-        const cDims = getDims(currentNode.type);
+        const cDims = getNodeCanvasDims(currentNode);
 
         for (const other of allNodes) {
             if (clusterIds.has(other.id)) continue;
             if (other.type === 'tempo' || other.type === 'speaker') continue;
 
-            const oDims = getDims(other.type);
+            const oDims = getNodeCanvasDims(other);
             const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
 
             if (axis === 'horizontal') {
@@ -736,7 +766,6 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
                     queue.push(other.id);
                 }
             } else if (axis === 'vertical') {
-                const oDims = getDims(other.type);
                 const gapBelow = other.position.y - (currentNode.position.y + cDims.h);
                 const gapAbove = currentNode.position.y - (other.position.y + oDims.h);
                 const vGap = Math.max(gapBelow, gapAbove);
@@ -1013,9 +1042,12 @@ export const createDefaultStepSequence = (): SequencerStep[] => {
     return Array.from({ length: 16 }, (_, index) => ({
         enabled: index < notes.length,
         note: notes[index % notes.length] ?? DEFAULT_PULSE_NOTE,
-        gate: 60,
+        mix: 60,
     }));
 };
+
+export const getSequencerStepMix = (step: SequencerStep) =>
+    clampVolumePercent(step.mix ?? step.gate ?? 60);
 
 const getLoopIntervalSeconds = (sync: boolean, rate: TransportRate, intervalMs: number) =>
     sync ? rate : Math.max(intervalMs, 50) / 1000;
@@ -1312,6 +1344,8 @@ type AppState = {
     autoEdgeIds: Set<string>;
     signalFlowVisible: boolean;
     signalFlowEvents: SignalFlowEvent[];
+    engineStarted: boolean;
+    engineError: string | null;
     isRecording: boolean;
     recordingElapsedMs: number;
     recordingMimeType: string | null;
@@ -1369,6 +1403,7 @@ type AppState = {
     clearSignalFlowEvent: (eventId: string) => void;
     startRecording: () => Promise<void>;
     stopRecording: () => Promise<void>;
+    startAudioEngine: () => Promise<boolean>;
     playOnboardingIntro: () => void;
     stopOnboardingIntro: () => void;
     fireNoteOn: (controllerId: string, note: string, velocity?: number) => void;
@@ -1412,6 +1447,8 @@ export const useStore = create<AppState>((set, get) => ({
     autoEdgeIds: new Set(),
     signalFlowVisible: false,
     signalFlowEvents: [],
+    engineStarted: false,
+    engineError: null,
     isRecording: false,
     recordingElapsedMs: 0,
     recordingMimeType: null,
@@ -1478,12 +1515,12 @@ export const useStore = create<AppState>((set, get) => ({
                     while (queue.length > 0) {
                         const currentId = queue.shift()!;
                         const currentNode = nodes.find(n => n.id === currentId)!;
-                        const curDims = getDims(currentNode.type);
+                        const curDims = getNodeCanvasDims(currentNode);
 
                         nodes.forEach(n => {
                             if (n.data.isLocked && !lockedCluster.has(n.id)) {
                                 const axis = getNodeAdjacencyAxis(currentNode.type, n.type);
-                                const nDims = getDims(n.type);
+                                const nDims = getNodeCanvasDims(n);
 
                                 if (axis === 'horizontal') {
                                     // Distance check (same as recalculateAdjacency)
@@ -2088,8 +2125,7 @@ export const useStore = create<AppState>((set, get) => ({
             if (value.mix === 0) {
                 node.volume.rampTo(-Infinity, 0.1);
             } else {
-                const db = ((value.mix - 1) / 99) * 36 - 30;
-                node.volume.rampTo(db, 0.1);
+                node.volume.rampTo(volumePercentToDb(value.mix), 0.1);
             }
         }
 
@@ -2098,8 +2134,7 @@ export const useStore = create<AppState>((set, get) => ({
             if (value.mix === 0) {
                 node.volume.rampTo(-Infinity, 0.1);
             } else {
-                const db = ((value.mix - 1) / 99) * 36 - 30;
-                node.volume.rampTo(db, 0.1);
+                node.volume.rampTo(volumePercentToDb(value.mix), 0.1);
             }
         }
 
@@ -2116,6 +2151,13 @@ export const useStore = create<AppState>((set, get) => ({
                 } else {
                     node.gain.rampTo(value.mix / 100, 0.1);
                 }
+            }
+        }
+
+        if (targetNode?.type === 'sampler' && typeof value.mix === 'number') {
+            const samplerChain = get().samplerChains.get(id);
+            if (samplerChain) {
+                samplerChain.player.volume.rampTo(volumePercentToDb(value.mix), 0.1);
             }
         }
 
@@ -2717,6 +2759,50 @@ export const useStore = create<AppState>((set, get) => ({
         }
     },
 
+    startAudioEngine: async () => {
+        if (get().engineStarted) {
+            return true;
+        }
+
+        try {
+            set({ engineError: null });
+            await Tone.start();
+            const rawContext = Tone.getContext().rawContext;
+            const isAudioRunning = () => Tone.getContext().rawContext.state === 'running';
+
+            for (let attempt = 0; attempt < 3 && !isAudioRunning(); attempt += 1) {
+                await rawContext.resume();
+                if (isAudioRunning()) {
+                    break;
+                }
+                await new Promise((resolve) => window.setTimeout(resolve, 200));
+            }
+
+            if (!isAudioRunning()) {
+                throw new Error('Audio context could not start');
+            }
+
+            const transport = Tone.getTransport();
+            if (transport.state !== 'started') {
+                transport.start();
+            }
+
+            get().initializeDefaultNodes();
+            set({
+                engineStarted: true,
+                engineError: null,
+            });
+            return true;
+        } catch (error) {
+            console.error('Failed to start audio engine:', error);
+            set({
+                engineStarted: false,
+                engineError: 'Audio is busy or blocked right now. Pause other audio and try again.',
+            });
+            return false;
+        }
+    },
+
     playOnboardingIntro: () => {
         get().stopOnboardingIntro();
 
@@ -2901,11 +2987,12 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
-        get().fireNoteOn(id, nextStep.note);
-        const gateDuration = Math.max(60, intervalMs * (nextStep.gate / 100));
+        const stepMix = getSequencerStepMix(nextStep);
+        get().fireNoteOn(id, nextStep.note, Math.max(0.08, stepMix / 100));
+        const noteDuration = Math.max(70, intervalMs * 0.55);
         window.setTimeout(() => {
             get().fireNoteOff(id, nextStep.note);
-        }, gateDuration);
+        }, noteDuration);
     },
 
     fireNoteOn: (controllerId: string, note: string, velocity = 1) => {
@@ -3274,7 +3361,8 @@ export const useStore = create<AppState>((set, get) => ({
         if (
             (node.type === 'tempo' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'tempo')) ||
             (node.type === 'speaker' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'speaker')) ||
-            (node.type === 'audioin' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'audioin'))
+            (node.type === 'audioin' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'audioin')) ||
+            (node.type === 'midiin' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'midiin'))
         ) {
             return;
         }
@@ -3399,7 +3487,7 @@ export const useStore = create<AppState>((set, get) => ({
                                         ...node,
                                         data: {
                                             ...node.data,
-                                            label: node.data.label || 'Pulse',
+                                            label: node.data.label || 'Bloop',
                                             pulseSync: node.data.pulseSync ?? true,
                                             pulseRate: node.data.pulseRate ?? '4n',
                                             pulseIntervalMs: node.data.pulseIntervalMs ?? 500,
@@ -3924,8 +4012,8 @@ export const useStore = create<AppState>((set, get) => ({
                 if (a.type === 'tempo' || b.type === 'tempo' || a.type === 'speaker' || b.type === 'speaker') {
                     continue;
                 }
-                const aDims = getDims(a.type);
-                const bDims = getDims(b.type);
+                const aDims = getNodeCanvasDims(a);
+                const bDims = getNodeCanvasDims(b);
 
                 const gapRight = b.position.x - (a.position.x + aDims.w);
                 const gapLeft = a.position.x - (b.position.x + bDims.w);
@@ -4029,8 +4117,8 @@ export const useStore = create<AppState>((set, get) => ({
                 if (a.type === 'tempo' || b.type === 'tempo' || a.type === 'speaker' || b.type === 'speaker') {
                     continue;
                 }
-                const aDims = getDims(a.type);
-                const bDims = getDims(b.type);
+                const aDims = getNodeCanvasDims(a);
+                const bDims = getNodeCanvasDims(b);
 
                 const gapRight = b.position.x - (a.position.x + aDims.w);
                 const gapLeft = a.position.x - (b.position.x + bDims.w);
@@ -4203,13 +4291,13 @@ export const useStore = create<AppState>((set, get) => ({
             const currentNode = nodes.find(n => n.id === currentId);
             if (!currentNode) continue;
 
-            const cDims = getDims(currentNode.type);
+            const cDims = getNodeCanvasDims(currentNode);
 
             for (const other of nodes) {
                 if (clusterIds.has(other.id)) continue;
                 if (other.type === 'tempo' || other.type === 'speaker') continue;
 
-                const oDims = getDims(other.type);
+                const oDims = getNodeCanvasDims(other);
                 const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
 
                 if (axis === 'horizontal') {

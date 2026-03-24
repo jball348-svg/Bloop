@@ -13,6 +13,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
 const extractWaveform = (audioBuffer: AudioBuffer, sampleCount = 64) => {
@@ -45,6 +46,7 @@ const fileToDataUrl = (file: File) =>
 
 export default function SamplerNode({ id }: { id: string }) {
     const loadSample = useStore((state) => state.loadSample);
+    const updateNodeValue = useStore((state) => state.updateNodeValue);
     const updateSamplerSettings = useStore((state) => state.updateSamplerSettings);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
@@ -61,6 +63,7 @@ export default function SamplerNode({ id }: { id: string }) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const accentStyle = useNodeAccentStyle('sampler');
     const [showAdvanced, setShowAdvanced] = useState(false);
+    const [mix, setMix] = useState(80);
 
     const hasSample = nodeData?.hasSample ?? false;
     const sampleName = nodeData?.sampleName || 'No sample loaded';
@@ -70,6 +73,10 @@ export default function SamplerNode({ id }: { id: string }) {
     const reverse = nodeData?.reverse ?? false;
     const pitchShift = nodeData?.pitchShift ?? 0;
     const isPlaying = nodeData?.isPlaying ?? false;
+
+    useEffect(() => {
+        updateNodeValue(id, { mix: 80 });
+    }, [id, updateNodeValue]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -168,6 +175,14 @@ export default function SamplerNode({ id }: { id: string }) {
                             {sampleName}
                         </div>
                     </div>
+
+                    <NodeMixControl
+                        value={mix}
+                        onChange={(value) => {
+                            setMix(value);
+                            updateNodeValue(id, { mix: value });
+                        }}
+                    />
 
                     <canvas
                         ref={canvasRef}

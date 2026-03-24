@@ -74,7 +74,7 @@ export default function PulseNode({ id }: { id: string }) {
                         ×
                     </button>
                     <div className="flex-1 text-[10px] font-black uppercase text-lime-400 tracking-[0.2em] text-center">
-                        Pulse
+                        Bloop
                     </div>
                     <LockButton id={id} isAdjacent={isAdjacent} accentColor="lime-500" />
                 </div>

@@ -1,42 +1,26 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 
-const CONTROLLER_SECTIONS = [
-    {
-        id: 'performance',
-        label: 'Performance',
-        tools: [
-            { type: 'keys', label: 'Keys', color: 'bg-black border border-white' },
-            { type: 'midiin', label: 'MIDI In', color: 'bg-neutral-300 text-slate-950' },
-            { type: 'controller', label: 'Arpeggiator', color: 'bg-yellow-500 text-slate-950' },
-            { type: 'chord', label: 'Chord', color: 'bg-sky-500' },
-        ],
-    },
-    {
-        id: 'sequencing',
-        label: 'Sequencing',
-        tools: [
-            { type: 'pulse', label: 'Pulse', color: 'bg-lime-500 text-slate-950' },
-            { type: 'stepsequencer', label: 'Sequencer', color: 'bg-blue-500' },
-            { type: 'adsr', label: 'ADSR', color: 'bg-amber-700' },
-            { type: 'moodpad', label: 'Mood Pad', color: 'bg-rose-500' },
-        ],
-    },
+const CONTROLLER_GROUPS = [
+    [
+        { type: 'keys', label: 'Keys', className: 'bg-neutral-950 text-white border border-white/70' },
+        { type: 'controller', label: 'Arpeggiator', className: 'bg-yellow-500 text-slate-950' },
+        { type: 'chord', label: 'Chord', className: 'bg-sky-500 text-white' },
+    ],
+    [
+        { type: 'quantizer', label: 'Quantizer', className: 'bg-purple-500 text-white' },
+        { type: 'adsr', label: 'ADSR', className: 'bg-amber-700 text-white' },
+        { type: 'stepsequencer', label: 'Sequencer', className: 'bg-blue-500 text-white' },
+        { type: 'moodpad', label: 'Mood Pad', className: 'bg-rose-500 text-white' },
+    ],
 ] as const;
 
 const ControllerMenu = () => {
-    const [activeSection, setActiveSection] = useState<(typeof CONTROLLER_SECTIONS)[number]['id']>('performance');
-
     const onDragStart = (event: React.DragEvent, nodeType: string) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
     };
-
-    const visibleTools = useMemo(
-        () => CONTROLLER_SECTIONS.find((section) => section.id === activeSection)?.tools ?? CONTROLLER_SECTIONS[0].tools,
-        [activeSection]
-    );
 
     return (
         <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10 select-none">
@@ -51,31 +35,22 @@ const ControllerMenu = () => {
                     Controllers
                 </span>
 
-                <div className="grid grid-cols-1 gap-2">
-                    {CONTROLLER_SECTIONS.map((section) => (
-                        <button
-                            key={section.id}
-                            onClick={() => setActiveSection(section.id)}
-                            className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
-                                activeSection === section.id
-                                    ? 'bg-lime-500 text-slate-950 shadow-[0_0_10px_rgba(132,204,22,0.35)]'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                        >
-                            {section.label}
-                        </button>
-                    ))}
-                </div>
-
                 <div className="flex flex-col gap-3 pt-1">
-                    {visibleTools.map((tool) => (
-                        <div
-                            key={tool.type}
-                            className={`px-3 py-1 rounded-full text-[10px] font-bold text-white cursor-grab active:cursor-grabbing hover:scale-105 transition-transform text-center ${tool.color}`}
-                            draggable={true}
-                            onDragStart={(event) => onDragStart(event, tool.type)}
-                        >
-                            {tool.label}
+                    {CONTROLLER_GROUPS.map((group, groupIndex) => (
+                        <div key={`controller-group-${groupIndex}`} className="flex flex-col gap-2">
+                            {group.map((tool) => (
+                                <div
+                                    key={tool.type}
+                                    className={`px-3 py-1 rounded-full text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-105 transition-transform text-center ${tool.className}`}
+                                    draggable={true}
+                                    onDragStart={(event) => onDragStart(event, tool.type)}
+                                >
+                                    {tool.label}
+                                </div>
+                            ))}
+                            {groupIndex < CONTROLLER_GROUPS.length - 1 && (
+                                <div className="mx-1 h-px" style={{ backgroundColor: 'var(--border-primary)' }} />
+                            )}
                         </div>
                     ))}
                 </div>

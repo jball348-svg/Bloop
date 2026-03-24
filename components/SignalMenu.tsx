@@ -1,53 +1,29 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { useStore } from '@/store/useStore';
+import React from 'react';
 
-const SIGNAL_SECTIONS = [
-    {
-        id: 'generators',
-        label: 'Generators',
-        tools: [
-            { type: 'generator', label: 'Generator', color: 'bg-red-500', singleton: false },
-            { type: 'sampler', label: 'Sampler', color: 'bg-stone-400 text-slate-950', singleton: false },
-            { type: 'audioin', label: 'Audio In', color: 'bg-slate-400 text-slate-950', singleton: true },
-            { type: 'drum', label: 'Drum', color: 'bg-orange-500', singleton: false },
-            { type: 'advanceddrum', label: 'Advanced Drums', color: 'bg-green-500 text-slate-950', singleton: false },
-        ],
-    },
-    {
-        id: 'modulators',
-        label: 'Modulators',
-        tools: [
-            { type: 'effect', label: 'Effect', color: 'bg-fuchsia-500', singleton: false },
-            { type: 'unison', label: 'Unison', color: 'bg-violet-500', singleton: false },
-            { type: 'detune', label: 'Detune', color: 'bg-teal-500', singleton: false },
-            { type: 'quantizer', label: 'Quantizer', color: 'bg-purple-500', singleton: false },
-        ],
-    },
-    {
-        id: 'visualisers',
-        label: 'Visualisers',
-        tools: [
-            { type: 'visualiser', label: 'Visualiser', color: 'bg-pink-500', singleton: false },
-        ],
-    },
+const SIGNAL_GROUPS = [
+    [
+        { type: 'generator', label: 'Generator', className: 'bg-red-500 text-white' },
+        { type: 'sampler', label: 'Sampler', className: 'bg-stone-400 text-slate-950' },
+        { type: 'drum', label: 'Drum', className: 'bg-orange-500 text-white' },
+        { type: 'advanceddrum', label: 'Advanced Drums', className: 'bg-green-500 text-slate-950' },
+    ],
+    [
+        { type: 'effect', label: 'Effect', className: 'bg-fuchsia-500 text-white' },
+        { type: 'unison', label: 'Unison', className: 'bg-violet-500 text-white' },
+        { type: 'detune', label: 'Detune', className: 'bg-teal-500 text-white' },
+    ],
+    [
+        { type: 'visualiser', label: 'Visualiser', className: 'bg-pink-500 text-white' },
+    ],
 ] as const;
 
 const SignalMenu = () => {
-    const nodes = useStore((state) => state.nodes);
-    const [activeSection, setActiveSection] = useState<(typeof SIGNAL_SECTIONS)[number]['id']>('generators');
-
     const onDragStart = (event: React.DragEvent, nodeType: string) => {
         event.dataTransfer.setData('application/reactflow', nodeType);
         event.dataTransfer.effectAllowed = 'move';
     };
-
-    const visibleTools = useMemo(
-        () => SIGNAL_SECTIONS.find((section) => section.id === activeSection)?.tools ?? SIGNAL_SECTIONS[0].tools,
-        [activeSection]
-    );
-    const hasAudioIn = nodes.some((node) => node.type === 'audioin');
 
     return (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 select-none">
@@ -62,44 +38,25 @@ const SignalMenu = () => {
                     <span className="text-[9px] font-black uppercase tracking-widest text-center" style={{ color: 'var(--text-muted)' }}>
                         Signals
                     </span>
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                        {SIGNAL_SECTIONS.map((section) => (
-                            <button
-                                key={section.id}
-                                onClick={() => setActiveSection(section.id)}
-                                className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] transition-all ${
-                                    activeSection === section.id
-                                        ? 'bg-cyan-400 text-slate-950 shadow-[0_0_10px_rgba(34,211,238,0.35)]'
-                                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                                }`}
-                            >
-                                {section.label}
-                            </button>
-                        ))}
-                    </div>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                    {visibleTools.map((tool) => (
-                        <div
-                            key={tool.type}
-                            title={tool.singleton && hasAudioIn ? 'Audio In is already on the canvas' : undefined}
-                            className={`px-3 py-1 rounded-full text-[10px] font-bold transition-transform text-center ${
-                                tool.singleton && hasAudioIn
-                                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
-                                    : `text-white cursor-grab active:cursor-grabbing hover:scale-105 ${tool.color}`
-                            }`}
-                            draggable={!(tool.singleton && hasAudioIn)}
-                            onDragStart={(event) => {
-                                if (tool.singleton && hasAudioIn) {
-                                    event.preventDefault();
-                                    return;
-                                }
-                                onDragStart(event, tool.type);
-                            }}
-                        >
-                            {tool.label}
-                        </div>
+                    {SIGNAL_GROUPS.map((group, groupIndex) => (
+                        <React.Fragment key={`signal-group-${groupIndex}`}>
+                            {group.map((tool) => (
+                                <div
+                                    key={tool.type}
+                                    className={`px-3 py-1 rounded-full text-[10px] font-bold transition-transform text-center cursor-grab active:cursor-grabbing hover:scale-105 ${tool.className}`}
+                                    draggable={true}
+                                    onDragStart={(event) => onDragStart(event, tool.type)}
+                                >
+                                    {tool.label}
+                                </div>
+                            ))}
+                            {groupIndex < SIGNAL_GROUPS.length - 1 && (
+                                <div className="mx-1 h-5 w-px" style={{ backgroundColor: 'var(--border-primary)' }} />
+                            )}
+                        </React.Fragment>
                     ))}
                 </div>
             </div>

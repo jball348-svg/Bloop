@@ -16,7 +16,7 @@ export type PresetCategory =
     | 'Ambient'
     | 'Complex Patches'
     | 'Feature Showcases'
-    | 'Campaign Rewards';
+    | 'Tutorial Rewards';
 
 export interface Preset {
     id: string;
@@ -35,7 +35,7 @@ export const PRESET_CATEGORY_ORDER: PresetCategory[] = [
     'Ambient',
     'Complex Patches',
     'Feature Showcases',
-    'Campaign Rewards',
+    'Tutorial Rewards',
 ];
 
 const DEFAULT_LABELS: Record<string, string> = {
@@ -43,7 +43,7 @@ const DEFAULT_LABELS: Record<string, string> = {
     keys: 'Keys',
     midiin: 'MIDI In',
     moodpad: 'Mood Pad',
-    pulse: 'Pulse',
+    pulse: 'Bloop',
     stepsequencer: 'Sequencer',
     chord: 'Chord',
     quantizer: 'Quantizer',
@@ -112,7 +112,7 @@ const sequenceWithNotes = (notes: string[]) =>
         ...step,
         enabled: index < notes.length,
         note: notes[index] ?? step.note,
-        gate: index % 2 === 0 ? 80 : 58,
+        mix: index % 2 === 0 ? 80 : 58,
     }));
 
 export const PRESETS: Preset[] = [
@@ -201,14 +201,14 @@ export const PRESETS: Preset[] = [
     },
     {
         id: 'pulse-parade',
-        name: 'Pulse Parade',
+        name: 'Bloop Parade',
         category: 'Rhythmic',
-        description: 'Pulse drives a sequenced synth pulse with phaser shimmer.',
+        description: 'Bloop drives a sequenced synth patch with phaser shimmer.',
         masterVolume: 66,
         nodes: [
             node('pulse-tempo', 'tempo', 74, 76, { bpm: 126 }),
             node('pulse-node', 'pulse', 150, 110, { isPlaying: true, pulseRate: '8n', pulseNote: 'C4' }),
-            node('pulse-gen', 'generator', 470, 116, { label: 'Pulse Saw', waveShape: 'sawtooth' }),
+            node('pulse-gen', 'generator', 470, 116, { label: 'Bloop Saw', waveShape: 'sawtooth' }),
             node('pulse-fx', 'effect', 756, 112, { label: 'Phaser', subType: 'phaser' }),
             node('pulse-speaker', 'speaker', 1028, 116),
         ],
@@ -409,7 +409,7 @@ export const PRESETS: Preset[] = [
         id: 'stacked-motion',
         name: 'Stacked Motion',
         category: 'Feature Showcases',
-        description: 'Pulse and sequencer combine for a layered patch with movement everywhere.',
+        description: 'Bloop and sequencer combine for a layered patch with movement everywhere.',
         masterVolume: 65,
         nodes: [
             node('stack-tempo', 'tempo', 66, 66, { bpm: 136 }),
@@ -419,7 +419,7 @@ export const PRESETS: Preset[] = [
                 sequenceRate: '8n',
                 stepSequence: sequenceWithNotes(['C4', 'D4', 'E4', 'G4', 'A4', 'G4', 'E4', 'D4']),
             }),
-            node('stack-gen-a', 'generator', 544, 98, { label: 'Pulse Lead', waveShape: 'square' }),
+            node('stack-gen-a', 'generator', 544, 98, { label: 'Bloop Lead', waveShape: 'square' }),
             node('stack-gen-b', 'generator', 544, 304, { label: 'Seq Lead', waveShape: 'triangle' }),
             node('stack-fx', 'effect', 830, 196, { label: 'Delay', subType: 'delay' }),
             node('stack-speaker', 'speaker', 1096, 196),
@@ -434,7 +434,7 @@ export const PRESETS: Preset[] = [
     {
         id: 'cave-echo',
         name: 'Cave Echo',
-        category: 'Campaign Rewards',
+        category: 'Tutorial Rewards',
         description: 'A roomy reward patch unlocked from the campaign.',
         rewardLocked: true,
         masterVolume: 60,
@@ -454,7 +454,7 @@ export const PRESETS: Preset[] = [
     {
         id: 'late-night',
         name: 'Late Night',
-        category: 'Campaign Rewards',
+        category: 'Tutorial Rewards',
         description: 'A darker after-hours arp patch unlocked in the campaign.',
         rewardLocked: true,
         masterVolume: 61,

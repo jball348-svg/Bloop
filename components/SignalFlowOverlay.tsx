@@ -13,38 +13,14 @@ import {
     AUDIO_SIGNAL_COLOR,
     CONTROL_INPUT_HANDLE_ID,
     CONTROL_OUTPUT_HANDLE_ID,
+    getNodeCanvasDims,
     CONTROL_SIGNAL_COLOR,
     type AppNode,
     useStore,
 } from '@/store/useStore';
 
-const NODE_DIMS: Record<string, { w: number; h: number }> = {
-    controller: { w: 288, h: 320 },
-    keys: { w: 288, h: 320 },
-    midiin: { w: 256, h: 240 },
-    moodpad: { w: 320, h: 416 },
-    pulse: { w: 288, h: 280 },
-    stepsequencer: { w: 352, h: 420 },
-    chord: { w: 224, h: 240 },
-    quantizer: { w: 240, h: 272 },
-    adsr: { w: 224, h: 340 },
-    generator: { w: 240, h: 220 },
-    sampler: { w: 320, h: 432 },
-    audioin: { w: 256, h: 272 },
-    drum: { w: 320, h: 360 },
-    advanceddrum: { w: 432, h: 420 },
-    effect: { w: 224, h: 260 },
-    unison: { w: 224, h: 220 },
-    detune: { w: 224, h: 200 },
-    visualiser: { w: 288, h: 320 },
-    speaker: { w: 224, h: 200 },
-    tempo: { w: 256, h: 240 },
-};
-
-const getDims = (type: string) => NODE_DIMS[type] ?? { w: 224, h: 220 };
-
 const getHandlePosition = (node: AppNode, handleId: string | null | undefined) => {
-    const dims = getDims(node.type);
+    const dims = getNodeCanvasDims(node);
 
     switch (handleId) {
         case CONTROL_OUTPUT_HANDLE_ID:

@@ -216,9 +216,6 @@ export default function MoodPadNode({ id }: { id: string }) {
                         <span>{descriptor}</span>
                         <span>{registerLabel}</span>
                     </div>
-                    <div className="mt-1 text-[10px] text-slate-400">
-                        Drag to move from calm to tense and from dark to bright.
-                    </div>
                 </div>
 
                 <div

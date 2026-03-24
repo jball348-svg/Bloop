@@ -1,7 +1,7 @@
 'use client';
 
 import * as Tone from 'tone';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
@@ -15,6 +15,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
 const TRACK_LENGTHS = [4, 8, 12, 16];
@@ -36,6 +37,7 @@ const fileToDataUrl = (file: File) =>
 
 export default function AdvancedDrumNode({ id }: { id: string }) {
     const updateNodeData = useStore((state) => state.updateNodeData);
+    const updateNodeValue = useStore((state) => state.updateNodeValue);
     const loadAdvancedDrumTrackSample = useStore((state) => state.loadAdvancedDrumTrackSample);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
@@ -55,6 +57,11 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
     const currentStep = nodeData?.currentStep ?? -1;
     const isPlaying = nodeData?.isPlaying ?? false;
     const accentStyle = useNodeAccentStyle('advanceddrum');
+    const [mix, setMix] = useState(80);
+
+    useEffect(() => {
+        updateNodeValue(id, { mix: 80 });
+    }, [id, updateNodeValue]);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -95,7 +102,7 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
                             Advanced Drums
                         </span>
                         <div className="rounded-xl border border-green-500/15 bg-slate-900/40 px-3 py-2 text-[10px] text-slate-400">
-                            Internal 16th-note clock with Pulse input support for external stepping.
+                            Internal 16th-note clock with Bloop input support for external stepping.
                         </div>
                     </div>
 
@@ -115,6 +122,16 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
                         </button>
                         <LockButton id={id} isAdjacent={isAdjacent} accentColor="green-500" />
                     </div>
+                </div>
+
+                <div className="mb-3">
+                    <NodeMixControl
+                        value={mix}
+                        onChange={(value) => {
+                            setMix(value);
+                            updateNodeValue(id, { mix: value });
+                        }}
+                    />
                 </div>
 
                 <div className="mb-3 rounded-2xl border border-green-500/15 bg-slate-900/40 p-3">

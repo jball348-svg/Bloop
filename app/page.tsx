@@ -17,6 +17,7 @@ import {
     DEFAULT_TRANSPORT_BPM,
     CONTROL_WIRE_PAIRS,
     getNodeAdjacencyAxis,
+    getNodeCanvasDims,
     ADJ_TOUCH_THRESHOLD,
     ADJ_Y_THRESHOLD,
     ADJ_VERT_THRESHOLD,
@@ -51,37 +52,8 @@ import GlobalMenu from '@/components/GlobalMenu';
 import SystemMenu from '@/components/SystemMenu';
 import OnboardingModal from '@/components/OnboardingModal';
 import CampaignPanel from '@/components/CampaignPanel';
+import BloopLauncher from '@/components/BloopLauncher';
 import { useCampaignStore } from '@/store/campaign';
-
-// Actual rendered widths from Tailwind classes on each component:
-//   ControllerNode → w-72 = 288px
-//   KeysNode → w-72 = 288px
-//   GeneratorNode → w-60 = 240px
-//   EffectNode / SpeakerNode / AdsrNode / ChordNode → w-56 = 224px
-const NODE_DIMS: Record<string, { w: number; h: number }> = {
-    controller: { w: 288, h: 320 },
-    keys:        { w: 288, h: 320 },
-    midiin:      { w: 256, h: 240 },
-    moodpad:     { w: 320, h: 416 },
-    pulse:       { w: 288, h: 280 },
-    stepsequencer: { w: 352, h: 420 },
-    chord:      { w: 224, h: 240 },
-    quantizer:  { w: 240, h: 272 },
-    adsr:       { w: 224, h: 340 },
-    generator:  { w: 240, h: 220 },
-    sampler:    { w: 320, h: 432 },
-    audioin:    { w: 256, h: 272 },
-    drum:       { w: 320, h: 360 },
-    advanceddrum: { w: 432, h: 420 },
-    effect:     { w: 224, h: 260 },
-    unison:     { w: 224, h: 220 },
-    detune:     { w: 224, h: 200 },
-    visualiser: { w: 288, h: 320 },
-    speaker:    { w: 224, h: 200 },
-    tempo:      { w: 256, h: 240 },
-};
-const DEFAULT_DIMS = { w: 224, h: 220 };
-const getDims = (type: string) => NODE_DIMS[type] ?? DEFAULT_DIMS;
 
 const SNAP_GRID = 15;
 const snap = (v: number) => Math.round(v / SNAP_GRID) * SNAP_GRID;
@@ -210,7 +182,7 @@ function BloopCanvasInner() {
             label = 'Mood Pad';
         }
         if (type === 'pulse') {
-            label = 'Pulse';
+            label = 'Bloop';
         }
         if (type === 'stepsequencer') {
             label = 'Sequencer';
@@ -281,12 +253,13 @@ function BloopCanvasInner() {
         }
 
         // Capture nodes and position synchronously before the timeout
-        const allNodes = useStore.getState().nodes;
         const initialX = draggedNode.position.x;
         const initialY = draggedNode.position.y;
 
         // Defer one tick so ReactFlow finishes writing its own snapped position first
         setTimeout(() => {
+            const allNodes = useStore.getState().nodes;
+
             if (draggedNode.type === 'tempo' || draggedNode.type === 'speaker') {
                 useStore.getState().recalculateAdjacency();
                 return;
@@ -295,7 +268,11 @@ function BloopCanvasInner() {
             let x = initialX;
             let y = initialY;
 
-            const draggedDims = getDims(draggedNode.type!);
+            const draggedDims = getNodeCanvasDims({
+                type: draggedNode.type ?? 'generator',
+                width: draggedNode.width,
+                height: draggedNode.height,
+            });
 
             // Multi-pass to handle chain reactions (A pushes into B which also overlaps C)
             for (let pass = 0; pass < 10; pass++) {
@@ -304,7 +281,7 @@ function BloopCanvasInner() {
                 for (const n of allNodes) {
                     if (n.id === draggedNode.id || n.type === 'tempo' || n.type === 'speaker') continue;
 
-                    const nDims = getDims(n.type);
+                    const nDims = getNodeCanvasDims(n);
                     const axis = getNodeAdjacencyAxis(
                         draggedNode.type as AudioNodeType,
                         n.type as AudioNodeType
@@ -418,10 +395,11 @@ function BloopCanvasInner() {
     }, [removeNodeAndCleanUp]);
 
     return (
-        <main className="w-screen h-screen flex select-none" style={{ backgroundColor: 'var(--background)' }}>
+        <main className="w-screen h-screen flex select-none" style={{ background: 'var(--canvas-wash)' }}>
             {campaignMode && <CampaignPanel />}
 
             <div className="relative flex-1">
+                <BloopLauncher />
                 <SignalMenu />
                 <ControllerMenu />
                 <GlobalMenu />

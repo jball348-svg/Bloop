@@ -1,19 +1,23 @@
-# Bloop Product Roadmap — v4 → v10
+# Bloop Product Roadmap — v4 → v11
 
-This document captures the full planned evolution of Bloop from its current v4 state to v10. It is derived from the original product planning session and should be treated as a living document — update it as priorities shift or new ideas emerge.
+This document captures the shipped v4-v10 roadmap plus the post-v10 UAT follow-up now queued as v11. It is derived from the original product planning session and should be treated as a living document — update it as priorities shift or new ideas emerge.
+
+`TICKETS.md` is the authoritative GitHub issue status ledger. The historical v4-v10 sections below retain their original planning notes even where the status language reflects the original roadmap framing rather than the final shipped state.
 
 ---
 
-## Current State — v3 Complete ✅
+## Current State — v10 Complete ✅
 
-Bloop v3 shipped:
-- Undo/Redo (50-step history)
-- ADSR Envelope, Noise Generator, Keys Controller, Unison & Detune nodes
-- Visualiser Node (waveform / spectrum)
-- Save/Load/Presets system (.bloop patch files)
-- Snapping & Locking (nodes snap to 15px grid; adjacency-snapped groups lock as one unit)
-- Control / Audio domain separation (architectural wiring overhaul)
-- Directional flow enforcement (controllers L→R, signal chain T→B)
+Bloop has now shipped the full original v4-v10 roadmap:
+- v4 stability fixes, packing, deployment, and infinite canvas work
+- v5 Bloop/Pulse sequencing and signal-flow visualisation
+- v6 theory tools, menu subdivisions, and Mood Pad
+- v7 sampler and advanced drum expansion
+- v8 MIDI input, audio input, and recording/export workflow
+- v9 onboarding, theming, presets expansion, and visualiser upgrades
+- v10 campaign mode and reward-backed guided play
+
+The next planned tranche is v11: a post-UAT cleanup pass focused on onboarding clarity, menu information architecture, theme simplification, node consistency, presets UX, and snapping reliability.
 
 ---
 
@@ -131,7 +135,30 @@ Bloop v3 shipped:
 
 ---
 
-## Dependency Graph (v4 → v10)
+## v11 — UAT Hardening, IA Cleanup & Interaction Reliability
+*Theme: Act on live-user feedback, simplify first-run UX, clean menu taxonomy, and harden core interactions before the next roadmap phase.*
+
+| Issue | Title | Status |
+|---|---|---|
+| [#60](https://github.com/jball348-svg/Bloop/issues/60) | Post-v10 UAT - Audio Bootstrap and Mandatory Intro Simplification | ✅ Closed |
+| [#61](https://github.com/jball348-svg/Bloop/issues/61) | Post-v10 UAT - System Menu Layout Cleanup and Tutorial Rename | ✅ Closed |
+| [#62](https://github.com/jball348-svg/Bloop/issues/62) | Post-v10 UAT - Promote MIDI In, Audio In, and Recorder into Global Utilities | ✅ Closed |
+| [#63](https://github.com/jball348-svg/Bloop/issues/63) | Post-v10 UAT - Always-Visible Node Menus and Dedicated Bloop Control | ✅ Closed |
+| [#64](https://github.com/jball348-svg/Bloop/issues/64) | Post-v10 UAT - Module Readability and Mix-Control Consistency Pass | ✅ Closed |
+| [#65](https://github.com/jball348-svg/Bloop/issues/65) | Post-v10 UAT - Accessible Theme Redesign and Simpler Appearance Settings | ✅ Closed |
+| [#66](https://github.com/jball348-svg/Bloop/issues/66) | Post-v10 UAT - Presets Library Overhaul | 🔵 Backlog |
+| [#67](https://github.com/jball348-svg/Bloop/issues/67) | Post-v10 UAT - Snapping, Adjacency, and Overlap Resolution Rewrite | 🟡 Validation Pass |
+
+### v11 Highlights
+- **Bootstrap + Intro (#60):** Collapse the current audio-engine unlock and intro flow into one clearer first-run path, with lighter onboarding chrome and correctly sized media.
+- **Global Utilities + Bloop IA (#62, #63):** Move MIDI In, Audio In, and recording into a true global utility surface; replace menu toggles with always-visible grouped menus; promote Pulse into a dedicated Bloop entry point.
+- **Theme + System Cleanup (#65, #61):** Reduce Appearance to the essentials, make light mode genuinely usable, and simplify the System menu labels/layout.
+- **Node Polish + Reliability (#64, #67):** Standardize mix conventions, clean up Keys/Sequencer/Mood Pad UX, and harden snapping/adjacency around runtime-measured node sizes before the next UAT pass.
+- **Presets Overhaul (#66):** Give presets their own deeper UX pass instead of burying the work inside general system-menu cleanup.
+
+---
+
+## Dependency Graph (v4 → v11)
 
 ```
 v4: #33 (bugs) → #34 (polish) → ~~#35 (packing)~~ ✅ → #36 (deploy) → #37 (canvas)
@@ -147,6 +174,13 @@ v8: #47 (MIDI In) → #48 (Audio In) → #49 (Session Export)
 v9: #50 (Onboarding) → #51 (Theming) → #52 (Presets + Visualiser)
        ↓
 v10: #53 (Campaign Mode)
+       ↓
+v11: #60 (Bootstrap + Intro)
+     #62 (Global Utilities) → #63 (Menus + Bloop)
+     #65 (Theme Simplification) ─┐
+     #62 (Global Utilities) ─────┼→ #61 (System Cleanup) → #66 (Presets Overhaul)
+     #63 (Menu Taxonomy) ────────┘
+     #64 (Module Polish) → #67 (Snapping Rewrite)
 ```
 
 ---

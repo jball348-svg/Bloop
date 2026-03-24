@@ -8,6 +8,7 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
     TRANSPORT_RATE_OPTIONS,
+    getSequencerStepMix,
     type SequencerStep,
     createDefaultStepSequence,
     getAdjacencyGlowClasses,
@@ -42,6 +43,7 @@ export default function StepSequencerNode({ id }: { id: string }) {
     const currentStep = nodeData?.currentStep ?? -1;
     const isPlaying = nodeData?.isPlaying ?? false;
     const activeStep = stepSequence[selectedStep] ?? stepSequence[0];
+    const activeStepMix = activeStep ? getSequencerStepMix(activeStep) : 60;
     const accentStyle = useNodeAccentStyle('stepsequencer');
 
     useEffect(() => {
@@ -159,7 +161,7 @@ export default function StepSequencerNode({ id }: { id: string }) {
                                 key={`${id}-step-${index}`}
                                 className={`rounded-xl border p-2 transition-all ${
                                     isSelected
-                                        ? 'border-blue-400 bg-blue-500/10'
+                                        ? 'border-blue-300 bg-slate-950/70 shadow-[0_0_0_1px_rgba(147,197,253,0.12)]'
                                         : 'border-slate-700 bg-slate-900/40'
                                 } ${isActive ? 'shadow-[0_0_16px_rgba(59,130,246,0.35)]' : ''}`}
                             >
@@ -185,7 +187,7 @@ export default function StepSequencerNode({ id }: { id: string }) {
                                     onClick={() => updateNodeData(id, { selectedStep: index })}
                                     className={`nodrag w-full rounded-lg border px-2 py-3 text-[11px] font-bold transition-all ${
                                         step.enabled
-                                            ? 'border-blue-400/40 bg-blue-500/10 text-blue-100'
+                                            ? 'border-blue-400/30 bg-slate-950/80 text-blue-100 hover:border-blue-300/45'
                                             : 'border-slate-700 bg-slate-900/40 text-slate-500'
                                     }`}
                                 >
@@ -235,17 +237,17 @@ export default function StepSequencerNode({ id }: { id: string }) {
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center justify-between">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                                        Gate
+                                        Mix
                                     </label>
-                                    <span className="text-[10px] font-mono text-blue-300">{activeStep.gate}%</span>
+                                    <span className="text-[10px] font-mono text-blue-300">{activeStepMix}%</span>
                                 </div>
                                 <input
                                     type="range"
                                     min="10"
                                     max="100"
                                     step="5"
-                                    value={activeStep.gate}
-                                    onChange={(event) => updateSequencerStep(id, selectedStep, { gate: Number(event.target.value) })}
+                                    value={activeStepMix}
+                                    onChange={(event) => updateSequencerStep(id, selectedStep, { mix: Number(event.target.value) })}
                                     className="nodrag w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                                 />
                             </div>

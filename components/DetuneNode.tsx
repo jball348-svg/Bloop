@@ -9,6 +9,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
 export default function DetuneNode({ id }: { id: string }) {
@@ -36,10 +37,9 @@ export default function DetuneNode({ id }: { id: string }) {
         updateNodeValue(id, { pitch: (val / 100) * 12 });
     };
 
-    const handleMixChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setMix(val);
-        updateNodeValue(id, { wet: isBypassed ? 0 : val / 100 });
+    const setMixValue = (value: number) => {
+        setMix(value);
+        updateNodeValue(id, { wet: isBypassed ? 0 : value / 100 });
     };
 
     return (
@@ -71,37 +71,16 @@ export default function DetuneNode({ id }: { id: string }) {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <div className="flex flex-col gap-2">
-                            <div className="flex justify-between items-end">
-                                <div className="flex flex-col gap-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Mix</label>
-                                    <button
-                                        onClick={() => {
-                                            const next = !isBypassed;
-                                            setIsBypassed(next);
-                                            updateNodeValue(id, { wet: next ? 0 : mix / 100 });
-                                        }}
-                                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded transition-colors ${
-                                            isBypassed
-                                                ? 'bg-teal-500 text-white'
-                                                : 'bg-teal-500/20 text-teal-400 border border-teal-500/30'
-                                        }`}
-                                    >
-                                        {isBypassed ? 'BYPASSED' : 'BYPASS'}
-                                    </button>
-                                </div>
-                                <span className="text-[10px] font-mono text-teal-400 font-bold">{isBypassed ? 0 : mix}%</span>
-                            </div>
-                            <input
-                                type="range"
-                                min="0"
-                                max="100"
-                                value={mix}
-                                onChange={handleMixChange}
-                                disabled={isBypassed}
-                                className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
-                        </div>
+                        <NodeMixControl
+                            value={mix}
+                            bypassed={isBypassed}
+                                onToggleBypass={() => {
+                                    const next = !isBypassed;
+                                    setIsBypassed(next);
+                                    updateNodeValue(id, { wet: next ? 0 : mix / 100 });
+                                }}
+                            onChange={setMixValue}
+                        />
 
                         <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-end">

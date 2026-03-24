@@ -64,7 +64,7 @@ export default function CampaignPanel() {
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <div className="text-[10px] font-black uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>
-                                Campaign Mode
+                                Tutorial Mode
                             </div>
                             <h2 className="mt-2 text-2xl font-black tracking-tight" style={{ color: 'var(--text-primary)' }}>
                                 Beginner Synth Trail
