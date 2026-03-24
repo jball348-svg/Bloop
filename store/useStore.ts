@@ -2237,9 +2237,37 @@ export const useStore = create<AppState>((set, get) => ({
             }
         }
 
-        set({
-            nodes: applyNodeChanges(changes, get().nodes) as AppNode[],
-        });
+        const nonRemoveChanges = changes.filter((c) => c.type !== 'remove');
+        const removeChanges = changes.filter((c) => c.type === 'remove');
+
+        if (nonRemoveChanges.length > 0) {
+            set({
+                nodes: applyNodeChanges(nonRemoveChanges, get().nodes) as AppNode[],
+            });
+        }
+
+        if (removeChanges.length > 0) {
+            // V11 AUDIT FIX:
+            // Intercept `{ type: 'remove' }` events from React Flow to ensure Tone.js 
+            // audio nodes are cleanly disconnected and disposed BEFORE removing them 
+            // from the canvas, preventing severe "ghost" audio memory leaks.
+            // Group deletions capture everything in a single snapshot instead of multiple.
+            get().saveSnapshot();
+            removeChanges.forEach(change => {
+                if ('id' in change) {
+                    get().removeAudioNode(change.id);
+                }
+            });
+            const removedIds = new Set(removeChanges.map((c) => 'id' in c ? c.id : ''));
+            const { nodes, edges } = get();
+            set({
+                nodes: nodes.filter((n: AppNode) => !removedIds.has(n.id)),
+                edges: edges.filter((e: AppEdge) => !removedIds.has(e.source) && !removedIds.has(e.target)),
+            });
+            get().rebuildAudioGraph();
+            get().rebuildModulationGraph();
+            get().recalculateAdjacency();
+        }
     },
 
     onEdgesChange: (changes: EdgeChange[]) => {
@@ -5456,6 +5484,9 @@ export const useStore = create<AppState>((set, get) => ({
 
         signalFlowTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
         signalFlowTimeouts.clear();
+
+        drumPadTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+        drumPadTimeouts.clear();
 
         // Stop and dispose all patterns (arpeggiators etc.)
         patterns.forEach((pattern) => {
