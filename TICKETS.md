@@ -1,8 +1,8 @@
 # TICKETS.md — Bloop Work Order
 
-This file tracks the current status of all GitHub Issues and defines the recommended order of implementation. **Update this file when you close a ticket.**
+This file tracks the current status of all GitHub Issues and defines the recommended order of implementation. Update this file whenever a roadmap ticket is opened, closed, superseded, or materially re-scoped.
 
-Always read this before picking up a ticket. Some tickets have hard dependencies — working out of order will cause conflicts.
+Always read this before picking up a ticket. Some tickets have hard dependencies and should not be started out of order.
 
 ---
 
@@ -52,9 +52,9 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#35](https://github.com/jball348-svg/Bloop/issues/35) | Node Packing — Compress Locked Groups into Single Macro-Nodes | ✅ Closed |
 | [#36](https://github.com/jball348-svg/Bloop/issues/36) | Vercel Pipeline Setup & Prototype Deployment | ✅ Closed |
 | [#37](https://github.com/jball348-svg/Bloop/issues/37) | Auto-Resizing Canvas Bounds & Infinite Pan | ✅ Closed |
-| [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | 🔵 V4, do not action |
-| [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | 🔵 V4, do not action |
-| [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | 🔵 V4, do not action |
+| [#23](https://github.com/jball348-svg/Bloop/issues/23) | Filter Node — Low Pass / High Pass / Band Pass | ✅ Closed |
+| [#29](https://github.com/jball348-svg/Bloop/issues/29) | Mixer-Channel Signal Model — Effects as Channel Inserts | ✅ Closed |
+| [#31](https://github.com/jball348-svg/Bloop/issues/31) | Drum Node — Add Controller Input Handle for ADSR Enveloping | ✅ Closed |
 
 ### V5 — Complete ✅
 
@@ -102,7 +102,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 |---|---|---|
 | [#53](https://github.com/jball348-svg/Bloop/issues/53) | Campaign Mode — Gamified Synthesis Puzzles with Reward System | ✅ Closed |
 
-### V11 — Post-v10 UAT Follow-up 🔵
+### V11 — Post-v10 UAT Follow-up Complete ✅
 
 | # | Title | Status |
 |---|---|---|
@@ -112,8 +112,40 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 | [#63](https://github.com/jball348-svg/Bloop/issues/63) | Post-v10 UAT - Always-Visible Node Menus and Dedicated Bloop Control | ✅ Closed |
 | [#64](https://github.com/jball348-svg/Bloop/issues/64) | Post-v10 UAT - Module Readability and Mix-Control Consistency Pass | ✅ Closed |
 | [#65](https://github.com/jball348-svg/Bloop/issues/65) | Post-v10 UAT - Accessible Theme Redesign and Simpler Appearance Settings | ✅ Closed |
-| [#66](https://github.com/jball348-svg/Bloop/issues/66) | Post-v10 UAT - Presets Library Overhaul | 🟣 V11 Backlog |
-| [#67](https://github.com/jball348-svg/Bloop/issues/67) | Post-v10 UAT - Snapping, Adjacency, and Overlap Resolution Rewrite | 🟡 Validation Pass |
+| [#66](https://github.com/jball348-svg/Bloop/issues/66) | Post-v10 UAT - Presets Library Overhaul | ✅ Closed |
+| [#67](https://github.com/jball348-svg/Bloop/issues/67) | Post-v10 UAT - Snapping, Adjacency, and Overlap Resolution Rewrite | ✅ Closed |
+
+### V12 — Sonic Expansion & Shaping 🟢
+
+| # | Title | Status |
+|---|---|---|
+| [#68](https://github.com/jball348-svg/Bloop/issues/68) | [V12 Core] Parameter State Normalization & Modulation Targets | 🟢 Open |
+| [#69](https://github.com/jball348-svg/Bloop/issues/69) | [V12 Feature] Generator Expansion — FM and AM Voice Modes | 🟢 Open |
+| [#70](https://github.com/jball348-svg/Bloop/issues/70) | [V12 Node] EQ Node — Tone.EQ3 Insert with Sweepable Crossovers | 🟢 Open |
+| [#71](https://github.com/jball348-svg/Bloop/issues/71) | [V12 Feature] LFO Node — Tempo-Synced Modulation Routing | 🟢 Open |
+
+### V13 — Composition & Writing 🟡
+
+| # | Title | Status |
+|---|---|---|
+| [#72](https://github.com/jball348-svg/Bloop/issues/72) | [V13 Core] Pattern Playback Engine — Polyphonic Clips on Tone.Transport | 🟡 Planned |
+| [#73](https://github.com/jball348-svg/Bloop/issues/73) | [V13 UI] Pattern Node — Piano Roll Editor | 🟡 Planned |
+| [#74](https://github.com/jball348-svg/Bloop/issues/74) | [V13 Feature] Gate-Accurate Envelope Handling for Pattern Notes | 🟡 Planned |
+
+### V14 — Mixing & Arrangement 🟡
+
+| # | Title | Status |
+|---|---|---|
+| [#75](https://github.com/jball348-svg/Bloop/issues/75) | [V14 Core] Mixer Node — Multi-Channel Master Bus | 🟡 Planned |
+| [#76](https://github.com/jball348-svg/Bloop/issues/76) | [V14 Feature] Arranger Node — Section Scenes and Playback Scheduling | 🟡 Planned |
+
+### V15 — Automation & Showcase 🟡
+
+| # | Title | Status |
+|---|---|---|
+| [#77](https://github.com/jball348-svg/Bloop/issues/77) | [V15 Feature] Arranger Automation Lanes — Parameter Curves and Mixer Moves | 🟡 Planned |
+| [#78](https://github.com/jball348-svg/Bloop/issues/78) | [V15 Core] Canvas Performance & Store Subscription Refactor | 🟡 Planned |
+| [#79](https://github.com/jball348-svg/Bloop/issues/79) | [V15 Product] Showcase Preset Pipeline — Built-In Song Slot and Validation | 🟡 Planned |
 
 ### Superseded / Closed
 
@@ -126,132 +158,79 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ---
 
-## V11 Recommended Work Order
+## V12 Recommended Work Order
 
-1. ~~**#60** Audio Bootstrap and Mandatory Intro Simplification~~ ✅
-2. ~~**#62** Promote MIDI In, Audio In, and Recorder into Global Utilities~~ ✅
-3. ~~**#63** Always-Visible Node Menus and Dedicated Bloop Control~~ ✅
-4. ~~**#65** Accessible Theme Redesign and Simpler Appearance Settings~~ ✅
-5. ~~**#61** System Menu Layout Cleanup and Tutorial Rename~~ ✅
-6. ~~**#64** Module Readability and Mix-Control Consistency Pass~~ ✅
-7. **#67** Snapping, Adjacency, and Overlap Resolution Rewrite — measured-dimension hardening landed; keep open for manual UAT
-8. **#66** Presets Library Overhaul
+1. **#68** Parameter State Normalization & Modulation Targets
+2. **#69** Generator Expansion — FM and AM Voice Modes
+3. **#70** EQ Node — Tone.EQ3 Insert with Sweepable Crossovers
+4. **#71** LFO Node — Tempo-Synced Modulation Routing
 
-9. # Bloop Ticket Tracker
+## V13 Recommended Work Order
 
-This document tracks the active, upcoming, and completed development tickets for Bloop. 
+1. **#72** Pattern Playback Engine — Polyphonic Clips on Tone.Transport
+2. **#73** Pattern Node — Piano Roll Editor
+3. **#74** Gate-Accurate Envelope Handling for Pattern Notes
 
-## 🟢 ACTIVE SPRINT: v12 - Sonic Expansion & Shaping
-*Focus: Expanding sound generation and frequency control.*
+## V14 Recommended Work Order
 
-- [ ] **TKT-1201: Implement FM/AM Generator Modes**
-  - Add new oscillator types to the `Generator` node or create a dedicated `Advanced Synth` node.
-  - Wire Tone.js FM/AM oscillators to the UI state.
-- [ ] **TKT-1202: Parametric EQ Node**
-  - Create a 3-band or 5-band EQ node using `Tone.EQ3` or `Tone.Filter` chains.
-  - Build UI for frequency, Q, and gain adjustments.
-- [ ] **TKT-1203: LFO Control Node**
-  - Build a Low-Frequency Oscillator node to modulate other node parameters (pitch, filter cutoff).
-  - Implement the routing logic to allow LFO cables to snap to parameter inputs.
+1. **#75** Mixer Node — Multi-Channel Master Bus
+2. **#76** Arranger Node — Section Scenes and Playback Scheduling
 
-## 🟡 UPCOMING: v13 - Composition & "Writing"
-*Focus: Upgrading note-input workflow to a Piano Roll interface.*
+## V15 Recommended Work Order
 
-- [ ] **TKT-1301: Piano Roll / Pattern Node UI**
-  - Build a grid-based UI module (FL Studio style) that opens on double-click.
-  - Implement note drag, drop, stretch, and delete functionality.
-- [ ] **TKT-1302: Polyphonic Output Engine**
-  - Upgrade the note-firing engine to handle chords and overlapping MIDI notes from the Pattern Node.
-- [ ] **TKT-1303: ADSR Gate Refining**
-  - Ensure the ADSR envelopes accurately trigger and release based on the precise note-on/note-off data from the Piano Roll.
-
-## 🟡 UPCOMING: v14 - Mixing & Arrangement
-*Focus: Organizing complex patches into a structured timeline.*
-
-- [ ] **TKT-1401: Global Mixer Node**
-  - Replace/Upgrade the `Amplifier` with a multi-channel mixer hub (volume, pan, mute, solo).
-- [ ] **TKT-1402: Timeline / Arranger Node**
-  - Create a macro-module that triggers specific Pattern Nodes based on a global bar counter (Intro -> Verse -> Chorus).
-
-## 🟡 UPCOMING: v15 - Automation & The Masterpiece
-*Focus: Optimization, Automation, and the Final Showcase Preset.*
-
-- [ ] **TKT-1501: Parameter Automation Routing**
-  - Allow the Timeline/Arranger to map automation to node dials (e.g., sweeping a filter on bar 16).
-- [ ] **TKT-1502: Graph & Engine Optimization**
-  - Refactor React Flow and Tone.js state handling to support 50+ nodes without lag.
-- [ ] **TKT-1503: The "Demo Song" Preset**
-  - Compose, balance, and save the final built-in showcase track.
-
----
-
-## 🏁 ARCHIVE: Completed (v1 - v11)
-* **Audio Engine:** Core Tone.js and React Flow integration.
-* **Nodes:** Arp, Keys, MIDI In, ADSR, Sequencer, Pulse, Chord, Mood Pad, Generator, Sampler, Audio In, Drums, Effects, Visualisers.
-* **UX/UI:** Cable routing, signal flow animation, drag-and-drop creation, undo/redo (50 steps), saving/loading `.bloop` files.
-* **Features:** Live audio, Web MIDI input, `.webm` recording, onboarding tutorial, gamified campaign mode.
-
----
-
-## Historical V4 Work Order
-
-1. ~~**#33** Bug Omnibus~~ ✅
-2. ~~**#34** Visual Polish~~ ✅
-3. ~~**#35** Node Packing~~ ✅ Done
-4. ~~**#36** Vercel Deployment~~ ✅
-5. ~~**#37** Auto-Resizing Canvas~~ ✅
-6. **#23**, **#29**, **#31** — hold until v4 core complete
+1. **#77** Arranger Automation Lanes — Parameter Curves and Mixer Moves
+2. **#78** Canvas Performance & Store Subscription Refactor
+3. **#79** Showcase Preset Pipeline — Built-In Song Slot and Validation
 
 ---
 
 ## Dependency Graph
 
-```
-── V2 Complete ── V3 Complete ──
+    ── V2 Complete ── V3 Complete ── V4 Complete ── V5 Complete ──
+    ── V6 Complete ── V7 Complete ── V8 Complete ── V9 Complete ──
+    ── V10 Complete ── V11 Complete ──
 
-V4 Core:
-~~#33 (bugs)~~ ✅ → ~~#34 (polish)~~ ✅ → ~~#35 (packing)~~ ✅ → ~~#36 (deploy)~~ ✅ → ~~#37 (canvas)~~ ✅
+    V12:
+    #68 (parameter normalization + modulation targets)
+      ├─→ #69 (FM/AM generator modes)
+      ├─→ #70 (EQ node)
+      └─→ #71 (LFO modulation routing)
 
-V4 Deferred Features:
-#23 (Filter) · #29 (Mixer) · #31 (Drum Input)
+    V13:
+    #68 ─┐
+    #69 ─┴→ #72 (pattern playback engine) → #73 (piano roll UI)
+                                   └──────→ #74 (gate-accurate note handling)
 
-V5 (requires v4 complete):
-~~#38 (Pulse)~~ ✅ → ~~#39 (Sequencer)~~ ✅ → ~~#40 (Signal Flow Vis)~~ ✅
+    V14:
+    #68 ─→ #75 (mixer node)
+    #72 ─┐
+    #75 ─┴→ #76 (arranger scenes + playback scheduling)
 
-V6 (requires v5 complete):
-~~#41 (Quantizer)~~ ✅ → ~~#42 (Sub-menus)~~ ✅ → ~~#43 (Mood Pad)~~ ✅
+    V15:
+    #68 ─┐
+    #75 ─┼→ #77 (automation lanes)
+    #76 ─┘
 
-V7 (requires v6 complete):
-~~#44 (Sampler)~~ ✅ → ~~#45 (Sample Manip)~~ ✅ → ~~#46 (Drum Machine Rebuild)~~ ✅
+    #72 ─┐
+    #75 ─┴→ #78 (performance refactor)
 
-V8 (requires v7 complete):
-~~#47 (MIDI In)~~ ✅ → ~~#48 (Audio In)~~ ✅ → ~~#49 (Session Export)~~ ✅
-
-V9 (requires v8 complete):
-~~#50 (Onboarding)~~ ✅ → ~~#51 (Theming)~~ ✅ → ~~#52 (Presets + Visualiser)~~ ✅
-
-V10 (requires v9 complete):
-~~#53 (Campaign Mode)~~ ✅
-
-V11 (post-v10 UAT follow-up):
-#60 (bootstrap/intro)
-#62 (global utilities) → #63 (menus + Bloop)
-#65 (theme) ─┐
-#62 (global utilities) ─┼→ #61 (system menu cleanup) → #66 (presets overhaul)
-#63 (menu taxonomy) ────┘
-#64 (module UX consistency) → #67 (snapping rewrite)
-```
+    #75 ─┐
+    #76 ─┼→ #79 (showcase preset pipeline)
+    #77 ─┤
+    #78 ─┘
 
 ---
 
 ## How to Update This File
 
 When you close a ticket:
-1. Change its status in the table from the current backlog marker (for example `🔵 Backlog` / `🟣 V11 Backlog`) to `✅ Closed`
-2. Strike through its entry in the Work Order section using `~~text~~`
-3. Commit this file in the same PR as the work
+1. Change its status in the table from the current backlog marker to `✅ Closed`.
+2. Strike through its entry in the relevant Work Order section if it is no longer active.
+3. Update the dependency graph if the closure changes the active frontier of work.
+4. Commit this file in the same PR as the implementation work.
 
 When a new ticket is added to GitHub Issues:
-1. Add a row to the appropriate Status Snapshot section
-2. Insert it into the Work Order at the appropriate phase
-3. Update the Dependency Graph if it has dependencies
+1. Add a row to the appropriate version snapshot section.
+2. Insert it into the recommended work order for that version.
+3. Update the dependency graph if it introduces a new hard dependency.
+4. Keep this file authoritative; do not append a second standalone tracker at the bottom.
