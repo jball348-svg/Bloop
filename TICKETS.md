@@ -117,37 +117,37 @@ Implementation note: v12-v15 are now implemented in the codebase and pass `npm r
 | [#66](https://github.com/jball348-svg/Bloop/issues/66) | Post-v10 UAT - Presets Library Overhaul | ✅ Closed |
 | [#67](https://github.com/jball348-svg/Bloop/issues/67) | Post-v10 UAT - Snapping, Adjacency, and Overlap Resolution Rewrite | ✅ Closed |
 
-### V12 — Sonic Expansion & Shaping 🟢
+### V12 — Sonic Expansion & Shaping Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#68](https://github.com/jball348-svg/Bloop/issues/68) | [V12 Core] Parameter State Normalization & Modulation Targets | 🟠 Implemented locally |
-| [#69](https://github.com/jball348-svg/Bloop/issues/69) | [V12 Feature] Generator Expansion — FM and AM Voice Modes | 🟠 Implemented locally |
-| [#70](https://github.com/jball348-svg/Bloop/issues/70) | [V12 Node] EQ Node — Tone.EQ3 Insert with Sweepable Crossovers | 🟠 Implemented locally |
-| [#71](https://github.com/jball348-svg/Bloop/issues/71) | [V12 Feature] LFO Node — Tempo-Synced Modulation Routing | 🟠 Implemented locally |
+| [#68](https://github.com/jball348-svg/Bloop/issues/68) | [V12 Core] Parameter State Normalization & Modulation Targets | ✅ Closed |
+| [#69](https://github.com/jball348-svg/Bloop/issues/69) | [V12 Feature] Generator Expansion — FM and AM Voice Modes | ✅ Closed |
+| [#70](https://github.com/jball348-svg/Bloop/issues/70) | [V12 Node] EQ Node — Tone.EQ3 Insert with Sweepable Crossovers | ✅ Closed |
+| [#71](https://github.com/jball348-svg/Bloop/issues/71) | [V12 Feature] LFO Node — Tempo-Synced Modulation Routing | ✅ Closed |
 
-### V13 — Composition & Writing 🟡
-
-| # | Title | Status |
-|---|---|---|
-| [#72](https://github.com/jball348-svg/Bloop/issues/72) | [V13 Core] Pattern Playback Engine — Polyphonic Clips on Tone.Transport | 🟠 Implemented locally |
-| [#73](https://github.com/jball348-svg/Bloop/issues/73) | [V13 UI] Pattern Node — Piano Roll Editor | 🟠 Implemented locally |
-| [#74](https://github.com/jball348-svg/Bloop/issues/74) | [V13 Feature] Gate-Accurate Envelope Handling for Pattern Notes | 🟠 Implemented locally |
-
-### V14 — Mixing & Arrangement 🟡
+### V13 — Composition & Writing Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#75](https://github.com/jball348-svg/Bloop/issues/75) | [V14 Core] Mixer Node — Multi-Channel Master Bus | 🟠 Implemented locally |
-| [#76](https://github.com/jball348-svg/Bloop/issues/76) | [V14 Feature] Arranger Node — Section Scenes and Playback Scheduling | 🟠 Implemented locally |
+| [#72](https://github.com/jball348-svg/Bloop/issues/72) | [V13 Core] Pattern Playback Engine — Polyphonic Clips on Tone.Transport | ✅ Closed |
+| [#73](https://github.com/jball348-svg/Bloop/issues/73) | [V13 UI] Pattern Node — Piano Roll Editor | ✅ Closed |
+| [#74](https://github.com/jball348-svg/Bloop/issues/74) | [V13 Feature] Gate-Accurate Envelope Handling for Pattern Notes | ✅ Closed |
 
-### V15 — Automation & Showcase 🟡
+### V14 — Mixing & Arrangement Complete ✅
 
 | # | Title | Status |
 |---|---|---|
-| [#77](https://github.com/jball348-svg/Bloop/issues/77) | [V15 Feature] Arranger Automation Lanes — Parameter Curves and Mixer Moves | 🟠 Implemented locally |
-| [#78](https://github.com/jball348-svg/Bloop/issues/78) | [V15 Core] Canvas Performance & Store Subscription Refactor | 🟠 Implemented locally |
-| [#79](https://github.com/jball348-svg/Bloop/issues/79) | [V15 Product] Showcase Preset Pipeline — Built-In Song Slot and Validation | 🟠 Implemented locally |
+| [#75](https://github.com/jball348-svg/Bloop/issues/75) | [V14 Core] Mixer Node — Multi-Channel Master Bus | ✅ Closed |
+| [#76](https://github.com/jball348-svg/Bloop/issues/76) | [V14 Feature] Arranger Node — Section Scenes and Playback Scheduling | ✅ Closed |
+
+### V15 — Automation & Showcase Complete ✅
+
+| # | Title | Status |
+|---|---|---|
+| [#77](https://github.com/jball348-svg/Bloop/issues/77) | [V15 Feature] Arranger Automation Lanes — Parameter Curves and Mixer Moves | ✅ Closed |
+| [#78](https://github.com/jball348-svg/Bloop/issues/78) | [V15 Core] Canvas Performance & Store Subscription Refactor | ✅ Closed |
+| [#79](https://github.com/jball348-svg/Bloop/issues/79) | [V15 Product] Showcase Preset Pipeline — Built-In Song Slot and Validation | ✅ Closed |
 
 ### Superseded / Closed
 
@@ -162,27 +162,27 @@ Implementation note: v12-v15 are now implemented in the codebase and pass `npm r
 
 ## V12 Recommended Work Order
 
-1. **#68** Parameter State Normalization & Modulation Targets
-2. **#69** Generator Expansion — FM and AM Voice Modes
-3. **#70** EQ Node — Tone.EQ3 Insert with Sweepable Crossovers
-4. **#71** LFO Node — Tempo-Synced Modulation Routing
+~~1. **#68** Parameter State Normalization & Modulation Targets~~
+~~2. **#69** Generator Expansion — FM and AM Voice Modes~~
+~~3. **#70** EQ Node — Tone.EQ3 Insert with Sweepable Crossovers~~
+~~4. **#71** LFO Node — Tempo-Synced Modulation Routing~~
 
 ## V13 Recommended Work Order
 
-1. **#72** Pattern Playback Engine — Polyphonic Clips on Tone.Transport
-2. **#73** Pattern Node — Piano Roll Editor
-3. **#74** Gate-Accurate Envelope Handling for Pattern Notes
+~~1. **#72** Pattern Playback Engine — Polyphonic Clips on Tone.Transport~~
+~~2. **#73** Pattern Node — Piano Roll Editor~~
+~~3. **#74** Gate-Accurate Envelope Handling for Pattern Notes~~
 
 ## V14 Recommended Work Order
 
-1. **#75** Mixer Node — Multi-Channel Master Bus
-2. **#76** Arranger Node — Section Scenes and Playback Scheduling
+~~1. **#75** Mixer Node — Multi-Channel Master Bus~~
+~~2. **#76** Arranger Node — Section Scenes and Playback Scheduling~~
 
 ## V15 Recommended Work Order
 
-1. **#77** Arranger Automation Lanes — Parameter Curves and Mixer Moves
-2. **#78** Canvas Performance & Store Subscription Refactor
-3. **#79** Showcase Preset Pipeline — Built-In Song Slot and Validation
+~~1. **#77** Arranger Automation Lanes — Parameter Curves and Mixer Moves~~
+~~2. **#78** Canvas Performance & Store Subscription Refactor~~
+~~3. **#79** Showcase Preset Pipeline — Built-In Song Slot and Validation~~
 
 ---
 

@@ -904,9 +904,13 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
                 const oCentreY = other.position.y + oDims.h / 2;
                 const vertDist = Math.abs(cCentreY - oCentreY);
 
-                if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
-                    clusterIds.add(other.id);
-                    queue.push(other.id);
+                if (horizGap >= -20 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
+                    const leftNode = currentNode.position.x <= other.position.x ? currentNode : other;
+                    const rightNode = currentNode.position.x <= other.position.x ? other : currentNode;
+                    if (CONTROL_WIRE_PAIRS.has(`${leftNode.type}->${rightNode.type}`)) {
+                        clusterIds.add(other.id);
+                        queue.push(other.id);
+                    }
                 }
             } else if (axis === 'vertical') {
                 const gapBelow = other.position.y - (currentNode.position.y + cDims.h);
@@ -917,9 +921,13 @@ const getClusterNodeIds = (startNodeId: string, allNodes: AppNode[]) => {
                 const oCentreX = other.position.x + oDims.w / 2;
                 const hDist = Math.abs(cCentreX - oCentreX);
 
-                if (vGap >= 0 && vGap <= ADJ_VERT_THRESHOLD && hDist <= ADJ_X_THRESHOLD) {
-                    clusterIds.add(other.id);
-                    queue.push(other.id);
+                if (vGap >= -20 && vGap <= ADJ_VERT_THRESHOLD && hDist <= ADJ_X_THRESHOLD) {
+                    const topNode = currentNode.position.y <= other.position.y ? currentNode : other;
+                    const bottomNode = currentNode.position.y <= other.position.y ? other : currentNode;
+                    if (VALID_AUTO_WIRE_PAIRS.has(`${topNode.type}->${bottomNode.type}`)) {
+                        clusterIds.add(other.id);
+                        queue.push(other.id);
+                    }
                 }
             }
         }
@@ -1167,6 +1175,23 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'visualiser->unison',
     'visualiser->detune',
     'visualiser->visualiser',
+    // Newly added controller->advanceddrum matches:
+    'controller->advanceddrum',
+    'midiin->advanceddrum',
+    'keys->advanceddrum',
+    'moodpad->advanceddrum',
+    'stepsequencer->advanceddrum',
+    'pattern->advanceddrum',
+    'chord->advanceddrum',
+    'quantizer->advanceddrum',
+    'adsr->advanceddrum',
+    // Newly added controller->drum matches for feature parity:
+    'controller->drum',
+    'moodpad->drum',
+    'pulse->drum',
+    'stepsequencer->drum',
+    'pattern->drum',
+    'quantizer->drum',
 ]);
 
 export const CONTROL_WIRE_PAIRS = new Set([
@@ -1220,6 +1245,23 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'pattern->adsr',
     'pattern->generator',
     'pattern->sampler',
+    // Newly added controller->advanceddrum matches:
+    'controller->advanceddrum',
+    'midiin->advanceddrum',
+    'keys->advanceddrum',
+    'moodpad->advanceddrum',
+    'stepsequencer->advanceddrum',
+    'pattern->advanceddrum',
+    'chord->advanceddrum',
+    'quantizer->advanceddrum',
+    'adsr->advanceddrum',
+    // Newly added controller->drum matches for feature parity:
+    'controller->drum',
+    'moodpad->drum',
+    'pulse->drum',
+    'stepsequencer->drum',
+    'pattern->drum',
+    'quantizer->drum',
 ]);
 
 const clampTempoBpm = (bpm: number) =>
@@ -5599,9 +5641,21 @@ export const useStore = create<AppState>((set, get) => ({
 
         const { nodes, edges, masterVolume } = data;
 
+        const hydratedEdges = (edges || []).map((edge) => {
+            const kind = edge.data?.kind || (edge.sourceHandle === AUDIO_OUTPUT_HANDLE_ID ? 'audio' : 'control');
+            return {
+                ...edge,
+                ...getEdgePresentation(kind),
+                data: {
+                    ...edge.data,
+                    kind,
+                },
+            };
+        });
+
         set({
             nodes: nodes || [],
-            edges: edges || [],
+            edges: hydratedEdges,
             masterVolume: masterVolume ?? DEFAULT_MASTER_VOLUME,
         });
 
@@ -5719,10 +5773,10 @@ export const useStore = create<AppState>((set, get) => ({
 
                 if (isControlPair) {
                     // Horizontal check
-                    if (horizGap < 0 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) continue;
+                    if (horizGap < -20 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) continue;
                 } else {
                     // Vertical check (audio domain)
-                    if (vertGap < 0 || vertGap > ADJ_VERT_THRESHOLD || horizDist > ADJ_X_THRESHOLD) continue;
+                    if (vertGap < -20 || vertGap > ADJ_VERT_THRESHOLD || horizDist > ADJ_X_THRESHOLD) continue;
                 }
 
                 const kind = isControlPair ? 'control' : 'audio';
@@ -5809,10 +5863,16 @@ export const useStore = create<AppState>((set, get) => ({
                 if (axis === null) continue;
 
                 if (axis === 'horizontal') {
-                    if (horizGap < 0 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) continue;
+                    if (horizGap < -20 || horizGap > ADJ_TOUCH_THRESHOLD || vertDist > ADJ_Y_THRESHOLD) continue;
+                    const leftNode = a.position.x <= b.position.x ? a : b;
+                    const rightNode = a.position.x <= b.position.x ? b : a;
+                    if (!CONTROL_WIRE_PAIRS.has(`${leftNode.type}->${rightNode.type}`)) continue;
                 } else {
                     // vertical
-                    if (vertGap < 0 || vertGap > ADJ_VERT_THRESHOLD || horizDist > ADJ_X_THRESHOLD) continue;
+                    if (vertGap < -20 || vertGap > ADJ_VERT_THRESHOLD || horizDist > ADJ_X_THRESHOLD) continue;
+                    const topNode = a.position.y <= b.position.y ? a : b;
+                    const bottomNode = a.position.y <= b.position.y ? b : a;
+                    if (!VALID_AUTO_WIRE_PAIRS.has(`${topNode.type}->${bottomNode.type}`)) continue;
                 }
 
                 adjacent.add(a.id);
@@ -5951,53 +6011,7 @@ export const useStore = create<AppState>((set, get) => ({
         const nextLocked = !startNode.data.isLocked;
 
         // Find all nodes in the same snapped cluster
-        const clusterIds = new Set<string>();
-        const queue = [id];
-        clusterIds.add(id);
-
-        while (queue.length > 0) {
-            const currentId = queue.shift()!;
-            const currentNode = nodes.find(n => n.id === currentId);
-            if (!currentNode) continue;
-
-            const cDims = getNodeCanvasDims(currentNode);
-
-            for (const other of nodes) {
-                if (clusterIds.has(other.id)) continue;
-                if (other.type === 'tempo' || other.type === 'speaker') continue;
-
-                const oDims = getNodeCanvasDims(other);
-                const axis = getNodeAdjacencyAxis(currentNode.type, other.type);
-
-                if (axis === 'horizontal') {
-                    const gapRight = other.position.x - (currentNode.position.x + cDims.w);
-                    const gapLeft = currentNode.position.x - (other.position.x + oDims.w);
-                    const horizGap = Math.max(gapRight, gapLeft);
-
-                    const cCentreY = currentNode.position.y + cDims.h / 2;
-                    const oCentreY = other.position.y + oDims.h / 2;
-                    const vertDist = Math.abs(cCentreY - oCentreY);
-
-                    if (horizGap >= 0 && horizGap <= ADJ_TOUCH_THRESHOLD && vertDist <= ADJ_Y_THRESHOLD) {
-                        clusterIds.add(other.id);
-                        queue.push(other.id);
-                    }
-                } else if (axis === 'vertical') {
-                    const gapBelow = other.position.y - (currentNode.position.y + cDims.h);
-                    const gapAbove = currentNode.position.y - (other.position.y + oDims.h);
-                    const vGap = Math.max(gapBelow, gapAbove);
-
-                    const cCentreX = currentNode.position.x + cDims.w / 2;
-                    const oCentreX = other.position.x + oDims.w / 2;
-                    const hDist = Math.abs(cCentreX - oCentreX);
-
-                    if (vGap >= 0 && vGap <= ADJ_VERT_THRESHOLD && hDist <= ADJ_X_THRESHOLD) {
-                        clusterIds.add(other.id);
-                        queue.push(other.id);
-                    }
-                }
-            }
-        }
+        const clusterIds = getClusterNodeIds(id, nodes);
 
         set({
             nodes: nodes.map(node => {

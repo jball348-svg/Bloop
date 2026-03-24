@@ -2,7 +2,7 @@
 
 Bloop is a visual modular audio sandbox for non-musicians and curious tinkerers. You drag colourful nodes onto a canvas, connect them with cables or snap them into place, and build playable synth patches without needing to know traditional audio-routing jargon first.
 
-The current repo reflects the v10 state of the product: external input, recording export, onboarding, theming, an expanded preset library, advanced visualisers, and a beginner-friendly campaign mode all ship in the app today.
+The current repo reflects the v15 state of the product: FM/AM Synthesis, Parametric EQs, LFOs, Piano Rolls, Arranger timelines, Automation Lanes, custom presets, and Master Bus Mixing.
 
 ---
 

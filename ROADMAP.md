@@ -4,23 +4,22 @@ Bloop is a visual modular audio sandbox designed to make sound design and routin
 
 ---
 
-## The Journey So Far (v1 - v11)
+## The Journey So Far (v1 - v15)
 
-From its inception, Bloop has grown from a simple proof-of-concept into a robust, browser-based modular synthesizer. Over the first 11 major iterations, we have successfully established:
+From its inception, Bloop has grown from a simple proof-of-concept into a robust, browser-based modular synthesizer. Over the first **15 major iterations**, we have successfully established:
 
 * **The Core Engine:** Seamless integration between React Flow (for the visual canvas) and Tone.js (for the audio graph).
 * **The Node Ecosystem:** A comprehensive suite of Controller nodes (Sequencers, Arp, MIDI In), Signal nodes (Oscillators, Samplers, Effects), and Global nodes.
 * **User Experience & Persistence:** Drag-and-drop routing, undo/redo history, and `.bloop` patch saving/loading.
 * **Onboarding & Gamification:** A replayable tutorial, theming system, and a beginner-friendly campaign mode that unlocks custom skins and presets.
 * **External I/O:** Live audio input (microphone/USB interface), Web MIDI support, and browser-native `.webm` session recording.
+* **Arrangement & Automation:** Piano rolls, automation lanes, mixer nodes, and full song timeline triggering abilities.
 
 ---
 
-## The Road to v15: "The Showcase"
+## V12-V15: The Showcase (Completed)
 
-**The Ultimate v15 Milestone:** To create a fully built, automated "Song" written entirely within Bloop, shipped as a master preset to demonstrate the platform's full capabilities. 
-
-To achieve this without turning Bloop into a bloated DAW, we are introducing targeted arrangement, mixing, and sequencing tools that maintain our visual, modular philosophy. UI bug fixes are temporarily deprioritized in favor of shipping these core functional pillars.
+**The Ultimate v15 Milestone:** To create a fully built, automated "Song" written entirely within Bloop, shipped as a master preset to demonstrate the platform's full capabilities. This was completed successfully.
 
 ### v12: Sonic Expansion & Shaping
 *Focus: Expanding the sound-generation capabilities beyond basic waveforms and providing finer control over frequencies.*
