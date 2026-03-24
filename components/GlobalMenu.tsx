@@ -11,7 +11,9 @@ const GlobalMenu = () => {
     const startRecording = useStore((state) => state.startRecording);
     const stopRecording = useStore((state) => state.stopRecording);
     const hasAmplifier = nodes.some((n) => n.type === 'speaker');
+    const hasMixer = nodes.some((n) => n.type === 'mixer');
     const hasTempo = nodes.some((n) => n.type === 'tempo');
+    const hasArranger = nodes.some((n) => n.type === 'arranger');
     const hasAudioIn = nodes.some((n) => n.type === 'audioin');
     const hasMidiIn = nodes.some((n) => n.type === 'midiin');
 
@@ -29,6 +31,8 @@ const GlobalMenu = () => {
     const recordingRemainder = recordingSeconds % 60;
     const globalTools = [
         { type: 'tempo', label: 'Tempo', className: 'bg-indigo-500 text-white', isPresent: hasTempo },
+        { type: 'arranger', label: 'Arranger', className: 'bg-indigo-700 text-white', isPresent: hasArranger },
+        { type: 'mixer', label: 'Mixer', className: 'bg-emerald-500 text-white', isPresent: hasMixer },
         { type: 'speaker', label: 'Amplifier', className: 'bg-emerald-500 text-white', isPresent: hasAmplifier },
         { type: 'midiin', label: 'MIDI In', className: 'bg-neutral-300 text-slate-950', isPresent: hasMidiIn },
         { type: 'audioin', label: 'Audio In', className: 'bg-slate-400 text-slate-950', isPresent: hasAudioIn },

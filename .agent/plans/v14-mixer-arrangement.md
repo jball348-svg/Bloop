@@ -12,11 +12,12 @@ GitHub issues: #75, #76.
 
 ## Progress
 
-- [ ] (2026-03-24) Read GitHub issues #75 and #76 in full.
-- [ ] (2026-03-24) Milestone 1 — Mixer node: add explicit master-bus routing, channel strips, persistence, and legacy speaker compatibility.
-- [ ] (2026-03-24) Milestone 2 — Arranger node: add section scenes, bar-boundary scheduling, and target node control for Pattern and rhythm nodes.
-- [ ] (2026-03-24) Validate with `npm run build`, `npm run lint`, and browser tests covering routing, solo/mute, and section changes.
-- [ ] (2026-03-24) Update `TICKETS.md`, close #75-#76, and record final outcomes here.
+- [x] (2026-03-24) Read GitHub issues #75 and #76 in full.
+- [x] (2026-03-24) Milestone 1 — Mixer node: add explicit master-bus routing, channel strips, persistence, and legacy speaker compatibility.
+- [x] (2026-03-24) Milestone 2 — Arranger node: add section scenes, bar-boundary scheduling, and target node control for Pattern and rhythm nodes.
+- [x] (2026-03-24) Validate with `npm run build` and `npm run lint`.
+- [ ] (2026-03-24) Browser tests covering routing, solo/mute, and section changes.
+- [x] (2026-03-24) Update `TICKETS.md` and record final outcomes here.
 
 ## Surprises & Discoveries
 
@@ -41,7 +42,7 @@ GitHub issues: #75, #76.
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented in code on 2026-03-24. New patches can route sources into a dedicated Mixer node with channel-strip state, and the Arranger can sequence Pattern and rhythm nodes by song section. Legacy `speaker` patches still load, while new showcase work can run through the routed mixer path. Manual browser/audio QA is still outstanding.
 
 ## Context and Orientation
 

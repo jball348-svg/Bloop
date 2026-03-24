@@ -8,6 +8,8 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ## Current Status Snapshot
 
+Implementation note: v12-v15 are now implemented in the codebase and pass `npm run build` and `npm run lint` as of 2026-03-24. The remaining step before issue closure is manual browser/audio QA of the new song-authoring flow.
+
 ### V2 — Complete ✅
 
 | # | Title | Status |
@@ -119,33 +121,33 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 | # | Title | Status |
 |---|---|---|
-| [#68](https://github.com/jball348-svg/Bloop/issues/68) | [V12 Core] Parameter State Normalization & Modulation Targets | 🟢 Open |
-| [#69](https://github.com/jball348-svg/Bloop/issues/69) | [V12 Feature] Generator Expansion — FM and AM Voice Modes | 🟢 Open |
-| [#70](https://github.com/jball348-svg/Bloop/issues/70) | [V12 Node] EQ Node — Tone.EQ3 Insert with Sweepable Crossovers | 🟢 Open |
-| [#71](https://github.com/jball348-svg/Bloop/issues/71) | [V12 Feature] LFO Node — Tempo-Synced Modulation Routing | 🟢 Open |
+| [#68](https://github.com/jball348-svg/Bloop/issues/68) | [V12 Core] Parameter State Normalization & Modulation Targets | 🟠 Implemented locally |
+| [#69](https://github.com/jball348-svg/Bloop/issues/69) | [V12 Feature] Generator Expansion — FM and AM Voice Modes | 🟠 Implemented locally |
+| [#70](https://github.com/jball348-svg/Bloop/issues/70) | [V12 Node] EQ Node — Tone.EQ3 Insert with Sweepable Crossovers | 🟠 Implemented locally |
+| [#71](https://github.com/jball348-svg/Bloop/issues/71) | [V12 Feature] LFO Node — Tempo-Synced Modulation Routing | 🟠 Implemented locally |
 
 ### V13 — Composition & Writing 🟡
 
 | # | Title | Status |
 |---|---|---|
-| [#72](https://github.com/jball348-svg/Bloop/issues/72) | [V13 Core] Pattern Playback Engine — Polyphonic Clips on Tone.Transport | 🟡 Planned |
-| [#73](https://github.com/jball348-svg/Bloop/issues/73) | [V13 UI] Pattern Node — Piano Roll Editor | 🟡 Planned |
-| [#74](https://github.com/jball348-svg/Bloop/issues/74) | [V13 Feature] Gate-Accurate Envelope Handling for Pattern Notes | 🟡 Planned |
+| [#72](https://github.com/jball348-svg/Bloop/issues/72) | [V13 Core] Pattern Playback Engine — Polyphonic Clips on Tone.Transport | 🟠 Implemented locally |
+| [#73](https://github.com/jball348-svg/Bloop/issues/73) | [V13 UI] Pattern Node — Piano Roll Editor | 🟠 Implemented locally |
+| [#74](https://github.com/jball348-svg/Bloop/issues/74) | [V13 Feature] Gate-Accurate Envelope Handling for Pattern Notes | 🟠 Implemented locally |
 
 ### V14 — Mixing & Arrangement 🟡
 
 | # | Title | Status |
 |---|---|---|
-| [#75](https://github.com/jball348-svg/Bloop/issues/75) | [V14 Core] Mixer Node — Multi-Channel Master Bus | 🟡 Planned |
-| [#76](https://github.com/jball348-svg/Bloop/issues/76) | [V14 Feature] Arranger Node — Section Scenes and Playback Scheduling | 🟡 Planned |
+| [#75](https://github.com/jball348-svg/Bloop/issues/75) | [V14 Core] Mixer Node — Multi-Channel Master Bus | 🟠 Implemented locally |
+| [#76](https://github.com/jball348-svg/Bloop/issues/76) | [V14 Feature] Arranger Node — Section Scenes and Playback Scheduling | 🟠 Implemented locally |
 
 ### V15 — Automation & Showcase 🟡
 
 | # | Title | Status |
 |---|---|---|
-| [#77](https://github.com/jball348-svg/Bloop/issues/77) | [V15 Feature] Arranger Automation Lanes — Parameter Curves and Mixer Moves | 🟡 Planned |
-| [#78](https://github.com/jball348-svg/Bloop/issues/78) | [V15 Core] Canvas Performance & Store Subscription Refactor | 🟡 Planned |
-| [#79](https://github.com/jball348-svg/Bloop/issues/79) | [V15 Product] Showcase Preset Pipeline — Built-In Song Slot and Validation | 🟡 Planned |
+| [#77](https://github.com/jball348-svg/Bloop/issues/77) | [V15 Feature] Arranger Automation Lanes — Parameter Curves and Mixer Moves | 🟠 Implemented locally |
+| [#78](https://github.com/jball348-svg/Bloop/issues/78) | [V15 Core] Canvas Performance & Store Subscription Refactor | 🟠 Implemented locally |
+| [#79](https://github.com/jball348-svg/Bloop/issues/79) | [V15 Product] Showcase Preset Pipeline — Built-In Song Slot and Validation | 🟠 Implemented locally |
 
 ### Superseded / Closed
 

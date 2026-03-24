@@ -19,6 +19,8 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Chord | Controller | `border-sky-500` | `text-sky-300` | `bg-sky-400` | `sky` |
 | Pulse | Controller | `border-lime-500` | `text-lime-400` | `bg-lime-500` | `lime` |
 | Step Sequencer | Controller | `border-blue-500` | `text-blue-400` | `bg-blue-500` | `blue` |
+| Pattern | Controller | `border-blue-700` | `text-blue-300` | `bg-blue-700` | `blue-700` |
+| LFO | Controller / Modulation | `border-lime-700` | `text-lime-300` | `bg-lime-500` | `lime-700` |
 | Mood Pad | Controller | `border-rose-500` | `text-rose-300` | `bg-rose-500` | `rose` |
 | Generator | Signal | `border-red-500` | `text-red-400` | `bg-red-500` | `red` |
 | Sampler | Signal | `border-stone-400` | `text-stone-200` | `bg-stone-400` | `stone` |
@@ -26,6 +28,7 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Drum | Signal | `border-orange-500` | `text-orange-400` | `bg-orange-500` | `orange` |
 | Advanced Drums | Signal | `border-green-500` | `text-green-300` | `bg-green-500` | `green` |
 | Effect | Signal | `border-fuchsia-500` | `text-fuchsia-400` | `bg-fuchsia-500` | `fuchsia` |
+| EQ | Signal | `border-zinc-400` | `text-zinc-300` | `bg-zinc-400` | `zinc-400` |
 | Unison | Signal | `border-violet-500` | `text-violet-400` | `bg-violet-500` | `violet` |
 | Detune | Signal | `border-teal-500` | `text-teal-400` | `bg-teal-500` | `teal` |
 | Visualiser | Signal | `border-pink-500` | `text-pink-400` | `bg-pink-500` | `pink` |
@@ -33,6 +36,8 @@ Every node has one primary accent colour. No two nodes share a colour. When addi
 | Packed Node (Macro) | Macro | `border-orange-400` | `text-orange-300` | `bg-orange-400` | `orange-400` (neon orange — distinct from Drum's orange-500) |
 | Tempo | Global | `border-indigo-500` | `text-indigo-400` | n/a | `indigo` |
 | Amplifier | Global | `border-emerald-500` | `text-emerald-400` | n/a | `emerald` |
+| Mixer | Global | `border-emerald-500` | `text-emerald-300` | `bg-emerald-500` | `emerald-500` |
+| Arranger | Global | `border-indigo-700` | `text-indigo-300` | n/a | `indigo-700` |
 
 ### Available (not yet assigned)
 
@@ -98,6 +103,7 @@ A locked group can be "packed" into a single Macro Node using `PackedNode.tsx`.
 V3 introduced directional routing rules based on handle IDs.
 - **Control Path**: Uses `Position.Left` (`control-in`) and `Position.Right` (`control-out`).
 - **Audio Path**: Uses `Position.Top` (`audio-in`) and `Position.Bottom` (`audio-out`).
+- **Modulation Path**: Uses `Position.Right` (`mod-out`) on sources and parameter-specific right-edge targets (`mod-in:<param>`) on destinations.
 
 **Conditional Handle Rendering** (Locked Groups):
 To prevent mid-chain connections in locked groups, only the entry and exit points should render handles.
@@ -120,6 +126,8 @@ Always in the top-left of every node. Hover state uses the node accent colour.
 | Mood Pad | `w-80` (320px) |
 | Pulse | `w-72` (288px) |
 | Step Sequencer | `w-[22rem]` (352px) |
+| Pattern | `w-[22rem]` (352px) |
+| LFO | `w-64` (256px) |
 | Sampler | `w-80` (320px) |
 | Drum | `w-80` (320px) |
 | Advanced Drums | `w-[27rem]` (432px) |
@@ -128,6 +136,9 @@ Always in the top-left of every node. Hover state uses the node accent colour.
 | MIDI In | `w-64` (256px) |
 | Audio In | `w-64` (256px) |
 | Visualiser | `w-72` (288px) |
+| EQ | `w-64` (256px) |
+| Mixer | `w-80` (320px) |
+| Arranger | `w-[22rem]` (352px) |
 | Effect / Chord / ADSR / Speaker | `w-56` (224px) |
 | Tempo | `w-64` (256px) |
 | Packed Node (Macro) | `w-56` (224px) — same as standard node |
@@ -136,9 +147,9 @@ Always in the top-left of every node. Hover state uses the node accent colour.
 
 ## Menu Colour Coordination
 
-- **Controllers menu** (left): yellow, white, lime, blue, amber, sky, rose
-- **Signals menu** (top): red, stone, slate, orange, green, fuchsia, violet, teal, pink, purple
-- **Global menu** (right): indigo, emerald
+- **Controllers menu** (left): yellow, white, lime, blue, blue-700, amber, sky, rose
+- **Signals menu** (top): red, stone, slate, orange, green, fuchsia, zinc, violet, teal, pink, purple
+- **Global menu** (right): indigo, indigo-700, emerald
 - **System menu** (bottom): neutral/slate chrome plus cyan action states for Presets / Appearance / Campaign / Intro / Record
 
 ---
@@ -147,3 +158,4 @@ Always in the top-left of every node. Hover state uses the node accent colour.
 
 - `DrumNode` is legacy-facing from v7 onwards. Keep it for backwards compatibility with saved patches, but route new patches toward `AdvancedDrumNode`.
 - The original `SpeakerNode.tsx` was renamed to `Amplifier` in v2. Do not re-add a Speaker node type.
+- `Amplifier` remains loadable for legacy patches, but new song-authoring work should route through `Mixer`.

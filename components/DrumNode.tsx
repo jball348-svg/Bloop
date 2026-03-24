@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import * as Tone from 'tone';
 import {
@@ -55,7 +55,7 @@ export default function DrumNode({ id }: { id: string }) {
     const isPlaying = nodeData?.isPlaying ?? false;
     const currentStep = nodeData?.currentStep ?? -1;
     const accentStyle = useNodeAccentStyle('drum');
-    const [mix, setMix] = useState(80);
+    const mix = nodeData?.mix ?? 80;
 
     useEffect(() => {
         if (drumMode !== 'hits') {
@@ -94,15 +94,6 @@ export default function DrumNode({ id }: { id: string }) {
     const handleModeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setDrumMode(id, event.target.value as DrumMode);
     };
-
-    const setMixValue = (value: number) => {
-        setMix(value);
-        updateNodeValue(id, { mix: value });
-    };
-
-    useEffect(() => {
-        updateNodeValue(id, { mix: 80 });
-    }, [id, updateNodeValue]);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -180,7 +171,7 @@ export default function DrumNode({ id }: { id: string }) {
                 <div className="mb-3">
                     <NodeMixControl
                         value={mix}
-                        onChange={setMixValue}
+                        onChange={(value) => updateNodeValue(id, { mix: value })}
                     />
                 </div>
 

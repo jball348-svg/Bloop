@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    type GeneratorMode,
     type WaveShape,
     getAdjacencyGlowClasses,
     isAudioEdge,
@@ -14,7 +15,13 @@ import LockButton from './LockButton';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
-const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth', 'noise'];
+const WAVE_SHAPES: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth'];
+const GENERATOR_MODES: Array<{ value: GeneratorMode; label: string }> = [
+    { value: 'wave', label: 'Wave' },
+    { value: 'fm', label: 'FM' },
+    { value: 'am', label: 'AM' },
+    { value: 'noise', label: 'Noise' },
+];
 
 export default function GeneratorNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
@@ -29,21 +36,17 @@ export default function GeneratorNode({ id }: { id: string }) {
     });
 
     const waveShape = nodeData?.waveShape || 'sine';
-    const [mix, setMix] = useState(80);
+    const generatorMode = nodeData?.generatorMode ?? (waveShape === 'noise' ? 'noise' : 'wave');
+    const mix = nodeData?.mix ?? 80;
+    const harmonicity = nodeData?.harmonicity ?? 1;
+    const modulationIndex = nodeData?.modulationIndex ?? 4;
     const accentStyle = useNodeAccentStyle('generator');
-
-    const handleWaveShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        updateNodeValue(id, { waveShape: e.target.value as WaveShape });
-    };
-
-    const setMixValue = (value: number) => {
-        setMix(value);
-        updateNodeValue(id, { mix: value });
-    };
-
-    useEffect(() => {
-        updateNodeValue(id, { mix: 80 });
-    }, [id, updateNodeValue]);
+    const toneLabel = useMemo(() => {
+        if (generatorMode === 'fm') return 'Carrier / Mod';
+        if (generatorMode === 'am') return 'Carrier / Amp';
+        if (generatorMode === 'noise') return 'White Noise';
+        return 'Oscillator';
+    }, [generatorMode]);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -88,19 +91,104 @@ export default function GeneratorNode({ id }: { id: string }) {
                     <div className="flex flex-col gap-3">
                         <NodeMixControl
                             value={mix}
-                            onChange={setMixValue}
+                            onChange={(value) => updateNodeValue(id, { mix: value })}
                         />
 
                         <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Voice Mode</label>
+                            <select
+                                value={generatorMode}
+                                onChange={(event) =>
+                                    updateNodeValue(id, { generatorMode: event.target.value as GeneratorMode })
+                                }
+                                className="nodrag bg-slate-800 text-[10px] text-red-300 border-none outline-none rounded p-1 uppercase font-bold"
+                            >
+                                {GENERATOR_MODES.map((mode) => (
+                                    <option key={mode.value} value={mode.value}>{mode.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {generatorMode !== 'noise' && (
+                            <div className="flex flex-col gap-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wave Shape</label>
                             <select
                                 value={waveShape}
-                                onChange={handleWaveShapeChange}
+                                onChange={(event) => updateNodeValue(id, { waveShape: event.target.value as WaveShape })}
                                 className="nodrag bg-slate-800 text-[10px] text-red-300 border-none outline-none rounded p-1 uppercase font-bold"
                             >
                                 {WAVE_SHAPES.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
-                        </div>
+                            </div>
+                        )}
+
+                        {(generatorMode === 'fm' || generatorMode === 'am') && (
+                            <div className="rounded-xl border px-3 py-3" style={{
+                                borderColor: 'var(--node-accent-border)',
+                                backgroundColor: 'color-mix(in srgb, var(--surface-secondary) 88%, transparent)',
+                            }}>
+                                <div className="mb-2 text-[9px] font-black uppercase tracking-[0.16em]" style={{ color: 'var(--text-muted)' }}>
+                                    {toneLabel}
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <label className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                            Harmonicity
+                                        </label>
+                                        <span className="text-[10px] font-mono font-bold text-red-300">
+                                            {harmonicity.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0.25"
+                                        max="8"
+                                        step="0.05"
+                                        value={harmonicity}
+                                        onChange={(event) =>
+                                            updateNodeValue(id, { harmonicity: Number(event.target.value) })
+                                        }
+                                        className="nodrag h-1 w-full cursor-pointer appearance-none rounded-lg bg-slate-700"
+                                        style={{ accentColor: 'var(--node-accent)' }}
+                                    />
+                                </div>
+
+                                {generatorMode === 'fm' && (
+                                    <div className="mt-3 flex flex-col gap-2">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <label className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                                                Mod Index
+                                            </label>
+                                            <span className="text-[10px] font-mono font-bold text-red-300">
+                                                {modulationIndex.toFixed(1)}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="20"
+                                            step="0.1"
+                                            value={modulationIndex}
+                                            onChange={(event) =>
+                                                updateNodeValue(id, { modulationIndex: Number(event.target.value) })
+                                            }
+                                            className="nodrag h-1 w-full cursor-pointer appearance-none rounded-lg bg-slate-700"
+                                            style={{ accentColor: 'var(--node-accent)' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {generatorMode === 'noise' && (
+                            <div className="rounded-xl border px-3 py-3 text-[10px] font-bold uppercase tracking-[0.16em] text-red-200" style={{
+                                borderColor: 'var(--node-accent-border)',
+                                backgroundColor: 'color-mix(in srgb, var(--surface-secondary) 88%, transparent)',
+                            }}>
+                                Noise mode ignores pitch controllers and behaves like a gated texture source.
+                            </div>
+                        )}
                     </div>
                 </div>
 

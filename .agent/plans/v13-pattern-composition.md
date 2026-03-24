@@ -12,12 +12,13 @@ GitHub issues: #72, #73, #74.
 
 ## Progress
 
-- [ ] (2026-03-24) Read GitHub issues #72, #73, and #74 in full.
-- [ ] (2026-03-24) Milestone 1 — Pattern engine: add clip data types, transport scheduling, persistence, and playback integration.
-- [ ] (2026-03-24) Milestone 2 — Piano roll UI: ship the Pattern node and its editor for multi-bar note authoring.
-- [ ] (2026-03-24) Milestone 3 — Gate accuracy: add note-instance-aware release handling for ADSR, generators, and samplers.
-- [ ] (2026-03-24) Validate with `npm run build`, `npm run lint`, and browser tests for chords, overlaps, save/load, and undo/redo.
-- [ ] (2026-03-24) Update `TICKETS.md`, close #72-#74, and record final outcomes here.
+- [x] (2026-03-24) Read GitHub issues #72, #73, and #74 in full.
+- [x] (2026-03-24) Milestone 1 — Pattern engine: add clip data types, transport scheduling, persistence, and playback integration.
+- [x] (2026-03-24) Milestone 2 — Piano roll UI: ship the Pattern node and its editor for multi-bar note authoring.
+- [x] (2026-03-24) Milestone 3 — Gate accuracy: add note-instance-aware release handling for ADSR, generators, and samplers.
+- [x] (2026-03-24) Validate with `npm run build` and `npm run lint`.
+- [ ] (2026-03-24) Browser tests for chords, overlaps, save/load, and undo/redo.
+- [x] (2026-03-24) Update `TICKETS.md` and record final outcomes here.
 
 ## Surprises & Discoveries
 
@@ -45,7 +46,7 @@ GitHub issues: #72, #73, #74.
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented in code on 2026-03-24. Bloop now has Pattern clips, transport-backed Pattern playback via `Tone.Part`, a piano-roll-style Pattern node editor, and duration-aware clip scheduling that avoids the old fixed-gate limitations. Manual browser QA remains before the tickets should be closed.
 
 ## Context and Orientation
 

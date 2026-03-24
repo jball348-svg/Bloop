@@ -1,7 +1,7 @@
 'use client';
 
 import * as Tone from 'tone';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
@@ -57,11 +57,7 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
     const currentStep = nodeData?.currentStep ?? -1;
     const isPlaying = nodeData?.isPlaying ?? false;
     const accentStyle = useNodeAccentStyle('advanceddrum');
-    const [mix, setMix] = useState(80);
-
-    useEffect(() => {
-        updateNodeValue(id, { mix: 80 });
-    }, [id, updateNodeValue]);
+    const mix = nodeData?.mix ?? 80;
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -127,10 +123,7 @@ export default function AdvancedDrumNode({ id }: { id: string }) {
                 <div className="mb-3">
                     <NodeMixControl
                         value={mix}
-                        onChange={(value) => {
-                            setMix(value);
-                            updateNodeValue(id, { mix: value });
-                        }}
+                        onChange={(value) => updateNodeValue(id, { mix: value })}
                     />
                 </div>
 

@@ -31,11 +31,14 @@ import MidiInNode from '@/components/MidiInNode';
 import ChordNode from '@/components/ChordNode';
 import DrumNode from '@/components/DrumNode';
 import EffectNode from '@/components/EffectNode';
+import EQNode from '@/components/EQNode';
 import UnisonNode from '@/components/UnisonNode';
 import DetuneNode from '@/components/DetuneNode';
 import VisualiserNode from '@/components/VisualiserNode';
 import PulseNode from '@/components/PulseNode';
 import StepSequencerNode from '@/components/StepSequencerNode';
+import PatternNode from '@/components/PatternNode';
+import LFONode from '@/components/LFONode';
 import SignalFlowOverlay from '@/components/SignalFlowOverlay';
 import QuantizerNode from '@/components/QuantizerNode';
 import MoodPadNode from '@/components/MoodPadNode';
@@ -45,6 +48,8 @@ import AdvancedDrumNode from '@/components/AdvancedDrumNode';
 import SpeakerNode from '@/components/SpeakerNode';
 import TempoNode from '@/components/TempoNode';
 import AdsrNode from '@/components/AdsrNode';
+import MixerNode from '@/components/MixerNode';
+import ArrangerNode from '@/components/ArrangerNode';
 import EngineControl from '@/components/EngineControl';
 import SignalMenu from '@/components/SignalMenu';
 import ControllerMenu from '@/components/ControllerMenu';
@@ -116,6 +121,7 @@ function BloopCanvasInner() {
         chord: ChordNode,
         drum: DrumNode,
         effect: EffectNode,
+        eq: EQNode,
         unison: UnisonNode,
         detune: DetuneNode,
         visualiser: VisualiserNode,
@@ -126,8 +132,12 @@ function BloopCanvasInner() {
         advanceddrum: AdvancedDrumNode,
         pulse: PulseNode,
         stepsequencer: StepSequencerNode,
+        pattern: PatternNode,
+        lfo: LFONode,
         speaker: SpeakerNode,
+        mixer: MixerNode,
         tempo: TempoNode,
+        arranger: ArrangerNode,
         adsr: AdsrNode,
     }), []);
 
@@ -187,6 +197,12 @@ function BloopCanvasInner() {
         if (type === 'stepsequencer') {
             label = 'Sequencer';
         }
+        if (type === 'pattern') {
+            label = 'Pattern';
+        }
+        if (type === 'lfo') {
+            label = 'LFO';
+        }
         if (type === 'chord') {
             subType = 'major';
             label = 'Chord';
@@ -206,6 +222,9 @@ function BloopCanvasInner() {
         if (type === 'drum') label = 'Drums';
         if (type === 'advanceddrum') label = 'Advanced Drums';
         if (type === 'effect') subType = 'reverb';
+        if (type === 'eq') {
+            label = 'EQ';
+        }
         if (type === 'unison') {
             label = 'Unison';
         }
@@ -216,7 +235,9 @@ function BloopCanvasInner() {
             label = 'Visualiser';
         }
         if (type === 'speaker') label = 'Master Out';
+        if (type === 'mixer') label = 'Mixer';
         if (type === 'tempo') label = 'Tempo';
+        if (type === 'arranger') label = 'Arranger';
 
         addNode({
             id: crypto.randomUUID(),

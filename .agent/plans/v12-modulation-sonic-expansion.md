@@ -12,12 +12,13 @@ GitHub issues: #68, #69, #70, #71.
 
 ## Progress
 
-- [ ] (2026-03-24) Read GitHub issues #68, #69, #70, and #71 in full.
-- [ ] (2026-03-24) Milestone 1 — Parameter normalization and modulation domain: move parameter-bearing nodes to store-backed base values, add modulation edge types and handle conventions, and keep runtime modulation out of React state.
-- [ ] (2026-03-24) Milestone 2 — Generator and EQ expansion: ship FM/AM generator engines and the new EQ node with persistence and routing support.
-- [ ] (2026-03-24) Milestone 3 — LFO node: ship tempo-synced/free-running modulation with visible modulation edges and safe cleanup.
-- [ ] (2026-03-24) Validate with `npm run build`, `npm run lint`, and browser audio checks covering save/load, undo/redo, and modulation audibility.
-- [ ] (2026-03-24) Update `TICKETS.md`, close #68-#71, and record final outcomes here.
+- [x] (2026-03-24) Read GitHub issues #68, #69, #70, and #71 in full.
+- [x] (2026-03-24) Milestone 1 — Parameter normalization and modulation domain: move parameter-bearing nodes to store-backed base values, add modulation edge types and handle conventions, and keep runtime modulation out of React state.
+- [x] (2026-03-24) Milestone 2 — Generator and EQ expansion: ship FM/AM generator engines and the new EQ node with persistence and routing support.
+- [x] (2026-03-24) Milestone 3 — LFO node: ship tempo-synced/free-running modulation with visible modulation edges and safe cleanup.
+- [x] (2026-03-24) Validate with `npm run build` and `npm run lint`.
+- [ ] (2026-03-24) Browser audio checks covering save/load, undo/redo, and modulation audibility.
+- [x] (2026-03-24) Update `TICKETS.md` and record final outcomes here.
 
 ## Surprises & Discoveries
 
@@ -45,7 +46,7 @@ GitHub issues: #68, #69, #70, #71.
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented in code on 2026-03-24. The store now treats parameter values as persisted base state, introduces a modulation edge domain, rebuildable LFO runtime bindings, FM/AM generator modes, and a new EQ node. The remaining validation gap is manual browser/audio QA before issue closure.
 
 ## Context and Orientation
 

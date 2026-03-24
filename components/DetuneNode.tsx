@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
@@ -9,6 +8,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import ModulationTargetHandle from './ModulationTargetHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
@@ -22,25 +22,14 @@ export default function DetuneNode({ id }: { id: string }) {
         return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
     const accentStyle = useNodeAccentStyle('detune');
-
-    const [cents, setCents] = useState(0);
-    const [mix, setMix] = useState(100);
-    const [isBypassed, setIsBypassed] = useState(false);
+    const wet = nodeData?.wet ?? 1;
+    const pitch = nodeData?.pitch ?? 0;
+    const mix = Math.round(wet * 100);
+    const isBypassed = wet <= 0.001;
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
     }
-
-    const handleCentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setCents(val);
-        updateNodeValue(id, { pitch: (val / 100) * 12 });
-    };
-
-    const setMixValue = (value: number) => {
-        setMix(value);
-        updateNodeValue(id, { wet: isBypassed ? 0 : value / 100 });
-    };
 
     return (
         <div
@@ -50,6 +39,7 @@ export default function DetuneNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('detune') : ''
         }`}
         >
+            <ModulationTargetHandle paramKey="wet" top={92} />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
@@ -74,27 +64,26 @@ export default function DetuneNode({ id }: { id: string }) {
                         <NodeMixControl
                             value={mix}
                             bypassed={isBypassed}
-                                onToggleBypass={() => {
-                                    const next = !isBypassed;
-                                    setIsBypassed(next);
-                                    updateNodeValue(id, { wet: next ? 0 : mix / 100 });
-                                }}
-                            onChange={setMixValue}
+                            onToggleBypass={() => {
+                                updateNodeValue(id, { wet: isBypassed ? 1 : 0 });
+                            }}
+                            onChange={(value) => updateNodeValue(id, { wet: value / 100 })}
                         />
 
                         <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-end">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pitch</label>
                                 <span className="text-[10px] font-mono text-teal-400 font-bold">
-                                    {cents > 0 ? '+' : ''}{cents}¢
+                                    {pitch > 0 ? '+' : ''}{pitch.toFixed(1)} st
                                 </span>
                             </div>
                             <input
                                 type="range"
-                                min="-100"
-                                max="100"
-                                value={cents}
-                                onChange={handleCentsChange}
+                                min="-12"
+                                max="12"
+                                step="0.1"
+                                value={pitch}
+                                onChange={(event) => updateNodeValue(id, { pitch: Number(event.target.value) })}
                                 className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-500"
                             />
                         </div>

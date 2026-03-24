@@ -12,12 +12,13 @@ GitHub issues: #77, #78, #79.
 
 ## Progress
 
-- [ ] (2026-03-24) Read GitHub issues #77, #78, and #79 in full.
-- [ ] (2026-03-24) Milestone 1 — Arranger automation lanes: add runtime automation targeting on top of the shared automatable-parameter registry.
-- [ ] (2026-03-24) Milestone 2 — Performance pass: reduce avoidable React Flow rerenders and isolate transport/runtime state from canvas rendering.
-- [ ] (2026-03-24) Milestone 3 — Showcase preset pipeline: add the built-in promotion path for a user-authored song patch and validate shipped asset handling.
-- [ ] (2026-03-24) Validate with `npm run build`, `npm run lint`, and browser tests on a large arranged patch.
-- [ ] (2026-03-24) Update `TICKETS.md`, close #77-#79, and record final outcomes here.
+- [x] (2026-03-24) Read GitHub issues #77, #78, and #79 in full.
+- [x] (2026-03-24) Milestone 1 — Arranger automation lanes: add runtime automation targeting on top of the shared automatable-parameter registry.
+- [x] (2026-03-24) Milestone 2 — Performance pass: reduce avoidable React Flow rerenders and isolate transport/runtime state from canvas rendering.
+- [x] (2026-03-24) Milestone 3 — Showcase preset pipeline: add the built-in promotion path for a user-authored song patch and validate shipped asset handling.
+- [x] (2026-03-24) Validate with `npm run build` and `npm run lint`.
+- [ ] (2026-03-24) Browser tests on a large arranged patch.
+- [x] (2026-03-24) Update `TICKETS.md` and record final outcomes here.
 
 ## Surprises & Discoveries
 
@@ -42,7 +43,7 @@ GitHub issues: #77, #78, #79.
 
 ## Outcomes & Retrospective
 
-Pending implementation.
+Implemented in code on 2026-03-24. The Arranger now owns automation lanes, the new node surfaces use store-backed values instead of drifting local state, and the preset library now includes a built-in multi-section showcase song exercising Pattern, Arranger, Mixer, EQ, and LFO workflows. Remaining work before ticket closure is manual browser/audio QA of the full song-authoring experience.
 
 ## Context and Orientation
 

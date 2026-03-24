@@ -63,7 +63,6 @@ export default function SamplerNode({ id }: { id: string }) {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const accentStyle = useNodeAccentStyle('sampler');
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [mix, setMix] = useState(80);
 
     const hasSample = nodeData?.hasSample ?? false;
     const sampleName = nodeData?.sampleName || 'No sample loaded';
@@ -73,10 +72,7 @@ export default function SamplerNode({ id }: { id: string }) {
     const reverse = nodeData?.reverse ?? false;
     const pitchShift = nodeData?.pitchShift ?? 0;
     const isPlaying = nodeData?.isPlaying ?? false;
-
-    useEffect(() => {
-        updateNodeValue(id, { mix: 80 });
-    }, [id, updateNodeValue]);
+    const mix = nodeData?.mix ?? 80;
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -178,10 +174,7 @@ export default function SamplerNode({ id }: { id: string }) {
 
                     <NodeMixControl
                         value={mix}
-                        onChange={(value) => {
-                            setMix(value);
-                            updateNodeValue(id, { mix: value });
-                        }}
+                        onChange={(value) => updateNodeValue(id, { mix: value })}
                     />
 
                     <canvas

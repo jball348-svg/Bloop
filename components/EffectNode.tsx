@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
@@ -9,6 +8,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import ModulationTargetHandle from './ModulationTargetHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
@@ -24,11 +24,15 @@ export default function EffectNode({ id }: { id: string }) {
     });
     const subType = nodeData?.subType || 'none';
     const accentStyle = useNodeAccentStyle('effect');
-
-    const [mix, setMix] = useState(50);
-    const [depth, setDepth] = useState(50);
-    const [time, setTime] = useState(50);
-    const [isBypassed, setIsBypassed] = useState(false);
+    const wet = nodeData?.wet ?? 0.5;
+    const mix = Math.round(wet * 100);
+    const roomSize = Math.round((nodeData?.roomSize ?? 0.5) * 100);
+    const delayTime = nodeData?.delayTime ?? 0.45;
+    const feedback = nodeData?.feedback ?? 0.4;
+    const distortion = Math.round((nodeData?.distortion ?? 0.5) * 100);
+    const phaserFrequency = nodeData?.frequency ?? 4;
+    const bits = nodeData?.bits ?? 4;
+    const isBypassed = wet <= 0.001;
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -36,24 +40,6 @@ export default function EffectNode({ id }: { id: string }) {
 
     const handleSubTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         changeNodeSubType(id, 'effect', e.target.value);
-    };
-
-    const setMixValue = (value: number) => {
-        setMix(value);
-        updateNodeValue(id, { wet: value / 100 });
-    };
-
-    const handleDepthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setDepth(val);
-        updateNodeValue(id, { roomSize: val / 100 });
-    };
-
-    const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setTime(val);
-        const delayVal = 0.1 + (val / 100) * 0.9;
-        updateNodeValue(id, { delayTime: delayVal });
     };
 
     return (
@@ -64,6 +50,15 @@ export default function EffectNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('effect') : ''
         }`}
         >
+            <ModulationTargetHandle paramKey="wet" top={84} />
+            {subType === 'reverb' && <ModulationTargetHandle paramKey="roomSize" top={150} />}
+            {subType === 'delay' && (
+                <>
+                    <ModulationTargetHandle paramKey="delayTime" top={150} />
+                    <ModulationTargetHandle paramKey="feedback" top={206} />
+                </>
+            )}
+            {subType === 'phaser' && <ModulationTargetHandle paramKey="frequency" top={150} />}
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
@@ -101,51 +96,57 @@ export default function EffectNode({ id }: { id: string }) {
                                 value={mix}
                                 bypassed={isBypassed}
                                 onToggleBypass={() => {
-                                    const next = !isBypassed;
-                                    setIsBypassed(next);
-                                    updateNodeValue(id, { wet: next ? 0 : mix / 100 });
+                                    updateNodeValue(id, { wet: isBypassed ? 0.5 : 0 });
                                 }}
-                                onChange={setMixValue}
+                                onChange={(value) => updateNodeValue(id, { wet: value / 100 })}
                             />
 
                             {subType === 'reverb' && (
                                 <div className="flex flex-col gap-2">
                                     <div className="flex justify-between items-end">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Depth</label>
-                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{roomSize}%</span>
                                     </div>
-                                    <input type="range" min="0" max="100" value={depth}
-                                        onChange={handleDepthChange}
+                                    <input type="range" min="0" max="100" value={roomSize}
+                                        onChange={(event) => updateNodeValue(id, { roomSize: Number(event.target.value) / 100 })}
                                         className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
                                     />
                                 </div>
                             )}
 
                             {subType === 'delay' && (
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex justify-between items-end">
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</label>
-                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 0.9).toFixed(2)}s</span>
+                                <>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex justify-between items-end">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Time</label>
+                                            <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{delayTime.toFixed(2)}s</span>
+                                        </div>
+                                        <input type="range" min="0.05" max="1.2" step="0.01" value={delayTime}
+                                            onChange={(event) => updateNodeValue(id, { delayTime: Number(event.target.value) })}
+                                            className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                        />
                                     </div>
-                                    <input type="range" min="0" max="100" value={time}
-                                        onChange={handleTimeChange}
-                                        className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
-                                    />
-                                </div>
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex justify-between items-end">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Feedback</label>
+                                            <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{Math.round(feedback * 100)}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="0.95" step="0.01" value={feedback}
+                                            onChange={(event) => updateNodeValue(id, { feedback: Number(event.target.value) })}
+                                            className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
+                                        />
+                                    </div>
+                                </>
                             )}
 
                             {subType === 'distortion' && (
                                 <div className="flex flex-col gap-2">
                                     <div className="flex justify-between items-end">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Drive</label>
-                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{depth}%</span>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{distortion}%</span>
                                     </div>
-                                    <input type="range" min="0" max="100" value={depth}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setDepth(val);
-                                            updateNodeValue(id, { distortion: val / 100 });
-                                        }}
+                                    <input type="range" min="0" max="100" value={distortion}
+                                        onChange={(event) => updateNodeValue(id, { distortion: Number(event.target.value) / 100 })}
                                         className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
                                     />
                                 </div>
@@ -155,14 +156,10 @@ export default function EffectNode({ id }: { id: string }) {
                                 <div className="flex flex-col gap-2">
                                     <div className="flex justify-between items-end">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speed</label>
-                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{(0.1 + (time / 100) * 19.9).toFixed(1)}Hz</span>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{phaserFrequency.toFixed(1)}Hz</span>
                                     </div>
-                                    <input type="range" min="0" max="100" value={time}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setTime(val);
-                                            updateNodeValue(id, { frequency: 0.1 + (val / 100) * 19.9 });
-                                        }}
+                                    <input type="range" min="0.1" max="20" step="0.1" value={phaserFrequency}
+                                        onChange={(event) => updateNodeValue(id, { frequency: Number(event.target.value) })}
                                         className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
                                     />
                                 </div>
@@ -172,14 +169,10 @@ export default function EffectNode({ id }: { id: string }) {
                                 <div className="flex flex-col gap-2">
                                     <div className="flex justify-between items-end">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bits</label>
-                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{Math.round(1 + (depth / 100) * 7)}</span>
+                                        <span className="text-[10px] font-mono text-fuchsia-400 font-bold">{bits}</span>
                                     </div>
-                                    <input type="range" min="0" max="100" value={depth}
-                                        onChange={(e) => {
-                                            const val = parseFloat(e.target.value);
-                                            setDepth(val);
-                                            updateNodeValue(id, { bits: Math.round(1 + (val / 100) * 7) });
-                                        }}
+                                    <input type="range" min="1" max="8" step="1" value={bits}
+                                        onChange={(event) => updateNodeValue(id, { bits: Number(event.target.value) })}
                                         className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-fuchsia-500"
                                     />
                                 </div>

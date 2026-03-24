@@ -12,6 +12,8 @@ const CONTROLLER_GROUPS = [
         { type: 'quantizer', label: 'Quantizer', className: 'bg-purple-500 text-white' },
         { type: 'adsr', label: 'ADSR', className: 'bg-amber-700 text-white' },
         { type: 'stepsequencer', label: 'Sequencer', className: 'bg-blue-500 text-white' },
+        { type: 'pattern', label: 'Pattern', className: 'bg-blue-700 text-white' },
+        { type: 'lfo', label: 'LFO', className: 'bg-lime-700 text-white' },
         { type: 'moodpad', label: 'Mood Pad', className: 'bg-rose-500 text-white' },
     ],
 ] as const;

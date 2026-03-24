@@ -14,7 +14,6 @@ import {
     applyNodeChanges,
     applyEdgeChanges,
     OnEdgeUpdateFunc,
-    updateEdge,
 } from 'reactflow';
 
 export const ROOT_NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -29,10 +28,14 @@ export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
 export const CONTROL_INPUT_HANDLE_ID = 'control-in';
 export const CONTROL_OUTPUT_HANDLE_ID = 'control-out';
+export const MODULATION_OUTPUT_HANDLE_ID = 'mod-out';
+export const MODULATION_INPUT_HANDLE_PREFIX = 'mod-in:';
 export const AUDIO_SIGNAL_COLOR = '#22d3ee';
 export const CONTROL_SIGNAL_COLOR = '#39ff14';
+export const MODULATION_SIGNAL_COLOR = '#bef264';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
+export const PATTERN_STEPS_PER_BAR = 16;
 export const TRANSPORT_RATE_OPTIONS = [
     { value: '1n', label: '1/1' },
     { value: '2n', label: '1/2' },
@@ -66,6 +69,15 @@ export const CHORD_QUALITY_OPTIONS = [
 ] as const;
 export type ChordQuality = (typeof CHORD_QUALITY_OPTIONS)[number]['value'];
 export const DEFAULT_CHORD_QUALITY: ChordQuality = 'major';
+export const createModulationHandleId = (paramKey: AutomatableParamKey) =>
+    `${MODULATION_INPUT_HANDLE_PREFIX}${paramKey}`;
+export const getModulationParamFromHandle = (handleId?: string | null): AutomatableParamKey | null => {
+    if (!handleId?.startsWith(MODULATION_INPUT_HANDLE_PREFIX)) {
+        return null;
+    }
+
+    return handleId.slice(MODULATION_INPUT_HANDLE_PREFIX.length) as AutomatableParamKey;
+};
 
 export type TransportRate = (typeof TRANSPORT_RATE_OPTIONS)[number]['value'];
 export type AudioNodeType =
@@ -73,15 +85,20 @@ export type AudioNodeType =
     | 'sampler'
     | 'audioin'
     | 'effect'
+    | 'eq'
     | 'speaker'
+    | 'mixer'
     | 'controller'
     | 'midiin'
     | 'tempo'
+    | 'arranger'
     | 'drum'
     | 'advanceddrum'
     | 'chord'
     | 'adsr'
     | 'keys'
+    | 'lfo'
+    | 'pattern'
     | 'unison'
     | 'detune'
     | 'visualiser'
@@ -89,8 +106,10 @@ export type AudioNodeType =
     | 'stepsequencer'
     | 'quantizer'
     | 'moodpad';
-export type ConnectionKind = 'audio' | 'tempo' | 'control';
+export type ConnectionKind = 'audio' | 'tempo' | 'control' | 'modulation';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
+export type GeneratorMode = 'wave' | 'noise' | 'fm' | 'am';
+export type ModulationWaveShape = 'sine' | 'triangle' | 'square' | 'sawtooth';
 export type DrumMode = 'hits' | 'grid';
 export type DrumPart = (typeof DRUM_PARTS)[number];
 export type DrumPattern = Record<DrumPart, boolean[]>;
@@ -107,10 +126,70 @@ export type AdvancedDrumTrackData = {
     sampleName?: string;
     sampleDataUrl?: string;
 };
+export type PatternNote = {
+    id: string;
+    note: string;
+    startStep: number;
+    lengthSteps: number;
+    velocity: number;
+};
+export type PatternClip = {
+    notes: PatternNote[];
+    loopBars: number;
+    stepsPerBar: number;
+};
+export type AutomatableParamKey =
+    | 'mix'
+    | 'wet'
+    | 'roomSize'
+    | 'delayTime'
+    | 'feedback'
+    | 'frequency'
+    | 'depth'
+    | 'pitch'
+    | 'low'
+    | 'mid'
+    | 'high'
+    | 'lowFrequency'
+    | 'highFrequency'
+    | 'harmonicity'
+    | 'modulationIndex'
+    | 'volume'
+    | 'pan';
+export type MixerChannelState = {
+    sourceId: string;
+    volume: number;
+    pan: number;
+    muted: boolean;
+    solo: boolean;
+};
+export type AutomationPoint = {
+    id: string;
+    barOffset: number;
+    value: number;
+    durationBars?: number;
+};
+export type AutomationLane = {
+    id: string;
+    targetNodeId: string;
+    targetParam: AutomatableParamKey;
+    mode: 'step' | 'ramp';
+    points: AutomationPoint[];
+};
+export type ArrangerScene = {
+    id: string;
+    name: string;
+    startBar: number;
+    lengthBars: number;
+    patternNodeIds: string[];
+    rhythmNodeIds: string[];
+    automationLanes: AutomationLane[];
+};
 export type AppEdgeData = {
     kind?: ConnectionKind;
     originalSource?: string;
     originalTarget?: string;
+    targetParam?: AutomatableParamKey;
 };
 export type AppEdge = Edge<AppEdgeData>;
 type DisposablePattern = {
@@ -130,6 +209,15 @@ type SamplerChain = {
     player: Tone.Player;
     pitchShift: Tone.PitchShift;
     previewTimeout: ReturnType<typeof setTimeout> | null;
+};
+type MixerStrip = {
+    sourceId: string;
+    input: Tone.Gain;
+    panVol: Tone.PanVol;
+};
+type MixerChain = {
+    output: Tone.PanVol;
+    strips: Map<string, MixerStrip>;
 };
 type AudioInputChain = {
     input: Tone.UserMedia;
@@ -156,6 +244,7 @@ type ActiveQuantizedNote = {
 };
 type NodeValueUpdate = {
     waveShape?: WaveShape;
+    generatorMode?: GeneratorMode;
     volume?: number;
     inputGain?: number;
     mix?: number;
@@ -174,6 +263,14 @@ type NodeValueUpdate = {
     release?: number;
     depth?: number;
     pitch?: number;
+    low?: number;
+    mid?: number;
+    high?: number;
+    lowFrequency?: number;
+    highFrequency?: number;
+    harmonicity?: number;
+    modulationIndex?: number;
+    pan?: number;
     packedName?: string;
 };
 
@@ -196,12 +293,28 @@ export type AppNode = Node & {
         audioInStatus?: 'idle' | 'requesting' | 'active' | 'denied' | 'unsupported' | 'error';
         inputGain?: number;
         isPlaying?: boolean;
+        mix?: number;
+        wet?: number;
+        roomSize?: number;
+        delayTime?: number;
+        feedback?: number;
+        distortion?: number;
+        frequency?: number;
+        octaves?: number;
+        bits?: number;
+        depth?: number;
+        pitch?: number;
+        volume?: number;
+        pan?: number;
         drumMode?: DrumMode;
         drumPattern?: DrumPattern;
         currentStep?: number;
         rootNote?: string;
         scaleType?: string;
         waveShape?: WaveShape;
+        generatorMode?: GeneratorMode;
+        harmonicity?: number;
+        modulationIndex?: number;
         octave?: number;
         bpm?: number;
         attack?: number;
@@ -237,6 +350,21 @@ export type AppNode = Node & {
         pitchShift?: number;
         advancedDrumTracks?: AdvancedDrumTrackData[];
         swing?: number;
+        eqLow?: number;
+        eqMid?: number;
+        eqHigh?: number;
+        eqLowFrequency?: number;
+        eqHighFrequency?: number;
+        lfoWaveform?: ModulationWaveShape;
+        lfoDepth?: number;
+        lfoSync?: boolean;
+        lfoRate?: TransportRate;
+        lfoHz?: number;
+        patternNotes?: PatternNote[];
+        patternLoopBars?: number;
+        patternStepsPerBar?: number;
+        mixerChannels?: MixerChannelState[];
+        arrangerScenes?: ArrangerScene[];
         visualiserMode?: 'waveform' | 'spectrum' | 'vu' | 'lissajous';
     };
     type: AudioNodeType;
@@ -254,6 +382,16 @@ type RecordingController = {
     mimeType: string;
     chunks: BlobPart[];
     timerId: number | ReturnType<typeof setInterval> | null;
+};
+
+type AutomatableParamDefinition = {
+    key: AutomatableParamKey;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    defaultValue: number;
+    supportsModulation?: boolean;
 };
 
 const CHORD_INTERVALS: Record<ChordQuality, string[]> = {
@@ -684,6 +822,8 @@ export const NODE_CANVAS_DIMS: Record<string, { w: number; h: number }> = {
     moodpad: { w: 320, h: 416 },
     pulse: { w: 288, h: 280 },
     stepsequencer: { w: 352, h: 420 },
+    pattern: { w: 352, h: 280 },
+    lfo: { w: 256, h: 280 },
     chord: { w: 224, h: 240 },
     quantizer: { w: 240, h: 272 },
     adsr: { w: 224, h: 340 },
@@ -693,11 +833,14 @@ export const NODE_CANVAS_DIMS: Record<string, { w: number; h: number }> = {
     drum: { w: 320, h: 360 },
     advanceddrum: { w: 432, h: 420 },
     effect: { w: 224, h: 260 },
+    eq: { w: 256, h: 320 },
     unison: { w: 224, h: 220 },
     detune: { w: 224, h: 200 },
     visualiser: { w: 288, h: 320 },
     speaker: { w: 224, h: 200 },
+    mixer: { w: 320, h: 360 },
     tempo: { w: 256, h: 240 },
+    arranger: { w: 352, h: 360 },
 };
 export const DEFAULT_NODE_CANVAS_DIMS = { w: 224, h: 220 };
 
@@ -821,12 +964,15 @@ let onboardingIntroTimeout: ReturnType<typeof setTimeout> | null = null;
 
 const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     tempo: -1,
+    arranger: -0.9,
     controller: 0,
     keys: 0,
     midiin: 0,
     moodpad: 0,
     pulse: 0,
     stepsequencer: 0.25,
+    pattern: 0.3,
+    lfo: 0.35,
     chord: 0.5,
     quantizer: 0.65,
     adsr: 0.75,
@@ -838,11 +984,26 @@ const SIGNAL_ORDER: Record<AudioNodeType, number> = {
     unison: 1.5,
     detune: 1.5,
     effect: 2,
+    eq: 2,
     visualiser: 2.5,
+    mixer: 2.8,
     speaker: 3,
 };
 
-const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'midiin', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
+const CONTROL_DOMAIN_TYPES = new Set<AudioNodeType>([
+    'controller',
+    'keys',
+    'midiin',
+    'moodpad',
+    'pulse',
+    'stepsequencer',
+    'pattern',
+    'lfo',
+    'chord',
+    'quantizer',
+    'adsr',
+    'arranger',
+]);
 
 export const isControlDomainNodeType = (type?: AudioNodeType | string | null) =>
     Boolean(type) && CONTROL_DOMAIN_TYPES.has(type as AudioNodeType);
@@ -852,10 +1013,33 @@ export const getAdjacencyGlowClasses = (type?: AudioNodeType | string | null) =>
         ? ' ring-2 ring-offset-2 ring-offset-slate-900 ring-[#39ff14] shadow-[0_0_24px_rgba(57,255,20,0.25)]'
         : ' ring-2 ring-offset-2 ring-offset-slate-900 ring-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.25)]';
 
-const CONTROL_INPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'stepsequencer', 'chord', 'quantizer', 'adsr', 'generator', 'sampler', 'drum', 'advanceddrum']);
-const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>(['controller', 'keys', 'midiin', 'moodpad', 'pulse', 'stepsequencer', 'chord', 'quantizer', 'adsr']);
-const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'unison', 'detune', 'visualiser', 'speaker']);
-const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'sampler', 'audioin', 'drum', 'advanceddrum', 'effect', 'unison', 'detune', 'visualiser']);
+const CONTROL_INPUT_TYPES = new Set<AudioNodeType>([
+    'controller',
+    'keys',
+    'stepsequencer',
+    'pattern',
+    'chord',
+    'quantizer',
+    'adsr',
+    'generator',
+    'sampler',
+    'drum',
+    'advanceddrum',
+]);
+const CONTROL_OUTPUT_TYPES = new Set<AudioNodeType>([
+    'controller',
+    'keys',
+    'midiin',
+    'moodpad',
+    'pulse',
+    'stepsequencer',
+    'pattern',
+    'chord',
+    'quantizer',
+    'adsr',
+]);
+const AUDIO_INPUT_TYPES = new Set<AudioNodeType>(['effect', 'eq', 'unison', 'detune', 'visualiser', 'speaker', 'mixer']);
+const AUDIO_OUTPUT_TYPES = new Set<AudioNodeType>(['generator', 'sampler', 'audioin', 'drum', 'advanceddrum', 'effect', 'eq', 'unison', 'detune', 'visualiser']);
 
 const getClusterSignalEntry = (clusterIds: Set<string>, nodes: AppNode[], kind: ConnectionKind): string | null => {
     const clusterNodes = nodes.filter(n => clusterIds.has(n.id));
@@ -919,8 +1103,14 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'stepsequencer->adsr',
     'stepsequencer->generator',
     'stepsequencer->sampler',
+    'pattern->quantizer',
+    'pattern->chord',
+    'pattern->adsr',
+    'pattern->generator',
+    'pattern->sampler',
     'audioin->unison',
     'audioin->detune',
+    'audioin->eq',
     'audioin->effect',
     'audioin->visualiser',
     'generator->unison',
@@ -931,8 +1121,24 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'advanceddrum->unison',
     'drum->detune',
     'advanceddrum->detune',
+    'generator->eq',
+    'sampler->eq',
+    'drum->eq',
+    'advanceddrum->eq',
+    'audioin->mixer',
+    'generator->mixer',
+    'sampler->mixer',
+    'drum->mixer',
+    'advanceddrum->mixer',
+    'effect->mixer',
+    'eq->mixer',
+    'unison->mixer',
+    'detune->mixer',
+    'visualiser->mixer',
     'unison->effect',
     'detune->effect',
+    'eq->effect',
+    'effect->eq',
     'unison->unison',
     'unison->detune',
     'detune->unison',
@@ -944,14 +1150,20 @@ export const VALID_AUTO_WIRE_PAIRS = new Set([
     'effect->effect',
     'effect->unison',
     'effect->detune',
+    'eq->unison',
+    'eq->detune',
+    'unison->eq',
+    'detune->eq',
     'generator->visualiser',
     'sampler->visualiser',
     'drum->visualiser',
     'advanceddrum->visualiser',
     'effect->visualiser',
+    'eq->visualiser',
     'unison->visualiser',
     'detune->visualiser',
     'visualiser->effect',
+    'visualiser->eq',
     'visualiser->unison',
     'visualiser->detune',
     'visualiser->visualiser',
@@ -1003,6 +1215,11 @@ export const CONTROL_WIRE_PAIRS = new Set([
     'stepsequencer->adsr',
     'stepsequencer->generator',
     'stepsequencer->sampler',
+    'pattern->quantizer',
+    'pattern->chord',
+    'pattern->adsr',
+    'pattern->generator',
+    'pattern->sampler',
 ]);
 
 const clampTempoBpm = (bpm: number) =>
@@ -1014,8 +1231,8 @@ const clampVolumePercent = (volume: number) =>
 const hasSpeakerNode = (nodes: AppNode[]) =>
     nodes.some((node) => node.type === 'speaker');
 
-const getGeneratorWaveShape = (nodes: AppNode[], id: string) =>
-    nodes.find((node) => node.id === id && node.type === 'generator')?.data.waveShape ?? 'sine';
+const hasMixerNode = (nodes: AppNode[]) =>
+    nodes.some((node) => node.type === 'mixer');
 
 const volumePercentToDb = (volume: number) => {
     const nextVolume = clampVolumePercent(volume);
@@ -1049,6 +1266,17 @@ export const createDefaultStepSequence = (): SequencerStep[] => {
 export const getSequencerStepMix = (step: SequencerStep) =>
     clampVolumePercent(step.mix ?? step.gate ?? 60);
 
+export const createDefaultPatternClip = (): PatternClip => ({
+    loopBars: 2,
+    stepsPerBar: PATTERN_STEPS_PER_BAR,
+    notes: [
+        { id: crypto.randomUUID(), note: 'C4', startStep: 0, lengthSteps: 4, velocity: 0.85 },
+        { id: crypto.randomUUID(), note: 'E4', startStep: 4, lengthSteps: 4, velocity: 0.75 },
+        { id: crypto.randomUUID(), note: 'G4', startStep: 8, lengthSteps: 4, velocity: 0.8 },
+        { id: crypto.randomUUID(), note: 'B4', startStep: 12, lengthSteps: 4, velocity: 0.7 },
+    ],
+});
+
 const getLoopIntervalSeconds = (sync: boolean, rate: TransportRate, intervalMs: number) =>
     sync ? rate : Math.max(intervalMs, 50) / 1000;
 
@@ -1074,6 +1302,168 @@ export const createDefaultAdvancedDrumTracks = (): AdvancedDrumTrackData[] => [
         steps: [0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0],
     },
 ];
+
+export const getGeneratorMode = (nodeData?: Partial<AppNode['data']>) => {
+    if (nodeData?.generatorMode) {
+        return nodeData.generatorMode;
+    }
+
+    if (nodeData?.waveShape === 'noise') {
+        return 'noise';
+    }
+
+    return 'wave';
+};
+
+const isGeneratorMode = (value?: string): value is GeneratorMode =>
+    value === 'wave' || value === 'noise' || value === 'fm' || value === 'am';
+
+const isPatternRuntimeNode = (type: AudioNodeType) =>
+    type === 'pulse' ||
+    type === 'stepsequencer' ||
+    type === 'pattern' ||
+    type === 'advanceddrum' ||
+    type === 'arranger';
+
+const shouldInitAudioNode = (node: AppNode) =>
+    node.type === 'generator' ||
+    node.type === 'sampler' ||
+    node.type === 'audioin' ||
+    node.type === 'drum' ||
+    node.type === 'advanceddrum' ||
+    node.type === 'effect' ||
+    node.type === 'eq' ||
+    node.type === 'unison' ||
+    node.type === 'detune' ||
+    node.type === 'visualiser' ||
+    node.type === 'mixer';
+
+const getNodeInitSubType = (node: AppNode) => {
+    if (node.type === 'generator') {
+        return getGeneratorMode(node.data);
+    }
+
+    return node.data.subType && node.data.subType !== 'none'
+        ? node.data.subType
+        : undefined;
+};
+
+export const patternStepToTransportPosition = (step: number, stepsPerBar = PATTERN_STEPS_PER_BAR) => {
+    const safeStepsPerBar = Math.max(1, stepsPerBar);
+    const bars = Math.floor(step / safeStepsPerBar);
+    const stepWithinBar = step % safeStepsPerBar;
+    const quarters = Math.floor(stepWithinBar / 4);
+    const sixteenths = stepWithinBar % 4;
+    return `${bars}:${quarters}:${sixteenths}`;
+};
+
+export const patternStepLengthToToneTime = (lengthSteps: number, stepsPerBar = PATTERN_STEPS_PER_BAR) => {
+    const safeLength = Math.max(1, lengthSteps);
+    const safeStepsPerBar = Math.max(1, stepsPerBar);
+    const bars = Math.floor(safeLength / safeStepsPerBar);
+    const stepWithinBar = safeLength % safeStepsPerBar;
+    const quarters = Math.floor(stepWithinBar / 4);
+    const sixteenths = stepWithinBar % 4;
+    return `${bars}:${quarters}:${sixteenths}`;
+};
+
+export const AUTOMATABLE_PARAM_REGISTRY: Partial<Record<AudioNodeType, AutomatableParamDefinition[]>> = {
+    generator: [
+        { key: 'mix', label: 'Mix', min: 0, max: 100, step: 1, defaultValue: 80 },
+        { key: 'harmonicity', label: 'Harmonicity', min: 0.25, max: 8, step: 0.05, defaultValue: 1 },
+        { key: 'modulationIndex', label: 'Mod Index', min: 0.5, max: 20, step: 0.1, defaultValue: 4 },
+    ],
+    sampler: [
+        { key: 'mix', label: 'Mix', min: 0, max: 100, step: 1, defaultValue: 80 },
+    ],
+    drum: [
+        { key: 'mix', label: 'Mix', min: 0, max: 100, step: 1, defaultValue: 80 },
+    ],
+    advanceddrum: [
+        { key: 'mix', label: 'Mix', min: 0, max: 100, step: 1, defaultValue: 80 },
+    ],
+    effect: [
+        { key: 'wet', label: 'Wet', min: 0, max: 1, step: 0.01, defaultValue: 0.5, supportsModulation: true },
+        { key: 'roomSize', label: 'Room Size', min: 0, max: 1, step: 0.01, defaultValue: 0.5, supportsModulation: true },
+        { key: 'delayTime', label: 'Delay Time', min: 0.05, max: 1.2, step: 0.01, defaultValue: 0.45, supportsModulation: true },
+        { key: 'feedback', label: 'Feedback', min: 0, max: 0.95, step: 0.01, defaultValue: 0.4, supportsModulation: true },
+        { key: 'frequency', label: 'Frequency', min: 0.1, max: 20, step: 0.1, defaultValue: 4, supportsModulation: true },
+    ],
+    eq: [
+        { key: 'low', label: 'Low', min: -24, max: 24, step: 1, defaultValue: 0, supportsModulation: true },
+        { key: 'mid', label: 'Mid', min: -24, max: 24, step: 1, defaultValue: 0, supportsModulation: true },
+        { key: 'high', label: 'High', min: -24, max: 24, step: 1, defaultValue: 0, supportsModulation: true },
+        { key: 'lowFrequency', label: 'Low Xover', min: 80, max: 1200, step: 5, defaultValue: 320, supportsModulation: true },
+        { key: 'highFrequency', label: 'High Xover', min: 1200, max: 8000, step: 10, defaultValue: 2800, supportsModulation: true },
+    ],
+    unison: [
+        { key: 'wet', label: 'Wet', min: 0, max: 1, step: 0.01, defaultValue: 0.5, supportsModulation: true },
+        { key: 'frequency', label: 'Rate', min: 0.1, max: 10, step: 0.1, defaultValue: 3.35, supportsModulation: true },
+        { key: 'depth', label: 'Depth', min: 0, max: 1, step: 0.01, defaultValue: 0.7 },
+    ],
+    detune: [
+        { key: 'wet', label: 'Wet', min: 0, max: 1, step: 0.01, defaultValue: 1, supportsModulation: true },
+        { key: 'pitch', label: 'Pitch', min: -12, max: 12, step: 0.1, defaultValue: 0 },
+    ],
+    mixer: [
+        { key: 'volume', label: 'Volume', min: 0, max: 100, step: 1, defaultValue: 70 },
+        { key: 'pan', label: 'Pan', min: -1, max: 1, step: 0.05, defaultValue: 0 },
+    ],
+};
+
+export const getAutomatableParamsForNode = (type?: AudioNodeType | null) =>
+    type ? AUTOMATABLE_PARAM_REGISTRY[type] ?? [] : [];
+
+const getAutomatableParamDefinition = (type: AudioNodeType, key: AutomatableParamKey) =>
+    getAutomatableParamsForNode(type).find((definition) => definition.key === key);
+
+export const getNodeAutomatableValue = (
+    nodeData: Partial<AppNode['data']> | undefined,
+    paramKey: AutomatableParamKey
+) => {
+    if (!nodeData) {
+        return 0;
+    }
+
+    switch (paramKey) {
+        case 'mix':
+            return nodeData.mix ?? 80;
+        case 'wet':
+            return nodeData.wet ?? 0.5;
+        case 'roomSize':
+            return nodeData.roomSize ?? 0.5;
+        case 'delayTime':
+            return nodeData.delayTime ?? 0.45;
+        case 'feedback':
+            return nodeData.feedback ?? 0.4;
+        case 'frequency':
+            return nodeData.frequency ?? 4;
+        case 'depth':
+            return nodeData.depth ?? 0.7;
+        case 'pitch':
+            return nodeData.pitch ?? 0;
+        case 'low':
+            return nodeData.eqLow ?? 0;
+        case 'mid':
+            return nodeData.eqMid ?? 0;
+        case 'high':
+            return nodeData.eqHigh ?? 0;
+        case 'lowFrequency':
+            return nodeData.eqLowFrequency ?? 320;
+        case 'highFrequency':
+            return nodeData.eqHighFrequency ?? 2800;
+        case 'harmonicity':
+            return nodeData.harmonicity ?? 1;
+        case 'modulationIndex':
+            return nodeData.modulationIndex ?? 4;
+        case 'volume':
+            return nodeData.volume ?? 70;
+        case 'pan':
+            return nodeData.pan ?? 0;
+        default:
+            return 0;
+    }
+};
 
 const velocityToGain = (velocity: number) => {
     if (velocity <= 0) {
@@ -1185,6 +1575,50 @@ const createAdvancedDrumRack = (): AdvancedDrumRack => {
     };
 };
 
+const createGeneratorAudioNode = (nodeData?: Partial<AppNode['data']>) => {
+    const generatorMode = getGeneratorMode(nodeData);
+    const mix = nodeData?.mix ?? 80;
+    const waveShape = nodeData?.waveShape && nodeData.waveShape !== 'noise'
+        ? nodeData.waveShape
+        : 'sine';
+
+    if (generatorMode === 'noise') {
+        const noise = new Tone.Noise({ type: 'white' });
+        noise.volume.value = volumePercentToDb(mix);
+        return noise;
+    }
+
+    if (generatorMode === 'fm') {
+        return new Tone.PolySynth(Tone.FMSynth, {
+            volume: volumePercentToDb(mix),
+            oscillator: { type: waveShape },
+            harmonicity: nodeData?.harmonicity ?? 1,
+            modulationIndex: nodeData?.modulationIndex ?? 4,
+        });
+    }
+
+    if (generatorMode === 'am') {
+        return new Tone.PolySynth(Tone.AMSynth, {
+            volume: volumePercentToDb(mix),
+            oscillator: { type: waveShape },
+            harmonicity: nodeData?.harmonicity ?? 1,
+        });
+    }
+
+    return new Tone.PolySynth(Tone.Synth, {
+        volume: volumePercentToDb(mix),
+        oscillator: { type: waveShape },
+    });
+};
+
+const disposeMixerChain = (chain: MixerChain) => {
+    chain.strips.forEach((strip) => {
+        strip.input.disconnect().dispose();
+        strip.panVol.disconnect().dispose();
+    });
+    chain.output.disconnect().dispose();
+};
+
 export const isTempoEdge = (edge: Edge<AppEdgeData>) =>
     edge.data?.kind === 'tempo' ||
     edge.sourceHandle === TEMPO_OUTPUT_HANDLE_ID ||
@@ -1195,7 +1629,13 @@ export const isControlEdge = (edge: Edge<AppEdgeData>) =>
     edge.sourceHandle === CONTROL_OUTPUT_HANDLE_ID ||
     edge.targetHandle === CONTROL_INPUT_HANDLE_ID;
 
-export const isAudioEdge = (edge: Edge<AppEdgeData>) => !isTempoEdge(edge) && !isControlEdge(edge);
+export const isModulationEdge = (edge: Edge<AppEdgeData>) =>
+    edge.data?.kind === 'modulation' ||
+    edge.sourceHandle === MODULATION_OUTPUT_HANDLE_ID ||
+    Boolean(getModulationParamFromHandle(edge.targetHandle));
+
+export const isAudioEdge = (edge: Edge<AppEdgeData>) =>
+    !isTempoEdge(edge) && !isControlEdge(edge) && !isModulationEdge(edge);
 
 const stripLegacyTempoEdges = (edges: AppEdge[]) =>
     edges.filter((edge) => !isTempoEdge(edge));
@@ -1224,6 +1664,31 @@ const isValidGraphConnection = (
     }
     if (sourceNode.type === 'tempo' || targetNode.type === 'tempo') {
         return false;
+    }
+
+    const modulationParam = getModulationParamFromHandle(connection.targetHandle);
+    const isModulationConn =
+        connection.sourceHandle === MODULATION_OUTPUT_HANDLE_ID &&
+        Boolean(modulationParam) &&
+        sourceNode.type === 'lfo';
+
+    if (isModulationConn) {
+        if (!modulationParam) {
+            return false;
+        }
+
+        const paramDefinition = getAutomatableParamDefinition(targetNode.type, modulationParam);
+        if (!paramDefinition?.supportsModulation) {
+            return false;
+        }
+
+        return !edges.some((edge) =>
+            edge.id !== ignoredEdgeId &&
+            edge.source === connection.source &&
+            edge.target === connection.target &&
+            edge.sourceHandle === connection.sourceHandle &&
+            edge.targetHandle === connection.targetHandle
+        );
     }
 
     // Strict domain matching — control-out MUST connect to control-in, audio-out MUST connect to audio-in
@@ -1260,12 +1725,24 @@ const getConnectionKind = (
         targetHandle?: string | null;
     }
 ): ConnectionKind | null => {
+    if (connection.sourceHandle === MODULATION_OUTPUT_HANDLE_ID) return 'modulation';
     if (connection.sourceHandle === CONTROL_OUTPUT_HANDLE_ID) return 'control';
     if (connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID) return 'audio';
     return null;
 };
 
 const getEdgePresentation = (kind: ConnectionKind) => {
+    if (kind === 'modulation') {
+        return {
+            style: {
+                stroke: MODULATION_SIGNAL_COLOR,
+                strokeWidth: 2,
+                strokeDasharray: '3 3',
+                filter: `drop-shadow(0 0 6px ${MODULATION_SIGNAL_COLOR})`,
+            },
+            data: { kind },
+        };
+    }
     if (kind === 'control') {
         return {
             style: {
@@ -1303,7 +1780,9 @@ const collectReachableEdgeIds = (
                 ? isControlEdge(edge)
                 : kind === 'audio'
                     ? isAudioEdge(edge)
-                    : isTempoEdge(edge)
+                    : kind === 'modulation'
+                        ? isModulationEdge(edge)
+                        : isTempoEdge(edge)
         )
         .forEach((edge) => {
             const visitKey = `${edge.id}:${sourceId}:${kind}`;
@@ -1333,7 +1812,9 @@ type AppState = {
     audioInputChains: Map<string, AudioInputChain>;
     drumRacks: Map<string, DrumRack>;
     samplerChains: Map<string, SamplerChain>;
+    mixerChains: Map<string, MixerChain>;
     advancedDrumRacks: Map<string, AdvancedDrumRack>;
+    lfoBindings: Map<string, Tone.LFO>;
     patterns: Map<string, DisposablePattern>;
     activeChordVoicings: Map<string, ActiveChordVoicing>;
     activeQuantizedNotes: Map<string, ActiveQuantizedNote>;
@@ -1371,6 +1852,12 @@ type AppState = {
     updateNodeValue: (id: string, value: NodeValueUpdate) => void;
     updateNodeData: (id: string, data: Partial<AppNode['data']>) => void;
     updateSequencerStep: (id: string, stepIndex: number, step: Partial<SequencerStep>) => void;
+    updatePatternData: (id: string, clip: Partial<PatternClip>) => void;
+    upsertPatternNote: (id: string, note: PatternNote) => void;
+    removePatternNote: (id: string, noteId: string) => void;
+    updateMixerChannel: (id: string, sourceId: string, patch: Partial<MixerChannelState>) => void;
+    upsertArrangerScene: (id: string, scene: ArrangerScene) => void;
+    removeArrangerScene: (id: string, sceneId: string) => void;
     updateTempoBpm: (id: string, bpm: number) => void;
     updateArpScale: (id: string, root: string, scale: string) => void;
     updateOctave: (id: string, octave: number) => void;
@@ -1416,6 +1903,8 @@ type AppState = {
     sanitizeLegacyTempoEdges: () => void;
     isValidConnection: (connection: Connection, ignoredEdgeId?: string) => boolean;
     rebuildAudioGraph: () => void;
+    rebuildModulationGraph: () => void;
+    syncMixerChannels: () => void;
     initializeDefaultNodes: () => void;
     clearCanvas: () => void;
     loadCanvas: (data: { nodes: AppNode[]; edges: AppEdge[]; masterVolume?: number }) => void;
@@ -1427,6 +1916,173 @@ type AppState = {
     redo: () => void;
 };
 
+const getPatternClipFromNode = (node: AppNode): PatternClip => ({
+    notes: node.data.patternNotes ?? createDefaultPatternClip().notes,
+    loopBars: Math.max(1, Math.min(8, node.data.patternLoopBars ?? 2)),
+    stepsPerBar: Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR),
+});
+
+const getDefaultMixerChannelState = (sourceId: string): MixerChannelState => ({
+    sourceId,
+    volume: 70,
+    pan: 0,
+    muted: false,
+    solo: false,
+});
+
+const applyMixerChannelRuntime = (
+    strip: MixerStrip,
+    channel: MixerChannelState,
+    hasSoloChannel: boolean
+) => {
+    const isAudible = !channel.muted && (!hasSoloChannel || channel.solo);
+    strip.input.gain.rampTo(isAudible ? 1 : 0, 0.05);
+    strip.panVol.volume.rampTo(
+        isAudible ? volumePercentToDb(channel.volume) : -Infinity,
+        0.1
+    );
+    strip.panVol.pan.rampTo(channel.pan, 0.1);
+};
+
+const getBarsAsToneTime = (bars: number) => `${Math.max(0, bars)}:0:0`;
+
+const resolveModulationTarget = (
+    state: Pick<AppState, 'audioNodes' | 'samplerChains' | 'drumRacks' | 'advancedDrumRacks' | 'mixerChains'>,
+    nodeId: string,
+    nodeType: AudioNodeType,
+    paramKey: AutomatableParamKey
+): unknown => {
+    if (nodeType === 'effect') {
+        const node = state.audioNodes.get(nodeId);
+        if (node instanceof Tone.Freeverb) {
+            if (paramKey === 'wet') return node.wet;
+            if (paramKey === 'roomSize') return node.roomSize;
+        }
+        if (node instanceof Tone.FeedbackDelay) {
+            if (paramKey === 'wet') return node.wet;
+            if (paramKey === 'delayTime') return node.delayTime;
+            if (paramKey === 'feedback') return node.feedback;
+        }
+        if (node instanceof Tone.Phaser) {
+            if (paramKey === 'wet') return node.wet;
+            if (paramKey === 'frequency') return node.frequency;
+        }
+    }
+
+    if (nodeType === 'eq') {
+        const node = state.audioNodes.get(nodeId);
+        if (node instanceof Tone.EQ3) {
+            if (paramKey === 'low') return node.low;
+            if (paramKey === 'mid') return node.mid;
+            if (paramKey === 'high') return node.high;
+            if (paramKey === 'lowFrequency') return node.lowFrequency;
+            if (paramKey === 'highFrequency') return node.highFrequency;
+        }
+    }
+
+    if (nodeType === 'unison') {
+        const node = state.audioNodes.get(nodeId);
+        if (node instanceof Tone.Chorus) {
+            if (paramKey === 'wet') return node.wet;
+            if (paramKey === 'frequency') return node.frequency;
+        }
+    }
+
+    if (nodeType === 'detune') {
+        const node = state.audioNodes.get(nodeId);
+        if (node instanceof Tone.PitchShift && paramKey === 'wet') {
+            return node.wet;
+        }
+    }
+
+    if (nodeType === 'mixer') {
+        const chain = state.mixerChains.get(nodeId);
+        if (chain) {
+            if (paramKey === 'volume') return chain.output.volume;
+            if (paramKey === 'pan') return chain.output.pan;
+        }
+    }
+
+    return null;
+};
+
+const applyRuntimeAutomatableValue = (
+    state: Pick<AppState, 'audioNodes' | 'samplerChains' | 'drumRacks' | 'advancedDrumRacks' | 'mixerChains'>,
+    nodeId: string,
+    nodeType: AudioNodeType,
+    paramKey: AutomatableParamKey,
+    value: number,
+    rampSeconds = 0.1
+) => {
+    if (nodeType === 'generator') {
+        const node = state.audioNodes.get(nodeId);
+        if (node instanceof Tone.PolySynth) {
+            if (paramKey === 'mix') {
+                node.volume.rampTo(volumePercentToDb(value), rampSeconds);
+            } else if (paramKey === 'harmonicity') {
+                node.set({ harmonicity: value } as never);
+            } else if (paramKey === 'modulationIndex') {
+                node.set({ modulationIndex: value } as never);
+            }
+        } else if (node instanceof Tone.Noise && paramKey === 'mix') {
+            node.volume.rampTo(volumePercentToDb(value), rampSeconds);
+        }
+        return;
+    }
+
+    if (nodeType === 'sampler' && paramKey === 'mix') {
+        state.samplerChains.get(nodeId)?.player.volume.rampTo(volumePercentToDb(value), rampSeconds);
+        return;
+    }
+
+    if (nodeType === 'drum' && paramKey === 'mix') {
+        state.drumRacks.get(nodeId)?.output.gain.rampTo(value / 100, rampSeconds);
+        return;
+    }
+
+    if (nodeType === 'advanceddrum' && paramKey === 'mix') {
+        state.advancedDrumRacks.get(nodeId)?.output.gain.rampTo(value / 100, rampSeconds);
+        return;
+    }
+
+    if (nodeType === 'mixer') {
+        const chain = state.mixerChains.get(nodeId);
+        if (!chain) {
+            return;
+        }
+        if (paramKey === 'volume') {
+            chain.output.volume.rampTo(volumePercentToDb(value), rampSeconds);
+        } else if (paramKey === 'pan') {
+            chain.output.pan.rampTo(value, rampSeconds);
+        }
+        return;
+    }
+
+    const target = resolveModulationTarget(state, nodeId, nodeType, paramKey) as {
+        rampTo?: (value: number, rampSeconds?: number) => void;
+        setValueAtTime?: (value: number, time: number) => void;
+        value?: number;
+    } | null;
+
+    if (!target) {
+        return;
+    }
+
+    if (typeof target.rampTo === 'function') {
+        target.rampTo(value, rampSeconds);
+        return;
+    }
+
+    if (typeof target.setValueAtTime === 'function') {
+        target.setValueAtTime(value, Tone.now() + rampSeconds);
+        return;
+    }
+
+    if ('value' in target) {
+        target.value = value;
+    }
+};
+
 export const useStore = create<AppState>((set, get) => ({
     nodes: [],
     edges: [],
@@ -1436,7 +2092,9 @@ export const useStore = create<AppState>((set, get) => ({
     audioInputChains: new Map(),
     drumRacks: new Map(),
     samplerChains: new Map(),
+    mixerChains: new Map(),
     advancedDrumRacks: new Map(),
+    lfoBindings: new Map(),
     patterns: new Map(),
     activeChordVoicings: new Map(),
     activeQuantizedNotes: new Map(),
@@ -1460,16 +2118,16 @@ export const useStore = create<AppState>((set, get) => ({
 
     ensureMasterOutput: () => {
         const { masterOutput, masterVolume, nodes } = get();
+        const isOutputActive = hasSpeakerNode(nodes) || hasMixerNode(nodes);
 
         if (masterOutput) {
-            // Update volume based on speaker presence when master output already exists
-            const targetVolume = hasSpeakerNode(nodes) ? volumePercentToDb(masterVolume) : -Infinity;
+            const targetVolume = isOutputActive ? volumePercentToDb(masterVolume) : -Infinity;
             masterOutput.volume.rampTo(targetVolume, 0.1);
             return masterOutput;
         }
 
         const nextMasterOutput = new Tone.Volume(
-            hasSpeakerNode(nodes) ? volumePercentToDb(masterVolume) : -Infinity
+            isOutputActive ? volumePercentToDb(masterVolume) : -Infinity
         ).toDestination();
         set({ masterOutput: nextMasterOutput });
         return nextMasterOutput;
@@ -1478,8 +2136,8 @@ export const useStore = create<AppState>((set, get) => ({
     setMasterVolume: (volume: number) => {
         const nextVolume = clampVolumePercent(volume);
         const masterOutput = get().ensureMasterOutput();
-        const isSpeakerActive = hasSpeakerNode(get().nodes);
-        masterOutput.volume.rampTo(isSpeakerActive ? volumePercentToDb(nextVolume) : -Infinity, 0.1);
+        const isOutputActive = hasSpeakerNode(get().nodes) || hasMixerNode(get().nodes);
+        masterOutput.volume.rampTo(isOutputActive ? volumePercentToDb(nextVolume) : -Infinity, 0.1);
         set({ masterVolume: nextVolume });
     },
 
@@ -1613,10 +2271,25 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         set({
-            edges: updateEdge(oldEdge, {
-                ...newConnection,
-                ...getEdgePresentation(kind),
-            }, get().edges),
+            edges: get().edges.map((edge) =>
+                edge.id === oldEdge.id
+                    ? {
+                        ...edge,
+                        source: newConnection.source ?? edge.source,
+                        target: newConnection.target ?? edge.target,
+                        sourceHandle: newConnection.sourceHandle ?? edge.sourceHandle ?? null,
+                        targetHandle: newConnection.targetHandle ?? edge.targetHandle ?? null,
+                        ...getEdgePresentation(kind),
+                        data: {
+                            kind,
+                            targetParam:
+                                kind === 'modulation'
+                                    ? getModulationParamFromHandle(newConnection.targetHandle)
+                                    : undefined,
+                        },
+                    }
+                    : edge
+            ) as AppEdge[],
         });
         get().autoWireAdjacentNodes();
     },
@@ -1660,6 +2333,10 @@ export const useStore = create<AppState>((set, get) => ({
                     kind,
                     originalSource,
                     originalTarget,
+                    targetParam:
+                        kind === 'modulation'
+                            ? getModulationParamFromHandle(connection.targetHandle)
+                            : undefined,
                 },
             }, edges),
         });
@@ -1671,16 +2348,14 @@ export const useStore = create<AppState>((set, get) => ({
         if (audioNodes.has(id)) return;
 
         let node: Tone.ToneAudioNode | null = null;
+        const nodeData = get().nodes.find((entry: AppNode) => entry.id === id)?.data;
 
         if (type === 'generator') {
-            const waveShape = (subType as WaveShape) || getGeneratorWaveShape(get().nodes, id);
-            if (waveShape === 'noise') {
-                node = new Tone.Noise({ type: 'white' });
-            } else {
-                const generator = new Tone.PolySynth();
-                generator.set({ oscillator: { type: waveShape } as never });
-                node = generator;
-            }
+            const generatorMode = isGeneratorMode(subType) ? subType : getGeneratorMode(nodeData);
+            node = createGeneratorAudioNode({
+                ...nodeData,
+                generatorMode,
+            });
         } else if (type === 'sampler') {
             const player = new Tone.Player({ autostart: false, loop: false, playbackRate: 1, reverse: false });
             const pitchShift = new Tone.PitchShift({ pitch: 0, wet: 1 });
@@ -1724,34 +2399,82 @@ export const useStore = create<AppState>((set, get) => ({
             set({ advancedDrumRacks: nextAdvancedDrumRacks });
             node = rack.output;
         } else if (type === 'effect') {
-            const actualSubType = subType || 'none';
+            const actualSubType = subType || nodeData?.subType || 'none';
             if (actualSubType === 'reverb') {
-                node = new Tone.Freeverb({ roomSize: 0.5, wet: 0.5 });
+                node = new Tone.Freeverb({
+                    roomSize: nodeData?.roomSize ?? 0.5,
+                    wet: nodeData?.wet ?? 0.5,
+                });
             } else if (actualSubType === 'delay') {
-                node = new Tone.FeedbackDelay('8n', 0.5);
+                const delay = new Tone.FeedbackDelay(
+                    nodeData?.delayTime ?? 0.45,
+                    nodeData?.feedback ?? 0.4
+                );
+                delay.wet.rampTo(nodeData?.wet ?? 0.5, 0.01);
+                node = delay;
             } else if (actualSubType === 'distortion') {
-                node = new Tone.Distortion(0.5);
+                const distortion = new Tone.Distortion(nodeData?.distortion ?? 0.5);
+                distortion.wet.rampTo(nodeData?.wet ?? 0.5, 0.01);
+                node = distortion;
             } else if (actualSubType === 'phaser') {
-                node = new Tone.Phaser({ frequency: 15, octaves: 5, baseFrequency: 1000 });
+                node = new Tone.Phaser({
+                    frequency: nodeData?.frequency ?? 4,
+                    octaves: nodeData?.octaves ?? 5,
+                    baseFrequency: 1000,
+                    wet: nodeData?.wet ?? 0.5,
+                });
             } else if (actualSubType === 'bitcrusher') {
-                node = new Tone.BitCrusher(4);
+                const bitCrusher = new Tone.BitCrusher(nodeData?.bits ?? 4);
+                bitCrusher.wet.rampTo(nodeData?.wet ?? 0.5, 0.01);
+                node = bitCrusher;
             } else {
                 node = new Tone.Volume(0);
             }
+        } else if (type === 'eq') {
+            node = new Tone.EQ3({
+                low: nodeData?.eqLow ?? 0,
+                mid: nodeData?.eqMid ?? 0,
+                high: nodeData?.eqHigh ?? 0,
+                lowFrequency: nodeData?.eqLowFrequency ?? 320,
+                highFrequency: nodeData?.eqHighFrequency ?? 2800,
+            });
         } else if (type === 'unison') {
-            node = new Tone.Chorus({ frequency: 3, delayTime: 2.5, depth: 0.7, wet: 0 }).start();
+            node = new Tone.Chorus({
+                frequency: nodeData?.frequency ?? 3.35,
+                delayTime: 2.5,
+                depth: nodeData?.depth ?? 0.7,
+                wet: nodeData?.wet ?? 0.5,
+            }).start();
         } else if (type === 'detune') {
-            node = new Tone.PitchShift({ pitch: 0, wet: 1 });
+            node = new Tone.PitchShift({
+                pitch: nodeData?.pitch ?? 0,
+                wet: nodeData?.wet ?? 1,
+            });
         } else if (type === 'visualiser') {
             node = new Tone.Gain(1); // passthrough — analysers are attached in the component
+        } else if (type === 'mixer') {
+            const output = new Tone.PanVol(
+                nodeData?.pan ?? 0,
+                volumePercentToDb(nodeData?.volume ?? 70)
+            );
+            const nextMixerChains = new Map(get().mixerChains);
+            nextMixerChains.set(id, {
+                output,
+                strips: new Map(),
+            });
+            set({ mixerChains: nextMixerChains });
+            node = output;
         } else if (
             type === 'controller' ||
             type === 'midiin' ||
             type === 'tempo' ||
             type === 'speaker' ||
+            type === 'arranger' ||
             type === 'chord' ||
             type === 'adsr' ||
             type === 'keys' ||
+            type === 'lfo' ||
+            type === 'pattern' ||
             type === 'moodpad' ||
             type === 'pulse' ||
             type === 'stepsequencer' ||
@@ -1818,7 +2541,16 @@ export const useStore = create<AppState>((set, get) => ({
     changeNodeSubType: (id: string, mainType: AudioNodeType, subType: string) => {
         get().saveSnapshot();
 
-        const { audioNodes, patterns, nodes, edges, generatorNoteCounts, activeGenerators } = get();
+        const {
+            audioNodes,
+            patterns,
+            nodes,
+            edges,
+            generatorNoteCounts,
+            activeGenerators,
+            lfoBindings,
+            mixerChains,
+        } = get();
         const wasPlaying = nodes.find((n: AppNode) => n.id === id)?.data.isPlaying || false;
 
         const oldNode = audioNodes.get(id);
@@ -1854,6 +2586,30 @@ export const useStore = create<AppState>((set, get) => ({
             set({ patterns: newPatterns });
         }
 
+        const oldLfoBindings = [...lfoBindings.entries()].filter(([edgeId]) => edgeId.startsWith(`${id}:`) || edgeId === id);
+        if (oldLfoBindings.length > 0) {
+            const nextBindings = new Map(lfoBindings);
+            oldLfoBindings.forEach(([edgeId, binding]) => {
+                try {
+                    binding.unsync();
+                    binding.stop();
+                } catch {
+                    // Ignore redundant stop/unsync calls during rebuild.
+                }
+                binding.disconnect().dispose();
+                nextBindings.delete(edgeId);
+            });
+            set({ lfoBindings: nextBindings });
+        }
+
+        const mixerChain = mixerChains.get(id);
+        if (mixerChain) {
+            const nextMixerChains = new Map(mixerChains);
+            disposeMixerChain(mixerChain);
+            nextMixerChains.delete(id);
+            set({ mixerChains: nextMixerChains });
+        }
+
         if (oldNode) {
             oldNode.disconnect().dispose();
             const newAudioNodes = new Map(audioNodes);
@@ -1875,7 +2631,13 @@ export const useStore = create<AppState>((set, get) => ({
                         ...n,
                         data: {
                             ...n.data,
-                            ...(mainType === 'generator' ? { waveShape: subType } : { subType }),
+                            ...(mainType === 'generator'
+                                ? (
+                                    isGeneratorMode(subType)
+                                        ? { generatorMode: subType }
+                                        : { waveShape: subType as WaveShape }
+                                )
+                                : { subType }),
                             isPlaying: wasPlaying
                         }
                     }
@@ -1903,7 +2665,9 @@ export const useStore = create<AppState>((set, get) => ({
             audioInputChains,
             drumRacks,
             samplerChains,
+            mixerChains,
             advancedDrumRacks,
+            lfoBindings,
             patterns,
             activeChordVoicings,
             activeQuantizedNotes,
@@ -1967,6 +2731,14 @@ export const useStore = create<AppState>((set, get) => ({
             set({ samplerChains: nextSamplerChains });
         }
 
+        const mixerChain = mixerChains.get(id);
+        if (mixerChain) {
+            disposeMixerChain(mixerChain);
+            const nextMixerChains = new Map(mixerChains);
+            nextMixerChains.delete(id);
+            set({ mixerChains: nextMixerChains });
+        }
+
         const audioInputChain = audioInputChains.get(id);
         if (audioInputChain) {
             try {
@@ -2028,6 +2800,24 @@ export const useStore = create<AppState>((set, get) => ({
             activeGenerators: nextActiveGenerators,
         });
 
+        const bindingEntries = [...lfoBindings.entries()].filter(([edgeId]) =>
+            edgeId === id || edgeId.includes(id)
+        );
+        if (bindingEntries.length > 0) {
+            const nextBindings = new Map(lfoBindings);
+            bindingEntries.forEach(([edgeId, binding]) => {
+                try {
+                    binding.unsync();
+                    binding.stop();
+                } catch {
+                    // Ignore redundant stop/unsync calls during node removal.
+                }
+                binding.disconnect().dispose();
+                nextBindings.delete(edgeId);
+            });
+            set({ lfoBindings: nextBindings });
+        }
+
         const node = audioNodes.get(id);
         if (node) {
             node.disconnect().dispose();
@@ -2039,155 +2829,288 @@ export const useStore = create<AppState>((set, get) => ({
 
     updateNodeValue: (id: string, value: NodeValueUpdate) => {
         const targetNode = get().nodes.find((candidate: AppNode) => candidate.id === id);
-        if (typeof value.packedName === 'string') {
+        if (!targetNode) {
+            return;
+        }
+
+        const nextData: Partial<AppNode['data']> = {};
+        const persistNodeData = () => {
+            if (Object.keys(nextData).length === 0) {
+                return;
+            }
+
             set({
                 nodes: get().nodes.map((node: AppNode) =>
                     node.id === id
-                        ? { ...node, data: { ...node.data, packedName: value.packedName } }
+                        ? { ...node, data: { ...node.data, ...nextData } }
                         : node
                 ),
             });
+        };
+
+        if (typeof value.packedName === 'string') {
+            nextData.packedName = value.packedName;
         }
 
-        if (targetNode?.type === 'speaker' && typeof value.volume === 'number') {
+        if (typeof value.generatorMode === 'string' && targetNode.type === 'generator') {
+            nextData.generatorMode = value.generatorMode;
+            persistNodeData();
+            if (getGeneratorMode(targetNode.data) !== value.generatorMode) {
+                get().changeNodeSubType(id, 'generator', value.generatorMode);
+            }
+            return;
+        }
+
+        if (typeof value.waveShape === 'string' && targetNode.type === 'generator') {
+            nextData.waveShape = value.waveShape;
+
+            if (getGeneratorMode(targetNode.data) === 'noise') {
+                nextData.generatorMode = 'wave';
+                persistNodeData();
+                get().changeNodeSubType(id, 'generator', 'wave');
+                return;
+            }
+
+            const node = get().audioNodes.get(id);
+            if (node instanceof Tone.PolySynth) {
+                node.set({ oscillator: { type: value.waveShape } as never });
+            }
+        }
+
+        if (typeof value.volume === 'number') {
+            nextData.volume = clampVolumePercent(value.volume);
+        }
+
+        if (typeof value.inputGain === 'number') {
+            nextData.inputGain = clampVolumePercent(value.inputGain);
+        }
+
+        if (typeof value.mix === 'number') {
+            nextData.mix = clampVolumePercent(value.mix);
+        }
+
+        if (typeof value.wet === 'number') nextData.wet = value.wet;
+        if (typeof value.roomSize === 'number') nextData.roomSize = value.roomSize;
+        if (typeof value.delayTime === 'number') nextData.delayTime = value.delayTime;
+        if (typeof value.feedback === 'number') nextData.feedback = value.feedback;
+        if (typeof value.distortion === 'number') nextData.distortion = value.distortion;
+        if (typeof value.frequency === 'number') nextData.frequency = value.frequency;
+        if (typeof value.octaves === 'number') nextData.octaves = value.octaves;
+        if (typeof value.bits === 'number') nextData.bits = value.bits;
+        if (typeof value.attack === 'number') nextData.attack = value.attack;
+        if (typeof value.decay === 'number') nextData.decay = value.decay;
+        if (typeof value.sustain === 'number') nextData.sustain = value.sustain;
+        if (typeof value.release === 'number') nextData.release = value.release;
+        if (typeof value.depth === 'number') nextData.depth = value.depth;
+        if (typeof value.pitch === 'number') nextData.pitch = value.pitch;
+        if (typeof value.low === 'number') nextData.eqLow = value.low;
+        if (typeof value.mid === 'number') nextData.eqMid = value.mid;
+        if (typeof value.high === 'number') nextData.eqHigh = value.high;
+        if (typeof value.lowFrequency === 'number') nextData.eqLowFrequency = value.lowFrequency;
+        if (typeof value.highFrequency === 'number') nextData.eqHighFrequency = value.highFrequency;
+        if (typeof value.harmonicity === 'number') nextData.harmonicity = value.harmonicity;
+        if (typeof value.modulationIndex === 'number') nextData.modulationIndex = value.modulationIndex;
+        if (typeof value.pan === 'number') nextData.pan = value.pan;
+
+        if (targetNode.type === 'speaker' && typeof value.volume === 'number') {
+            persistNodeData();
             get().setMasterVolume(value.volume);
             return;
         }
 
-        if (targetNode?.type === 'audioin' && typeof value.inputGain === 'number') {
-            const nextInputGain = clampVolumePercent(value.inputGain);
+        if (targetNode.type === 'audioin' && typeof value.inputGain === 'number') {
             const inputNode = get().audioNodes.get(id);
             if (inputNode instanceof Tone.Volume) {
-                inputNode.volume.rampTo(volumePercentToDb(nextInputGain), 0.1);
+                inputNode.volume.rampTo(volumePercentToDb(nextData.inputGain ?? 75), 0.1);
             }
-            set({
-                nodes: get().nodes.map((node: AppNode) =>
-                    node.id === id
-                        ? { ...node, data: { ...node.data, inputGain: nextInputGain } }
-                        : node
-                ),
-            });
+            persistNodeData();
             return;
         }
 
-        // Handle ADSR nodes (no audio node, just store parameters)
-        if (targetNode?.type === 'adsr') {
-            const nodes = get().nodes.map((n: AppNode) => {
-                if (n.id === id) {
-                    return {
-                        ...n,
-                        data: {
-                            ...n.data,
-                            ...(typeof value.attack === 'number' && { attack: value.attack }),
-                            ...(typeof value.decay === 'number' && { decay: value.decay }),
-                            ...(typeof value.sustain === 'number' && { sustain: value.sustain }),
-                            ...(typeof value.release === 'number' && { release: value.release }),
-                        }
-                    };
-                }
-                return n;
-            });
-            set({ nodes });
+        if (targetNode.type === 'adsr') {
+            persistNodeData();
             return;
         }
 
-        const node = get().audioNodes.get(id);
-        if (!node) return;
+        const {
+            audioNodes,
+            samplerChains,
+            drumRacks,
+            advancedDrumRacks,
+            mixerChains,
+        } = get();
+        const node = audioNodes.get(id);
 
-        if (value.waveShape) {
-            const currentNode = get().nodes.find((n: AppNode) => n.id === id);
-            const currentWaveShape = currentNode?.data.waveShape ?? 'sine';
-
-            // Check if we're switching between noise and non-noise waveforms
-            const isSwitchingToNoise = value.waveShape === 'noise' && currentWaveShape !== 'noise';
-            const isSwitchingFromNoise = currentWaveShape === 'noise' && value.waveShape !== 'noise';
-
-            if (isSwitchingToNoise || isSwitchingFromNoise) {
-                // Switching between noise and oscillator types requires changeNodeSubType
-                // changeNodeSubType will handle updating the node data, so return early
-                get().changeNodeSubType(id, 'generator', value.waveShape);
-                return;
-            } else if (node instanceof Tone.PolySynth) {
-                node.set({ oscillator: { type: value.waveShape } as never });
-            }
-
-            const nodes = get().nodes.map((n: AppNode) =>
-                n.id === id ? { ...n, data: { ...n.data, waveShape: value.waveShape } } : n
+        if (typeof value.mix === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'mix',
+                value.mix
             );
-            set({ nodes });
+        }
+        if (typeof value.wet === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'wet',
+                value.wet
+            );
+        }
+        if (typeof value.roomSize === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'roomSize',
+                value.roomSize
+            );
+        }
+        if (typeof value.delayTime === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'delayTime',
+                value.delayTime
+            );
+        }
+        if (typeof value.feedback === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'feedback',
+                value.feedback
+            );
+        }
+        if (typeof value.frequency === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'frequency',
+                value.frequency
+            );
+        }
+        if (typeof value.depth === 'number' && node instanceof Tone.Chorus) {
+            node.depth = value.depth;
+        }
+        if (typeof value.pitch === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'pitch',
+                value.pitch
+            );
+        }
+        if (typeof value.low === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'low',
+                value.low
+            );
+        }
+        if (typeof value.mid === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'mid',
+                value.mid
+            );
+        }
+        if (typeof value.high === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'high',
+                value.high
+            );
+        }
+        if (typeof value.lowFrequency === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'lowFrequency',
+                value.lowFrequency
+            );
+        }
+        if (typeof value.highFrequency === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'highFrequency',
+                value.highFrequency
+            );
+        }
+        if (typeof value.harmonicity === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'harmonicity',
+                value.harmonicity
+            );
+        }
+        if (typeof value.modulationIndex === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'modulationIndex',
+                value.modulationIndex
+            );
+        }
+        if (typeof value.volume === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'volume',
+                value.volume
+            );
+        }
+        if (typeof value.pan === 'number') {
+            applyRuntimeAutomatableValue(
+                { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                id,
+                targetNode.type,
+                'pan',
+                value.pan
+            );
         }
 
-        if (node instanceof Tone.Volume && typeof value.volume === 'number') {
-            node.volume.rampTo(volumePercentToDb(value.volume), 0.1);
+        if (node instanceof Tone.Distortion && typeof value.distortion === 'number') {
+            node.distortion = value.distortion;
+        } else if (node instanceof Tone.Phaser && typeof value.octaves === 'number') {
+            node.octaves = value.octaves;
+        } else if (node instanceof Tone.BitCrusher && typeof value.bits === 'number') {
+            node.bits.value = value.bits;
         }
 
-        if (node instanceof Tone.PolySynth && typeof value.mix === 'number') {
-            if (value.mix === 0) {
-                node.volume.rampTo(-Infinity, 0.1);
-            } else {
-                node.volume.rampTo(volumePercentToDb(value.mix), 0.1);
-            }
-        }
+        persistNodeData();
 
-        // Handle noise mix - Tone.Noise has a volume property
-        if (node instanceof Tone.Noise && typeof value.mix === 'number') {
-            if (value.mix === 0) {
-                node.volume.rampTo(-Infinity, 0.1);
-            } else {
-                node.volume.rampTo(volumePercentToDb(value.mix), 0.1);
-            }
-        }
-
-        // Handle drum mix - drum rack output is a Gain node
-        if (node instanceof Tone.Gain && typeof value.mix === 'number') {
-            const { drumRacks, advancedDrumRacks } = get();
-            const isDrumOutput =
-                Array.from(drumRacks.values()).some(rack => rack.output === node) ||
-                Array.from(advancedDrumRacks.values()).some(rack => rack.output === node);
-
-            if (isDrumOutput) {
-                if (value.mix === 0) {
-                    node.gain.rampTo(0, 0.1);
-                } else {
-                    node.gain.rampTo(value.mix / 100, 0.1);
-                }
-            }
-        }
-
-        if (targetNode?.type === 'sampler' && typeof value.mix === 'number') {
-            const samplerChain = get().samplerChains.get(id);
-            if (samplerChain) {
-                samplerChain.player.volume.rampTo(volumePercentToDb(value.mix), 0.1);
-            }
-        }
-
-        if (node instanceof Tone.Freeverb) {
-            if (typeof value.roomSize === 'number') node.roomSize.value = value.roomSize;
-            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
-        } else if (node instanceof Tone.FeedbackDelay) {
-            if (typeof value.delayTime === 'number') node.delayTime.rampTo(value.delayTime, 0.1);
-            if (typeof value.feedback === 'number') node.feedback.rampTo(value.feedback, 0.1);
-            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
-        } else if (node instanceof Tone.Distortion) {
-            if (typeof value.distortion === 'number') node.distortion = value.distortion;
-            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
-        } else if (node instanceof Tone.Phaser) {
-            if (typeof value.frequency === 'number') node.frequency.rampTo(value.frequency, 0.1);
-            if (typeof value.octaves === 'number') node.octaves = value.octaves;
-            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
-        } else if (node instanceof Tone.BitCrusher) {
-            if (typeof value.bits === 'number') node.bits.value = value.bits;
-        } else if (node instanceof Tone.Chorus) {
-            if (typeof value.depth === 'number') node.depth = value.depth;
-            if (typeof value.frequency === 'number') node.frequency.rampTo(value.frequency, 0.1);
-            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
-        } else if (node instanceof Tone.PitchShift) {
-            if (typeof value.pitch === 'number') node.pitch = value.pitch;
-            if (typeof value.wet === 'number') node.wet.rampTo(value.wet, 0.1);
-        }
-
-        if (node instanceof Tone.Oscillator && typeof value.frequency === 'number') {
-            node.frequency.rampTo(value.frequency, 0.1);
+        if (
+            get().edges.some((edge) =>
+                isModulationEdge(edge) &&
+                (
+                    edge.source === id ||
+                    edge.target === id ||
+                    edge.data?.originalSource === id ||
+                    edge.data?.originalTarget === id
+                )
+            )
+        ) {
+            get().rebuildModulationGraph();
         }
     },
 
@@ -2205,6 +3128,22 @@ export const useStore = create<AppState>((set, get) => ({
                     : node
             ),
         });
+
+        const node = get().nodes.find((candidate: AppNode) => candidate.id === id);
+        if (
+            node?.type === 'lfo' ||
+            get().edges.some((edge) =>
+                isModulationEdge(edge) &&
+                (
+                    edge.source === id ||
+                    edge.target === id ||
+                    edge.data?.originalSource === id ||
+                    edge.data?.originalTarget === id
+                )
+            )
+        ) {
+            get().rebuildModulationGraph();
+        }
     },
 
     updateSequencerStep: (id: string, stepIndex: number, step: Partial<SequencerStep>) => {
@@ -2234,6 +3173,155 @@ export const useStore = create<AppState>((set, get) => ({
                 };
             }),
         });
+    },
+
+    updatePatternData: (id: string, clip: Partial<PatternClip>) => {
+        const currentNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'pattern');
+        if (!currentNode) {
+            return;
+        }
+
+        const currentClip = getPatternClipFromNode(currentNode);
+        const nextClip: PatternClip = {
+            notes: clip.notes ?? currentClip.notes,
+            loopBars: clip.loopBars ?? currentClip.loopBars,
+            stepsPerBar: clip.stepsPerBar ?? currentClip.stepsPerBar,
+        };
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            patternNotes: nextClip.notes,
+                            patternLoopBars: nextClip.loopBars,
+                            patternStepsPerBar: nextClip.stepsPerBar,
+                        },
+                    }
+                    : node
+            ),
+        });
+
+        if (currentNode.data.isPlaying) {
+            get().toggleNodePlayback(id, true);
+        }
+    },
+
+    upsertPatternNote: (id: string, note: PatternNote) => {
+        const currentNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'pattern');
+        if (!currentNode) {
+            return;
+        }
+
+        const clip = getPatternClipFromNode(currentNode);
+        const existingIndex = clip.notes.findIndex((entry) => entry.id === note.id);
+        const nextNotes =
+            existingIndex === -1
+                ? [...clip.notes, note]
+                : clip.notes.map((entry, index) => (index === existingIndex ? note : entry));
+
+        get().updatePatternData(id, { notes: nextNotes });
+    },
+
+    removePatternNote: (id: string, noteId: string) => {
+        const currentNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'pattern');
+        if (!currentNode) {
+            return;
+        }
+
+        const clip = getPatternClipFromNode(currentNode);
+        get().updatePatternData(id, {
+            notes: clip.notes.filter((note) => note.id !== noteId),
+        });
+    },
+
+    updateMixerChannel: (id: string, sourceId: string, patch: Partial<MixerChannelState>) => {
+        const mixerNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'mixer');
+        if (!mixerNode) {
+            return;
+        }
+
+        const currentChannels: MixerChannelState[] = mixerNode.data.mixerChannels ?? [];
+        const existingChannel = currentChannels.find((channel: MixerChannelState) => channel.sourceId === sourceId)
+            ?? getDefaultMixerChannelState(sourceId);
+        const nextChannel = {
+            ...existingChannel,
+            ...patch,
+            sourceId,
+            volume:
+                typeof patch.volume === 'number'
+                    ? clampVolumePercent(patch.volume)
+                    : existingChannel.volume,
+            pan:
+                typeof patch.pan === 'number'
+                    ? Math.max(-1, Math.min(1, patch.pan))
+                    : existingChannel.pan,
+        };
+        const nextChannels = currentChannels.some((channel) => channel.sourceId === sourceId)
+            ? currentChannels.map((channel: MixerChannelState) => (channel.sourceId === sourceId ? nextChannel : channel))
+            : [...currentChannels, nextChannel];
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? { ...node, data: { ...node.data, mixerChannels: nextChannels } }
+                    : node
+            ),
+        });
+        get().syncMixerChannels();
+    },
+
+    upsertArrangerScene: (id: string, scene: ArrangerScene) => {
+        const arrangerNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'arranger');
+        if (!arrangerNode) {
+            return;
+        }
+
+        const existingScenes: ArrangerScene[] = arrangerNode.data.arrangerScenes ?? [];
+        const nextScenes = existingScenes.some((entry: ArrangerScene) => entry.id === scene.id)
+            ? existingScenes.map((entry: ArrangerScene) => (entry.id === scene.id ? scene : entry))
+            : [...existingScenes, scene];
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? { ...node, data: { ...node.data, arrangerScenes: nextScenes } }
+                    : node
+            ),
+        });
+
+        if (arrangerNode.data.isPlaying) {
+            get().toggleNodePlayback(id, true);
+        }
+    },
+
+    removeArrangerScene: (id: string, sceneId: string) => {
+        const arrangerNode = get().nodes.find((node: AppNode) => node.id === id && node.type === 'arranger');
+        if (!arrangerNode) {
+            return;
+        }
+
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === id
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            arrangerScenes: (node.data.arrangerScenes ?? []).filter(
+                                (scene: ArrangerScene) => scene.id !== sceneId
+                            ),
+                        },
+                    }
+                    : node
+            ),
+        });
+
+        if (arrangerNode.data.isPlaying) {
+            get().toggleNodePlayback(id, true);
+        }
     },
 
     updateTempoBpm: (id: string, bpm: number) => {
@@ -3190,6 +4278,268 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
+        if (nodeData.type === 'pattern') {
+            const existingPattern = patterns.get(id);
+            if (existingPattern) {
+                existingPattern.stop().dispose();
+                const nextPatterns = new Map(patterns);
+                nextPatterns.delete(id);
+                set({ patterns: nextPatterns });
+            }
+
+            if (isPlaying) {
+                const clip = getPatternClipFromNode(nodeData);
+                const events = clip.notes
+                    .slice()
+                    .sort((a: PatternNote, b: PatternNote) => a.startStep - b.startStep)
+                    .map((note) => ({
+                        time: patternStepToTransportPosition(note.startStep, clip.stepsPerBar),
+                        note,
+                    }));
+
+                const part = new Tone.Part((time, event: { note: PatternNote }) => {
+                    const runtimeNodes = get().nodes;
+                    const nodesById = new Map(runtimeNodes.map((node: AppNode) => [node.id, node]));
+                    const audioNodes = get().audioNodes;
+                    const dispatches = collectNoteDispatches(
+                        id,
+                        event.note.note,
+                        nodesById,
+                        get().edges,
+                        new Map(),
+                        new Map(),
+                        true
+                    );
+                    const noteDuration = patternStepLengthToToneTime(
+                        event.note.lengthSteps,
+                        clip.stepsPerBar
+                    );
+                    const noteDurationSeconds = Tone.Time(noteDuration).toSeconds();
+                    const velocity = Math.max(0.001, Math.min(1, event.note.velocity));
+
+                    applyAdsrEnvelopes(id, nodesById, get().edges, audioNodes);
+                    get().emitSignalFlow(id, 'control');
+
+                    dispatches.forEach(({ generatorId, note }) => {
+                        const samplerChain = get().samplerChains.get(generatorId);
+                        if (samplerChain?.player.loaded) {
+                            try {
+                                samplerChain.player.stop(time);
+                            } catch {
+                                // Ignore redundant stop calls when retriggering sequenced samples.
+                            }
+                            samplerChain.player.start(time);
+                            samplerChain.player.stop(
+                                (typeof time === 'number' ? time : Tone.Time(time).toSeconds()) + noteDurationSeconds
+                            );
+                            get().emitSignalFlow(generatorId, 'audio');
+                            return;
+                        }
+
+                        const targetNode = get().audioNodes.get(generatorId);
+                        if (targetNode instanceof Tone.PolySynth) {
+                            targetNode.triggerAttackRelease(note, noteDuration, time, velocity);
+                            get().emitSignalFlow(generatorId, 'audio');
+                        } else if (targetNode instanceof Tone.Noise) {
+                            const startTime = typeof time === 'number' ? time : Tone.Time(time).toSeconds();
+                            targetNode.start(startTime);
+                            targetNode.stop(startTime + noteDurationSeconds);
+                            get().emitSignalFlow(generatorId, 'audio');
+                        }
+                    });
+
+                    Tone.getDraw().schedule(() => {
+                        set({
+                            nodes: get().nodes.map((node: AppNode) =>
+                                node.id === id
+                                    ? {
+                                        ...node,
+                                        data: {
+                                            ...node.data,
+                                            currentStep: event.note.startStep,
+                                        },
+                                    }
+                                    : node
+                            ),
+                        });
+                    }, time);
+                }, events);
+
+                part.loop = true;
+                part.loopEnd = `${clip.loopBars}:0:0`;
+                part.start(0);
+
+                const nextPatterns = new Map(get().patterns);
+                nextPatterns.set(id, part);
+                set({ patterns: nextPatterns });
+            }
+
+            set({
+                nodes: nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                isPlaying,
+                                currentStep: isPlaying ? node.data.currentStep ?? -1 : -1,
+                            },
+                        }
+                        : node
+                ),
+            });
+            return;
+        }
+
+        if (nodeData.type === 'arranger') {
+            const existingPattern = patterns.get(id);
+            if (existingPattern) {
+                existingPattern.stop().dispose();
+                const nextPatterns = new Map(patterns);
+                nextPatterns.delete(id);
+                set({ patterns: nextPatterns });
+            }
+
+            if (isPlaying) {
+                const scenes: ArrangerScene[] = (nodeData.data.arrangerScenes ?? [])
+                    .slice()
+                    .sort((a: ArrangerScene, b: ArrangerScene) => a.startBar - b.startBar);
+                const loopBars = Math.max(
+                    1,
+                    ...scenes.map((scene: ArrangerScene) => scene.startBar + Math.max(1, scene.lengthBars))
+                );
+
+                const scenePart = new Tone.Part((time, rawScene) => {
+                    if (typeof rawScene === 'string') {
+                        return;
+                    }
+                    const scene = rawScene as ArrangerScene;
+                    const sceneStart = typeof time === 'number' ? time : Tone.Time(time).toSeconds();
+
+                    Tone.getDraw().schedule(() => {
+                        const runtimeNodes = get().nodes;
+                        const patternNodeIds = runtimeNodes
+                            .filter((node: AppNode) => node.type === 'pattern')
+                            .map((node: AppNode) => node.id);
+                        const rhythmNodeIds = runtimeNodes
+                            .filter((node: AppNode) =>
+                                node.type === 'stepsequencer' ||
+                                node.type === 'advanceddrum'
+                            )
+                            .map((node: AppNode) => node.id);
+
+                        patternNodeIds.forEach((patternId) => {
+                            get().toggleNodePlayback(patternId, scene.patternNodeIds.includes(patternId));
+                        });
+                        rhythmNodeIds.forEach((rhythmId) => {
+                            get().toggleNodePlayback(rhythmId, scene.rhythmNodeIds.includes(rhythmId));
+                        });
+
+                        set({
+                            nodes: get().nodes.map((node: AppNode) =>
+                                node.id === id
+                                    ? {
+                                        ...node,
+                                        data: {
+                                            ...node.data,
+                                            currentStep: scene.startBar,
+                                        },
+                                    }
+                                    : node
+                            ),
+                        });
+                    }, time);
+
+                    scene.automationLanes.forEach((lane: AutomationLane) => {
+                        const targetNode = get().nodes.find((node: AppNode) => node.id === lane.targetNodeId);
+                        if (!targetNode) {
+                            return;
+                        }
+
+                        const sortedPoints = lane.points
+                            .slice()
+                            .sort((a: AutomationPoint, b: AutomationPoint) => a.barOffset - b.barOffset);
+                        sortedPoints.forEach((point: AutomationPoint, pointIndex: number) => {
+                            const absoluteTime = sceneStart + Tone.Time(getBarsAsToneTime(point.barOffset)).toSeconds();
+                            const nextPoint = sortedPoints[pointIndex + 1];
+                            Tone.getDraw().schedule(() => {
+                                applyRuntimeAutomatableValue(
+                                    {
+                                        audioNodes: get().audioNodes,
+                                        samplerChains: get().samplerChains,
+                                        drumRacks: get().drumRacks,
+                                        advancedDrumRacks: get().advancedDrumRacks,
+                                        mixerChains: get().mixerChains,
+                                    },
+                                    lane.targetNodeId,
+                                    targetNode.type,
+                                    lane.targetParam,
+                                    point.value,
+                                    0.05
+                                );
+
+                                if (lane.mode === 'ramp' && nextPoint) {
+                                    const rampDurationSeconds = Tone.Time(
+                                        getBarsAsToneTime(Math.max(0, nextPoint.barOffset - point.barOffset))
+                                    ).toSeconds();
+                                    applyRuntimeAutomatableValue(
+                                        {
+                                            audioNodes: get().audioNodes,
+                                            samplerChains: get().samplerChains,
+                                            drumRacks: get().drumRacks,
+                                            advancedDrumRacks: get().advancedDrumRacks,
+                                            mixerChains: get().mixerChains,
+                                        },
+                                        lane.targetNodeId,
+                                        targetNode.type,
+                                        lane.targetParam,
+                                        nextPoint.value,
+                                        Math.max(0.05, rampDurationSeconds)
+                                    );
+                                }
+                            }, absoluteTime);
+                        });
+                    });
+                }, scenes.map((scene: ArrangerScene) => [getBarsAsToneTime(scene.startBar), scene]));
+
+                scenePart.loop = true;
+                scenePart.loopEnd = getBarsAsToneTime(loopBars);
+                scenePart.start(0);
+
+                const nextPatterns = new Map(get().patterns);
+                nextPatterns.set(id, scenePart);
+                set({ patterns: nextPatterns });
+            } else {
+                get().nodes
+                    .filter((node: AppNode) =>
+                        node.type === 'pattern' ||
+                        node.type === 'stepsequencer' ||
+                        node.type === 'advanceddrum'
+                    )
+                    .forEach((node: AppNode) => {
+                        if (node.data.isPlaying) {
+                            get().toggleNodePlayback(node.id, false);
+                        }
+                    });
+            }
+
+            set({
+                nodes: nodes.map((node: AppNode) =>
+                    node.id === id
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                isPlaying,
+                                currentStep: isPlaying ? node.data.currentStep ?? 0 : -1,
+                            },
+                        }
+                        : node
+                ),
+            });
+            return;
+        }
+
         if (nodeData.type === 'pulse' || nodeData.type === 'stepsequencer') {
             const existingPattern = patterns.get(id);
             if (existingPattern) {
@@ -3361,6 +4711,8 @@ export const useStore = create<AppState>((set, get) => ({
         if (
             (node.type === 'tempo' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'tempo')) ||
             (node.type === 'speaker' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'speaker')) ||
+            (node.type === 'mixer' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'mixer')) ||
+            (node.type === 'arranger' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'arranger')) ||
             (node.type === 'audioin' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'audioin')) ||
             (node.type === 'midiin' && get().nodes.some((existingNode: AppNode) => existingNode.type === 'midiin'))
         ) {
@@ -3439,6 +4791,10 @@ export const useStore = create<AppState>((set, get) => ({
                                     ...node.data,
                                     label: node.data.label || 'Oscillator',
                                     waveShape: node.data.waveShape ?? 'sine',
+                                    generatorMode: node.data.generatorMode ?? getGeneratorMode(node.data),
+                                    mix: node.data.mix ?? 80,
+                                    harmonicity: node.data.harmonicity ?? 1,
+                                    modulationIndex: node.data.modulationIndex ?? 4,
                                 },
                             }
                             : node.type === 'sampler'
@@ -3455,6 +4811,7 @@ export const useStore = create<AppState>((set, get) => ({
                                         playbackRate: node.data.playbackRate ?? 1,
                                         reverse: node.data.reverse ?? false,
                                         pitchShift: node.data.pitchShift ?? 0,
+                                        mix: node.data.mix ?? 80,
                                         isPlaying: node.data.isPlaying ?? false,
                                     },
                                 }
@@ -3466,6 +4823,7 @@ export const useStore = create<AppState>((set, get) => ({
                                         label: node.data.label || 'Drums',
                                         drumMode: node.data.drumMode ?? 'hits',
                                         drumPattern: node.data.drumPattern ?? createDefaultDrumPattern(),
+                                        mix: node.data.mix ?? 80,
                                         currentStep: node.data.currentStep ?? -1,
                                         isPlaying: node.data.isPlaying ?? false,
                                     },
@@ -3477,6 +4835,7 @@ export const useStore = create<AppState>((set, get) => ({
                                             ...node.data,
                                             label: node.data.label || 'Advanced Drums',
                                             advancedDrumTracks: node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks(),
+                                            mix: node.data.mix ?? 80,
                                             swing: node.data.swing ?? 0,
                                             currentStep: node.data.currentStep ?? -1,
                                             isPlaying: node.data.isPlaying ?? false,
@@ -3531,6 +4890,115 @@ export const useStore = create<AppState>((set, get) => ({
                                                         moodY: node.data.moodY ?? 0.55,
                                                     },
                                                 }
+                                                : node.type === 'effect'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Effect',
+                                                            subType: node.data.subType ?? 'reverb',
+                                                            wet: node.data.wet ?? 0.5,
+                                                            roomSize: node.data.roomSize ?? 0.5,
+                                                            delayTime: node.data.delayTime ?? 0.45,
+                                                            feedback: node.data.feedback ?? 0.4,
+                                                            distortion: node.data.distortion ?? 0.5,
+                                                            frequency: node.data.frequency ?? 4,
+                                                            octaves: node.data.octaves ?? 5,
+                                                            bits: node.data.bits ?? 4,
+                                                        },
+                                                    }
+                                                : node.type === 'eq'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'EQ',
+                                                            eqLow: node.data.eqLow ?? 0,
+                                                            eqMid: node.data.eqMid ?? 0,
+                                                            eqHigh: node.data.eqHigh ?? 0,
+                                                            eqLowFrequency: node.data.eqLowFrequency ?? 320,
+                                                            eqHighFrequency: node.data.eqHighFrequency ?? 2800,
+                                                        },
+                                                    }
+                                                : node.type === 'lfo'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'LFO',
+                                                            lfoWaveform: node.data.lfoWaveform ?? 'sine',
+                                                            lfoDepth: node.data.lfoDepth ?? 0.35,
+                                                            lfoSync: node.data.lfoSync ?? true,
+                                                            lfoRate: node.data.lfoRate ?? '4n',
+                                                            lfoHz: node.data.lfoHz ?? 1,
+                                                        },
+                                                    }
+                                                : node.type === 'pattern'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Pattern',
+                                                            patternNotes: node.data.patternNotes ?? createDefaultPatternClip().notes,
+                                                            patternLoopBars: node.data.patternLoopBars ?? 2,
+                                                            patternStepsPerBar: node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR,
+                                                            currentStep: node.data.currentStep ?? -1,
+                                                            isPlaying: node.data.isPlaying ?? false,
+                                                        },
+                                                    }
+                                                : node.type === 'unison'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Unison',
+                                                            wet: node.data.wet ?? 0.5,
+                                                            depth: node.data.depth ?? 0.7,
+                                                            frequency: node.data.frequency ?? 3.35,
+                                                        },
+                                                    }
+                                                : node.type === 'detune'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Detune',
+                                                            wet: node.data.wet ?? 1,
+                                                            pitch: node.data.pitch ?? 0,
+                                                        },
+                                                    }
+                                                : node.type === 'mixer'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Mixer',
+                                                            volume: node.data.volume ?? 70,
+                                                            pan: node.data.pan ?? 0,
+                                                            mixerChannels: node.data.mixerChannels ?? [],
+                                                        },
+                                                    }
+                                                : node.type === 'arranger'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Arranger',
+                                                            arrangerScenes: node.data.arrangerScenes ?? [
+                                                                {
+                                                                    id: crypto.randomUUID(),
+                                                                    name: 'Intro',
+                                                                    startBar: 0,
+                                                                    lengthBars: 4,
+                                                                    patternNodeIds: [],
+                                                                    rhythmNodeIds: [],
+                                                                    automationLanes: [],
+                                                                },
+                                                            ],
+                                                            currentStep: node.data.currentStep ?? -1,
+                                                            isPlaying: node.data.isPlaying ?? false,
+                                                        },
+                                                    }
                                                 : node.type === 'visualiser'
                                                     ? {
                                                         ...node,
@@ -3554,28 +5022,11 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
-        if (nextNode.type === 'generator') {
-            get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.waveShape);
-        } else if (nextNode.data.subType && nextNode.data.subType !== 'none') {
-            get().initAudioNode(nextNode.id, nextNode.type, nextNode.data.subType);
-        } else if (
-            nextNode.type === 'sampler' ||
-            nextNode.type === 'audioin' ||
-            nextNode.type === 'drum' ||
-            nextNode.type === 'advanceddrum' ||
-            nextNode.type === 'unison' ||
-            nextNode.type === 'detune' ||
-            nextNode.type === 'visualiser'
-        ) {
-            get().initAudioNode(nextNode.id, nextNode.type);
+        if (shouldInitAudioNode(nextNode)) {
+            get().initAudioNode(nextNode.id, nextNode.type, getNodeInitSubType(nextNode));
         }
 
-        if (
-            (nextNode.type === 'pulse' ||
-                nextNode.type === 'stepsequencer' ||
-                nextNode.type === 'advanceddrum') &&
-            nextNode.data.isPlaying
-        ) {
+        if (isPatternRuntimeNode(nextNode.type) && nextNode.data.isPlaying) {
             get().toggleNodePlayback(nextNode.id, true);
         }
 
@@ -3724,6 +5175,14 @@ export const useStore = create<AppState>((set, get) => ({
         const routedSourceIds = new Set<string>();
 
         audioNodes.forEach((node: Tone.ToneAudioNode) => node.disconnect());
+        get().syncMixerChannels();
+        get().mixerChains.forEach((chain) => {
+            chain.strips.forEach((strip) => {
+                strip.input.disconnect();
+                strip.panVol.disconnect();
+                strip.panVol.connect(chain.output);
+            });
+        });
         masterOutput.disconnect();
         masterOutput.toDestination();
         if (recordingController) {
@@ -3757,14 +5216,22 @@ export const useStore = create<AppState>((set, get) => ({
                 const sourceNode = audioNodes.get(actualSourceId);
                 const targetNode = audioNodes.get(actualTargetId);
 
+                if (sourceNode && targetInfo.type === 'mixer') {
+                    const strip = get().mixerChains.get(actualTargetId)?.strips.get(actualSourceId);
+                    if (strip) {
+                        sourceNode.connect(strip.input);
+                        routedSourceIds.add(actualSourceId);
+                    }
+                    return;
+                }
+
                 if (sourceNode && targetNode) {
                     sourceNode.connect(targetNode);
                     routedSourceIds.add(actualSourceId);
                 }
             });
 
-        // Only connect audio nodes to master output if speaker node is present
-        if (hasSpeakerNode(nodes)) {
+        if (hasSpeakerNode(nodes) || hasMixerNode(nodes)) {
             audioNodes.forEach((audioNode: Tone.ToneAudioNode, id: string) => {
                 const nodeInfo = nodesById.get(id);
 
@@ -3786,6 +5253,171 @@ export const useStore = create<AppState>((set, get) => ({
         audioInputChains.forEach((chain) => {
             chain.gain.connect(chain.meter);
         });
+
+        get().rebuildModulationGraph();
+    },
+
+    rebuildModulationGraph: () => {
+        const {
+            edges,
+            nodes,
+            audioNodes,
+            samplerChains,
+            drumRacks,
+            advancedDrumRacks,
+            mixerChains,
+            lfoBindings,
+        } = get();
+        const nextBindings = new Map<string, Tone.LFO>();
+        const nodesById = new Map(nodes.map((node: AppNode) => [node.id, node]));
+
+        lfoBindings.forEach((binding) => {
+            try {
+                binding.unsync();
+                binding.stop();
+            } catch {
+                // Ignore redundant stop/unsync calls while rebuilding modulation.
+            }
+            binding.disconnect().dispose();
+        });
+
+        edges
+            .filter((edge: AppEdge) => isModulationEdge(edge))
+            .forEach((edge: AppEdge) => {
+                const sourceId = edge.data?.originalSource || edge.source;
+                const targetId = edge.data?.originalTarget || edge.target;
+                const sourceNode = nodesById.get(sourceId);
+                const targetNode = nodesById.get(targetId);
+                const targetParam =
+                    edge.data?.targetParam ?? getModulationParamFromHandle(edge.targetHandle);
+
+                if (!sourceNode || !targetNode || sourceNode.type !== 'lfo' || !targetParam) {
+                    return;
+                }
+
+                const definition = getAutomatableParamDefinition(targetNode.type, targetParam);
+                if (!definition?.supportsModulation) {
+                    return;
+                }
+
+                const modulationTarget = resolveModulationTarget(
+                    { audioNodes, samplerChains, drumRacks, advancedDrumRacks, mixerChains },
+                    targetId,
+                    targetNode.type,
+                    targetParam
+                );
+                if (!modulationTarget) {
+                    return;
+                }
+
+                const baseValue = getNodeAutomatableValue(targetNode.data, targetParam);
+                const depth = Math.max(0, Math.min(1, sourceNode.data.lfoDepth ?? 0.35));
+                const halfSpan = ((definition.max - definition.min) * depth) / 2;
+                const min = Math.max(definition.min, baseValue - halfSpan);
+                const max = Math.min(definition.max, baseValue + halfSpan);
+                const lfo = new Tone.LFO({
+                    type: sourceNode.data.lfoWaveform ?? 'sine',
+                    frequency: sourceNode.data.lfoSync
+                        ? sourceNode.data.lfoRate ?? '4n'
+                        : sourceNode.data.lfoHz ?? 1,
+                    min,
+                    max,
+                    amplitude: 1,
+                });
+
+                if (sourceNode.data.lfoSync ?? true) {
+                    lfo.sync().start(0);
+                } else {
+                    lfo.start();
+                }
+
+                lfo.connect(modulationTarget as never);
+                nextBindings.set(edge.id, lfo);
+            });
+
+        set({ lfoBindings: nextBindings });
+    },
+
+    syncMixerChannels: () => {
+        const { nodes, edges, mixerChains, audioNodes } = get();
+        let didUpdateNodes = false;
+        const nextNodes = nodes.map((node: AppNode) => {
+            if (node.type !== 'mixer') {
+                return node;
+            }
+
+            const chain = mixerChains.get(node.id);
+            if (!chain) {
+                return node;
+            }
+
+            const incomingSourceIds = Array.from(
+                new Set(
+                    edges
+                        .filter((edge: AppEdge) => isAudioEdge(edge))
+                        .filter((edge: AppEdge) => (edge.data?.originalTarget || edge.target) === node.id)
+                        .map((edge: AppEdge) => edge.data?.originalSource || edge.source)
+                        .filter((sourceId): sourceId is string => Boolean(sourceId && audioNodes.has(sourceId)))
+                )
+            );
+
+            const currentChannels: MixerChannelState[] = node.data.mixerChannels ?? [];
+            const nextChannels = incomingSourceIds.map((sourceId) =>
+                currentChannels.find((channel: MixerChannelState) => channel.sourceId === sourceId) ??
+                getDefaultMixerChannelState(sourceId)
+            );
+
+            chain.output.volume.rampTo(volumePercentToDb(node.data.volume ?? 70), 0.1);
+            chain.output.pan.rampTo(node.data.pan ?? 0, 0.1);
+
+            chain.strips.forEach((strip, sourceId) => {
+                if (incomingSourceIds.includes(sourceId)) {
+                    return;
+                }
+                strip.input.disconnect().dispose();
+                strip.panVol.disconnect().dispose();
+                chain.strips.delete(sourceId);
+            });
+
+            nextChannels.forEach((channel) => {
+                let strip = chain.strips.get(channel.sourceId);
+                if (!strip) {
+                    const input = new Tone.Gain(1);
+                    const panVol = new Tone.PanVol(channel.pan, volumePercentToDb(channel.volume));
+                    input.connect(panVol);
+                    panVol.connect(chain.output);
+                    strip = { sourceId: channel.sourceId, input, panVol };
+                    chain.strips.set(channel.sourceId, strip);
+                }
+            });
+
+            const hasSoloChannel = nextChannels.some((channel: MixerChannelState) => channel.solo);
+            nextChannels.forEach((channel: MixerChannelState) => {
+                const strip = chain.strips.get(channel.sourceId);
+                if (strip) {
+                    applyMixerChannelRuntime(strip, channel, hasSoloChannel);
+                }
+            });
+
+            const currentSignature = JSON.stringify(currentChannels);
+            const nextSignature = JSON.stringify(nextChannels);
+            if (currentSignature !== nextSignature) {
+                didUpdateNodes = true;
+                return {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        mixerChannels: nextChannels,
+                    },
+                };
+            }
+
+            return node;
+        });
+
+        if (didUpdateNodes) {
+            set({ nodes: nextNodes });
+        }
     },
 
     initializeDefaultNodes: () => {
@@ -3795,26 +5427,28 @@ export const useStore = create<AppState>((set, get) => ({
         const tempoNode = nodes.find((node: AppNode) => node.type === 'tempo');
         Tone.getTransport().bpm.value = tempoNode?.data.bpm ?? DEFAULT_TRANSPORT_BPM;
         nodes.forEach((node: AppNode) => {
-            if (node.data.subType && node.data.subType !== 'none') {
-                get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (
-                node.type === 'audioin' ||
-                node.type === 'drum' ||
-                node.type === 'unison' ||
-                node.type === 'detune' ||
-                node.type === 'visualiser'
-            ) {
-                get().initAudioNode(node.id, node.type);
+            if (shouldInitAudioNode(node)) {
+                get().initAudioNode(node.id, node.type, getNodeInitSubType(node));
             }
         });
         get().rebuildAudioGraph();
         nodes
-            .filter((node: AppNode) => (node.type === 'pulse' || node.type === 'stepsequencer') && node.data.isPlaying)
+            .filter((node: AppNode) => isPatternRuntimeNode(node.type) && node.data.isPlaying)
             .forEach((node: AppNode) => get().toggleNodePlayback(node.id, true));
     },
 
     clearCanvas: () => {
-        const { audioNodes, audioInputChains, drumRacks, samplerChains, advancedDrumRacks, patterns, masterOutput } = get();
+        const {
+            audioNodes,
+            audioInputChains,
+            drumRacks,
+            samplerChains,
+            mixerChains,
+            advancedDrumRacks,
+            lfoBindings,
+            patterns,
+            masterOutput,
+        } = get();
 
         if (get().isRecording) {
             void get().stopRecording();
@@ -3849,6 +5483,10 @@ export const useStore = create<AppState>((set, get) => ({
             chain.player.disconnect().dispose();
         });
 
+        mixerChains.forEach((chain) => {
+            disposeMixerChain(chain);
+        });
+
         advancedDrumRacks.forEach((rack) => {
             rack.loop?.dispose();
             rack.players.forEach((player) => {
@@ -3877,6 +5515,16 @@ export const useStore = create<AppState>((set, get) => ({
             chain.meter.dispose();
         });
 
+        lfoBindings.forEach((binding) => {
+            try {
+                binding.unsync();
+                binding.stop();
+            } catch {
+                // Ignore redundant stop calls while clearing the canvas.
+            }
+            binding.disconnect().dispose();
+        });
+
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
             node.disconnect().dispose();
@@ -3894,7 +5542,9 @@ export const useStore = create<AppState>((set, get) => ({
             audioInputChains: new Map(),
             drumRacks: new Map(),
             samplerChains: new Map(),
+            mixerChains: new Map(),
             advancedDrumRacks: new Map(),
+            lfoBindings: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
             activeQuantizedNotes: new Map(),
@@ -3931,20 +5581,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Reinitialize all audio nodes
         nodes.forEach((node) => {
-            if (node.type === 'generator') {
-                get().initAudioNode(node.id, node.type, node.data.waveShape);
-            } else if (node.data.subType && node.data.subType !== 'none') {
-                get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (
-                node.type === 'sampler' ||
-                node.type === 'audioin' ||
-                node.type === 'drum' ||
-                node.type === 'advanceddrum' ||
-                node.type === 'unison' ||
-                node.type === 'detune' ||
-                node.type === 'visualiser'
-            ) {
-                get().initAudioNode(node.id, node.type);
+            if (shouldInitAudioNode(node)) {
+                get().initAudioNode(node.id, node.type, getNodeInitSubType(node));
             }
 
             // For tempo nodes, ensure global transport is synced
@@ -3988,7 +5626,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
         nodes
-            .filter((node: AppNode) => (node.type === 'pulse' || node.type === 'stepsequencer' || node.type === 'advanceddrum') && node.data.isPlaying)
+            .filter((node: AppNode) => isPatternRuntimeNode(node.type) && node.data.isPlaying)
             .forEach((node: AppNode) => get().toggleNodePlayback(node.id, true));
     },
 
@@ -4401,7 +6039,16 @@ export const useStore = create<AppState>((set, get) => ({
         });
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
-        const { audioNodes, audioInputChains, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
+        const {
+            audioNodes,
+            audioInputChains,
+            drumRacks,
+            samplerChains,
+            mixerChains,
+            advancedDrumRacks,
+            lfoBindings,
+            patterns,
+        } = get();
 
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
@@ -4427,6 +6074,10 @@ export const useStore = create<AppState>((set, get) => ({
                 // Ignore redundant stop calls during undo re-sync.
             }
             chain.player.disconnect().dispose();
+        });
+
+        mixerChains.forEach((chain) => {
+            disposeMixerChain(chain);
         });
 
         advancedDrumRacks.forEach((rack) => {
@@ -4462,13 +6113,25 @@ export const useStore = create<AppState>((set, get) => ({
             pattern.stop().dispose();
         });
 
+        lfoBindings.forEach((binding) => {
+            try {
+                binding.unsync();
+                binding.stop();
+            } catch {
+                // Ignore redundant stop calls during undo re-sync.
+            }
+            binding.disconnect().dispose();
+        });
+
         // Clear audio state
         set({
             audioNodes: new Map(),
             audioInputChains: new Map(),
             drumRacks: new Map(),
             samplerChains: new Map(),
+            mixerChains: new Map(),
             advancedDrumRacks: new Map(),
+            lfoBindings: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
             activeQuantizedNotes: new Map(),
@@ -4480,18 +6143,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Reinitialize audio nodes for restored state
         previousSnapshot.nodes.forEach((node) => {
-            if (node.data.subType && node.data.subType !== 'none') {
-                get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (
-                node.type === 'sampler' ||
-                node.type === 'audioin' ||
-                node.type === 'drum' ||
-                node.type === 'advanceddrum' ||
-                node.type === 'unison' ||
-                node.type === 'detune' ||
-                node.type === 'visualiser'
-            ) {
-                get().initAudioNode(node.id, node.type);
+            if (shouldInitAudioNode(node)) {
+                get().initAudioNode(node.id, node.type, getNodeInitSubType(node));
             }
         });
 
@@ -4531,7 +6184,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
         previousSnapshot.nodes
-            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer' || node.type === 'advanceddrum') && node.data.isPlaying)
+            .filter((node) => isPatternRuntimeNode(node.type) && node.data.isPlaying)
             .forEach((node) => get().toggleNodePlayback(node.id, true));
     },
 
@@ -4563,7 +6216,16 @@ export const useStore = create<AppState>((set, get) => ({
         });
 
         // Re-sync audio: dispose all current audio nodes, then reinitialize
-        const { audioNodes, audioInputChains, drumRacks, samplerChains, advancedDrumRacks, patterns } = get();
+        const {
+            audioNodes,
+            audioInputChains,
+            drumRacks,
+            samplerChains,
+            mixerChains,
+            advancedDrumRacks,
+            lfoBindings,
+            patterns,
+        } = get();
 
         // Dispose all audio nodes
         audioNodes.forEach((node) => {
@@ -4589,6 +6251,10 @@ export const useStore = create<AppState>((set, get) => ({
                 // Ignore redundant stop calls during redo re-sync.
             }
             chain.player.disconnect().dispose();
+        });
+
+        mixerChains.forEach((chain) => {
+            disposeMixerChain(chain);
         });
 
         advancedDrumRacks.forEach((rack) => {
@@ -4624,13 +6290,25 @@ export const useStore = create<AppState>((set, get) => ({
             pattern.stop().dispose();
         });
 
+        lfoBindings.forEach((binding) => {
+            try {
+                binding.unsync();
+                binding.stop();
+            } catch {
+                // Ignore redundant stop calls during redo re-sync.
+            }
+            binding.disconnect().dispose();
+        });
+
         // Clear audio state
         set({
             audioNodes: new Map(),
             audioInputChains: new Map(),
             drumRacks: new Map(),
             samplerChains: new Map(),
+            mixerChains: new Map(),
             advancedDrumRacks: new Map(),
+            lfoBindings: new Map(),
             patterns: new Map(),
             activeChordVoicings: new Map(),
             activeQuantizedNotes: new Map(),
@@ -4642,18 +6320,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         // Reinitialize audio nodes for restored state
         nextSnapshot.nodes.forEach((node) => {
-            if (node.data.subType && node.data.subType !== 'none') {
-                get().initAudioNode(node.id, node.type, node.data.subType);
-            } else if (
-                node.type === 'sampler' ||
-                node.type === 'audioin' ||
-                node.type === 'drum' ||
-                node.type === 'advanceddrum' ||
-                node.type === 'unison' ||
-                node.type === 'detune' ||
-                node.type === 'visualiser'
-            ) {
-                get().initAudioNode(node.id, node.type);
+            if (shouldInitAudioNode(node)) {
+                get().initAudioNode(node.id, node.type, getNodeInitSubType(node));
             }
         });
 
@@ -4693,7 +6361,7 @@ export const useStore = create<AppState>((set, get) => ({
         get().rebuildAudioGraph();
         get().recalculateAdjacency();
         nextSnapshot.nodes
-            .filter((node) => (node.type === 'pulse' || node.type === 'stepsequencer' || node.type === 'advanceddrum') && node.data.isPlaying)
+            .filter((node) => isPatternRuntimeNode(node.type) && node.data.isPlaying)
             .forEach((node) => get().toggleNodePlayback(node.id, true));
     },
 }));

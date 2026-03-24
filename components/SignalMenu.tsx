@@ -11,6 +11,7 @@ const SIGNAL_GROUPS = [
     ],
     [
         { type: 'effect', label: 'Effect', className: 'bg-fuchsia-500 text-white' },
+        { type: 'eq', label: 'EQ', className: 'bg-zinc-400 text-slate-950' },
         { type: 'unison', label: 'Unison', className: 'bg-violet-500 text-white' },
         { type: 'detune', label: 'Detune', className: 'bg-teal-500 text-white' },
     ],

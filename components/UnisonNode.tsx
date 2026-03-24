@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
@@ -9,6 +8,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import ModulationTargetHandle from './ModulationTargetHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
@@ -22,41 +22,16 @@ export default function UnisonNode({ id }: { id: string }) {
         return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
 
-    const [depth, setDepth] = useState(70);
-    const [speed, setSpeed] = useState(30);
-    const [mix, setMix] = useState(50);
-    const [isBypassed, setIsBypassed] = useState(false);
+    const wet = nodeData?.wet ?? 0.5;
+    const depth = Math.round((nodeData?.depth ?? 0.7) * 100);
+    const frequency = nodeData?.frequency ?? 3.35;
+    const mix = Math.round(wet * 100);
+    const isBypassed = wet <= 0.001;
     const accentStyle = useNodeAccentStyle('unison');
-
-    useEffect(() => {
-        updateNodeValue(id, {
-            wet: 0.5,
-            depth: 0.7,
-            frequency: 0.5 + (30 / 100) * 9.5,
-        });
-    }, [id, updateNodeValue]);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
     }
-
-    const handleDepthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setDepth(val);
-        updateNodeValue(id, { depth: val / 100 });
-    };
-
-    const handleSpeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = parseFloat(e.target.value);
-        setSpeed(val);
-        const frequency = 0.5 + (val / 100) * 9.5;
-        updateNodeValue(id, { frequency });
-    };
-
-    const setMixValue = (value: number) => {
-        setMix(value);
-        updateNodeValue(id, { wet: isBypassed ? 0 : value / 100 });
-    };
 
     return (
         <div
@@ -66,6 +41,8 @@ export default function UnisonNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('unison') : ''
         }`}
         >
+            <ModulationTargetHandle paramKey="wet" top={92} />
+            <ModulationTargetHandle paramKey="frequency" top={214} />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">
@@ -90,12 +67,10 @@ export default function UnisonNode({ id }: { id: string }) {
                         <NodeMixControl
                             value={mix}
                             bypassed={isBypassed}
-                                onToggleBypass={() => {
-                                    const next = !isBypassed;
-                                    setIsBypassed(next);
-                                    updateNodeValue(id, { wet: next ? 0 : mix / 100 });
-                                }}
-                            onChange={setMixValue}
+                            onToggleBypass={() => {
+                                updateNodeValue(id, { wet: isBypassed ? 0.5 : 0 });
+                            }}
+                            onChange={(value) => updateNodeValue(id, { wet: value / 100 })}
                         />
 
                         <div className="flex flex-col gap-2">
@@ -108,7 +83,7 @@ export default function UnisonNode({ id }: { id: string }) {
                                 min="0"
                                 max="100"
                                 value={depth}
-                                onChange={handleDepthChange}
+                                onChange={(event) => updateNodeValue(id, { depth: Number(event.target.value) / 100 })}
                                 className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
                             />
                         </div>
@@ -117,15 +92,16 @@ export default function UnisonNode({ id }: { id: string }) {
                             <div className="flex justify-between items-end">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Speed</label>
                                 <span className="text-[10px] font-mono text-violet-400 font-bold">
-                                    {(0.5 + (speed / 100) * 9.5).toFixed(1)}Hz
+                                    {frequency.toFixed(1)}Hz
                                 </span>
                             </div>
                             <input
                                 type="range"
-                                min="0"
-                                max="100"
-                                value={speed}
-                                onChange={handleSpeedChange}
+                                min="0.1"
+                                max="10"
+                                step="0.1"
+                                value={frequency}
+                                onChange={(event) => updateNodeValue(id, { frequency: Number(event.target.value) })}
                                 className="nodrag w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-violet-500"
                             />
                         </div>

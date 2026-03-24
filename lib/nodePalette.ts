@@ -8,6 +8,8 @@ export const DEFAULT_NODE_ACCENTS: Record<AudioNodeType, string> = {
     moodpad: '#f43f5e',
     pulse: '#84cc16',
     stepsequencer: '#3b82f6',
+    pattern: '#1d4ed8',
+    lfo: '#65a30d',
     chord: '#38bdf8',
     quantizer: '#a855f7',
     adsr: '#d97706',
@@ -17,11 +19,14 @@ export const DEFAULT_NODE_ACCENTS: Record<AudioNodeType, string> = {
     drum: '#f97316',
     advanceddrum: '#22c55e',
     effect: '#d946ef',
+    eq: '#a1a1aa',
     unison: '#8b5cf6',
     detune: '#14b8a6',
     visualiser: '#ec4899',
     speaker: '#10b981',
+    mixer: '#10b981',
     tempo: '#6366f1',
+    arranger: '#4338ca',
 };
 
 export const CORE_ACCENT_PALETTE = [
