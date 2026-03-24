@@ -28,6 +28,3 @@
 1. **Automation:** Allow the Arranger Node to send sequenced floating-point values to specific node IDs and parameters (e.g., interpolating a filter cutoff from 200Hz to 2000Hz over 4 bars).
 2. **Performance Refactor:** Audit `useStore` to ensure React state changes aren't causing unnecessary re-renders of the entire React Flow canvas when Tone.js values update.
 
----
-**Agent Instructions:**
-Acknowledge that you have read this brief. Wait for the user to say "Start Epic [X]", at which point you will generate the exact file structures, Zustand state updates, and React components required to fulfill that Epic.
