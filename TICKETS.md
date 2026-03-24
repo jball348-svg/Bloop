@@ -137,6 +137,60 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 7. **#67** Snapping, Adjacency, and Overlap Resolution Rewrite — measured-dimension hardening landed; keep open for manual UAT
 8. **#66** Presets Library Overhaul
 
+9. # Bloop Ticket Tracker
+
+This document tracks the active, upcoming, and completed development tickets for Bloop. 
+
+## 🟢 ACTIVE SPRINT: v12 - Sonic Expansion & Shaping
+*Focus: Expanding sound generation and frequency control.*
+
+- [ ] **TKT-1201: Implement FM/AM Generator Modes**
+  - Add new oscillator types to the `Generator` node or create a dedicated `Advanced Synth` node.
+  - Wire Tone.js FM/AM oscillators to the UI state.
+- [ ] **TKT-1202: Parametric EQ Node**
+  - Create a 3-band or 5-band EQ node using `Tone.EQ3` or `Tone.Filter` chains.
+  - Build UI for frequency, Q, and gain adjustments.
+- [ ] **TKT-1203: LFO Control Node**
+  - Build a Low-Frequency Oscillator node to modulate other node parameters (pitch, filter cutoff).
+  - Implement the routing logic to allow LFO cables to snap to parameter inputs.
+
+## 🟡 UPCOMING: v13 - Composition & "Writing"
+*Focus: Upgrading note-input workflow to a Piano Roll interface.*
+
+- [ ] **TKT-1301: Piano Roll / Pattern Node UI**
+  - Build a grid-based UI module (FL Studio style) that opens on double-click.
+  - Implement note drag, drop, stretch, and delete functionality.
+- [ ] **TKT-1302: Polyphonic Output Engine**
+  - Upgrade the note-firing engine to handle chords and overlapping MIDI notes from the Pattern Node.
+- [ ] **TKT-1303: ADSR Gate Refining**
+  - Ensure the ADSR envelopes accurately trigger and release based on the precise note-on/note-off data from the Piano Roll.
+
+## 🟡 UPCOMING: v14 - Mixing & Arrangement
+*Focus: Organizing complex patches into a structured timeline.*
+
+- [ ] **TKT-1401: Global Mixer Node**
+  - Replace/Upgrade the `Amplifier` with a multi-channel mixer hub (volume, pan, mute, solo).
+- [ ] **TKT-1402: Timeline / Arranger Node**
+  - Create a macro-module that triggers specific Pattern Nodes based on a global bar counter (Intro -> Verse -> Chorus).
+
+## 🟡 UPCOMING: v15 - Automation & The Masterpiece
+*Focus: Optimization, Automation, and the Final Showcase Preset.*
+
+- [ ] **TKT-1501: Parameter Automation Routing**
+  - Allow the Timeline/Arranger to map automation to node dials (e.g., sweeping a filter on bar 16).
+- [ ] **TKT-1502: Graph & Engine Optimization**
+  - Refactor React Flow and Tone.js state handling to support 50+ nodes without lag.
+- [ ] **TKT-1503: The "Demo Song" Preset**
+  - Compose, balance, and save the final built-in showcase track.
+
+---
+
+## 🏁 ARCHIVE: Completed (v1 - v11)
+* **Audio Engine:** Core Tone.js and React Flow integration.
+* **Nodes:** Arp, Keys, MIDI In, ADSR, Sequencer, Pulse, Chord, Mood Pad, Generator, Sampler, Audio In, Drums, Effects, Visualisers.
+* **UX/UI:** Cable routing, signal flow animation, drag-and-drop creation, undo/redo (50 steps), saving/loading `.bloop` files.
+* **Features:** Live audio, Web MIDI input, `.webm` recording, onboarding tutorial, gamified campaign mode.
+
 ---
 
 ## Historical V4 Work Order
