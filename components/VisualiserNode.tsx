@@ -7,6 +7,7 @@ import {
     AUDIO_INPUT_HANDLE_ID,
     AUDIO_INPUT_SECONDARY_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
@@ -14,6 +15,7 @@ import {
 import { hexToRgba } from '@/lib/nodePalette';
 import { useNodeAccent, useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const VISUALISER_MODES = [
@@ -46,7 +48,8 @@ export default function VisualiserNode({ id }: { id: string }) {
     const updateNodeData = useStore((state) => state.updateNodeData);
     const audioNodes = useStore((state) => state.audioNodes);
     const edges = useStore((state) => state.edges);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const canvasEdges = state.edges;
@@ -63,6 +66,8 @@ export default function VisualiserNode({ id }: { id: string }) {
     const meterRef = useRef<Tone.Meter | null>(null);
     const peakHoldRef = useRef<number[]>([]);
     const animFrameRef = useRef<number>(0);
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     const secondaryEdge = useMemo(
         () =>
@@ -295,6 +300,12 @@ export default function VisualiserNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('visualiser') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-center justify-between gap-2 mb-3">
                     <button

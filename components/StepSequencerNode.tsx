@@ -11,12 +11,14 @@ import {
     getSequencerStepMix,
     type SequencerStep,
     createDefaultStepSequence,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
@@ -28,7 +30,8 @@ export default function StepSequencerNode({ id }: { id: string }) {
     const updateSequencerStep = useStore((state) => state.updateSequencerStep);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -45,6 +48,8 @@ export default function StepSequencerNode({ id }: { id: string }) {
     const activeStep = stepSequence[selectedStep] ?? stepSequence[0];
     const activeStepMix = activeStep ? getSequencerStepMix(activeStep) : 60;
     const accentStyle = useNodeAccentStyle('stepsequencer');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     useEffect(() => {
         if (isPlaying) {
@@ -64,6 +69,12 @@ export default function StepSequencerNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('stepsequencer') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle
                     type="target"

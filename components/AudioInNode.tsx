@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     AUDIO_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
@@ -18,7 +20,8 @@ export default function AudioInNode({ id }: { id: string }) {
     const closeAudioInput = useStore((state) => state.closeAudioInput);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -30,6 +33,8 @@ export default function AudioInNode({ id }: { id: string }) {
     const status = nodeData?.audioInStatus ?? 'idle';
     const inputGain = nodeData?.inputGain ?? 75;
     const accentStyle = useNodeAccentStyle('audioin');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     useEffect(() => {
         if (status === 'active') {
@@ -84,6 +89,12 @@ export default function AudioInNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('audioin') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">
                     <button

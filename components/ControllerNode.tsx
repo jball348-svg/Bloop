@@ -4,6 +4,7 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
     TONAL_SCALE_OPTIONS,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
@@ -12,6 +13,7 @@ import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import { Scale } from '@tonaljs/tonal';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 export default function ControllerNode({ id }: { id: string }) {
@@ -25,52 +27,61 @@ export default function ControllerNode({ id }: { id: string }) {
         const edges = state.edges;
         return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const rootNote = nodeData?.rootNote || 'C';
     const scaleType = nodeData?.scaleType || 'major pentatonic';
+    const arpRate = nodeData?.arpRate ?? 200;
     const isPlaying = nodeData?.isPlaying ?? false;
     const accentStyle = useNodeAccentStyle('controller');
-    const seqRef = useRef<Tone.Sequence | null>(null);
+    const loopRef = useRef<Tone.Loop | null>(null);
+    const noteIndexRef = useRef(0);
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
 
     useEffect(() => {
         if (!isPlaying) {
-            if (seqRef.current) {
-                seqRef.current.stop();
-                seqRef.current.dispose();
-                seqRef.current = null;
+            if (loopRef.current) {
+                loopRef.current.stop();
+                loopRef.current.dispose();
+                loopRef.current = null;
             }
+            noteIndexRef.current = 0;
             return;
         }
 
         const notes = Scale.get(`${rootNote}4 ${scaleType}`).notes;
         if (notes.length === 0) return;
 
-        if (seqRef.current) {
-            seqRef.current.stop();
-            seqRef.current.dispose();
+        if (loopRef.current) {
+            loopRef.current.stop();
+            loopRef.current.dispose();
         }
 
-        seqRef.current = new Tone.Sequence(
-            (time, note) => {
+        noteIndexRef.current = 0;
+        loopRef.current = new Tone.Loop((time) => {
+            const note = notes[noteIndexRef.current % notes.length];
+            noteIndexRef.current += 1;
+            if (!note) {
+                return;
+            }
+
                 fireNoteOn(id, note);
                 Tone.getDraw().schedule(() => {}, time);
-                setTimeout(() => fireNoteOff(id, note), 80);
-            },
-            notes,
-            '8n'
-        );
+                window.setTimeout(() => fireNoteOff(id, note), Math.max(50, Math.min(arpRate, 240)));
+            }, arpRate / 1000);
 
-        seqRef.current.start(0);
+        loopRef.current.start(0);
 
         return () => {
-            if (seqRef.current) {
-                seqRef.current.stop();
-                seqRef.current.dispose();
-                seqRef.current = null;
+            if (loopRef.current) {
+                loopRef.current.stop();
+                loopRef.current.dispose();
+                loopRef.current = null;
             }
         };
-    }, [isPlaying, rootNote, scaleType, id, fireNoteOn, fireNoteOff]);
+    }, [arpRate, isPlaying, rootNote, scaleType, id, fireNoteOn, fireNoteOff]);
 
 
     if (nodeData?.isPackedVisible) {
@@ -85,6 +96,12 @@ export default function ControllerNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('controller') : ''
         }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">

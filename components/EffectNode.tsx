@@ -2,12 +2,14 @@ import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import ModulationTargetHandle from './ModulationTargetHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
@@ -16,7 +18,8 @@ export default function EffectNode({ id }: { id: string }) {
     const changeNodeSubType = useStore((state) => state.changeNodeSubType);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -33,6 +36,8 @@ export default function EffectNode({ id }: { id: string }) {
     const phaserFrequency = nodeData?.frequency ?? 4;
     const bits = nodeData?.bits ?? 4;
     const isBypassed = wet <= 0.001;
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -50,6 +55,12 @@ export default function EffectNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('effect') : ''
         }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <ModulationTargetHandle paramKey="wet" top={84} />
             {subType === 'reverb' && <ModulationTargetHandle paramKey="roomSize" top={150} />}
             {subType === 'delay' && (

@@ -6,12 +6,14 @@ import { Midi } from '@tonaljs/tonal';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const TENSION_PRESETS = [
@@ -49,7 +51,8 @@ export default function MoodPadNode({ id }: { id: string }) {
     const fireNoteOff = useStore((state) => state.fireNoteOff);
     const updateNodeData = useStore((state) => state.updateNodeData);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -65,6 +68,8 @@ export default function MoodPadNode({ id }: { id: string }) {
     const pointerIdRef = useRef<number | null>(null);
     const draggingRef = useRef(false);
     const [isDragging, setIsDragging] = useState(false);
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     const descriptor = useMemo(() => {
         const presetIndex = Math.min(
@@ -193,6 +198,12 @@ export default function MoodPadNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('moodpad') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">
                     <button

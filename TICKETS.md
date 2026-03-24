@@ -8,7 +8,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ## Current Status Snapshot
 
-Implementation note: v12-v15 are now implemented in the codebase and pass `npm run build` and `npm run lint` as of 2026-03-24. The remaining step before issue closure is manual browser/audio QA of the new song-authoring flow.
+Implementation note: v12-v15 are implemented in the codebase and pass `npm run build` and `npm run lint` as of 2026-03-24. V16 is now in progress in the working tree: the math receiver foundation, shared handle UI, and expanded receiver batches are being wired before manual browser/audio QA.
 
 ### V2 — Complete ✅
 
@@ -149,6 +149,24 @@ Implementation note: v12-v15 are now implemented in the codebase and pass `npm r
 | [#78](https://github.com/jball348-svg/Bloop/issues/78) | [V15 Core] Canvas Performance & Store Subscription Refactor | ✅ Closed |
 | [#79](https://github.com/jball348-svg/Bloop/issues/79) | [V15 Product] Showcase Preset Pipeline — Built-In Song Slot and Validation | ✅ Closed |
 
+### V16 — Math Cable System In Progress 🟡
+
+| # | Title | Status |
+|---|---|---|
+| [#80](https://github.com/jball348-svg/Bloop/issues/80) | [V16 Arch] Math Cable System — Design Specification & Store Schema | 🟡 In Progress |
+| [#81](https://github.com/jball348-svg/Bloop/issues/81) | [V16 Core] Shared MathInputHandle Component & Border Break Aesthetic | 🟡 In Progress |
+| [#82](https://github.com/jball348-svg/Bloop/issues/82) | [V16 Node] Generator — Math Input Receiver | 🟡 In Progress |
+| [#83](https://github.com/jball348-svg/Bloop/issues/83) | [V16 Node] Effect — Math Input Receiver | 🟡 In Progress |
+| [#84](https://github.com/jball348-svg/Bloop/issues/84) | [V16 Node] Speaker — Math Input Receiver | 🟡 In Progress |
+| [#85](https://github.com/jball348-svg/Bloop/issues/85) | [V16 Node] Controller — Math Input Receiver | 🟡 In Progress |
+| [#86](https://github.com/jball348-svg/Bloop/issues/86) | [V16 Cleanup] Supersede Pre-V16 Modulation Designs — Align Open Tickets | ⬜ Open |
+
+Implementation note: the receiver expansion beyond the original four-node batch is currently being delivered under the #80 architecture umbrella until dedicated follow-up GitHub issues are opened for Batch B and Batch C node coverage.
+
+Expanded receiver workstreams tracked in code for V16:
+1. Receiver Batch B: ADSR, Audio In, Drum, Advanced Drum, Unison, Detune, EQ, Sampler, Tempo, LFO, Quantizer, Keys, Chord, Visualiser, Mixer, Pulse, and Mood Pad.
+2. Receiver Batch C: Step Sequencer selected-step controls, Pattern selected-note controls, and Arranger selected-scene controls.
+
 ### Superseded / Closed
 
 | # | Title | Status |
@@ -183,6 +201,15 @@ Implementation note: v12-v15 are now implemented in the codebase and pass `npm r
 ~~1. **#77** Arranger Automation Lanes — Parameter Curves and Mixer Moves~~
 ~~2. **#78** Canvas Performance & Store Subscription Refactor~~
 ~~3. **#79** Showcase Preset Pipeline — Built-In Song Slot and Validation~~
+
+## V16 Recommended Work Order
+
+1. **#80** Math Cable System — Design Specification & Store Schema
+2. **#81** Shared MathInputHandle Component & Border Break Aesthetic
+3. **#82–#85** Original receiver batch: Generator, Effect, Speaker, Controller
+4. Receiver Batch B under #80 architecture scope until follow-up GitHub issues are opened
+5. Receiver Batch C under #80 architecture scope until follow-up GitHub issues are opened
+6. **#86** Supersede Pre-V16 Modulation Designs — Align Open Tickets
 
 ---
 
@@ -220,6 +247,17 @@ Implementation note: v12-v15 are now implemented in the codebase and pass `npm r
     #76 ─┼→ #79 (showcase preset pipeline)
     #77 ─┤
     #78 ─┘
+
+    V16:
+    #80 (math edge domain + receiver schema + dispatcher)
+      ├─→ #81 (shared math input handle UI)
+      ├─→ #82 (generator receiver)
+      ├─→ #83 (effect receiver)
+      ├─→ #84 (speaker receiver)
+      ├─→ #85 (controller receiver)
+      ├─→ Receiver Batch B (remaining bounded-control nodes; currently tracked under #80)
+      ├─→ Receiver Batch C (contextual editor nodes; currently tracked under #80)
+      └─→ #86 (cleanup + ticket alignment after receiver coverage lands)
 
 ---
 

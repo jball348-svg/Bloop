@@ -1,11 +1,15 @@
-import { useStore } from '@/store/useStore';
+import { getMathTargetOptionsForNode, useStore } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 
 export default function SpeakerNode({ id }: { id: string }) {
     const masterVolume = useStore((state) => state.masterVolume);
     const setMasterVolume = useStore((state) => state.setMasterVolume);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
     const accentStyle = useNodeAccentStyle('speaker');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setMasterVolume(parseFloat(e.target.value));
@@ -17,6 +21,12 @@ export default function SpeakerNode({ id }: { id: string }) {
             style={accentStyle}
             className="themed-node bg-slate-800 border-2 border-emerald-500 rounded-2xl p-3 shadow-2xl text-white w-56 transition-all hover:shadow-emerald-500/20 group relative select-none"
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <div className="relative z-10 flex flex-col">
                 <div className="flex items-center mb-3">
                     <button

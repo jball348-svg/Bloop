@@ -7,12 +7,14 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     PATTERN_STEPS_PER_BAR,
     type PatternNote,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const PIANO_ROLL_NOTES = [
@@ -40,7 +42,8 @@ export default function PatternNode({ id }: { id: string }) {
     const removePatternNote = useStore((state) => state.removePatternNote);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -59,6 +62,8 @@ export default function PatternNode({ id }: { id: string }) {
 
     const selectedNote = notes.find((note: PatternNote) => note.id === selectedNoteId) ?? null;
     const stepNumbers = useMemo(() => Array.from({ length: totalSteps }, (_, index) => index), [totalSteps]);
+    const targetOptions = getMathTargetOptionsForNode(node, { selectedPatternNoteId: selectedNoteId });
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -72,6 +77,12 @@ export default function PatternNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('pattern') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             {(!nodeData?.isLocked || nodeData?.isExit) && (
                 <Handle
                     type="source"

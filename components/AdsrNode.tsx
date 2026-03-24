@@ -2,12 +2,14 @@ import { Handle, Position } from 'reactflow';
 import {
     CONTROL_INPUT_HANDLE_ID,
     CONTROL_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 interface AdsrSliderProps {
@@ -94,12 +96,15 @@ export default function AdsrNode({ id }: { id: string }) {
         return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
     
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const attack = nodeData?.attack ?? 0.01;
     const decay = nodeData?.decay ?? 0.1;
     const sustain = nodeData?.sustain ?? 0.7;
     const release = nodeData?.release ?? 0.5;
     const accentStyle = useNodeAccentStyle('adsr');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
     
     const handleAttackChange = (value: number) => {
         updateNodeValue(id, { attack: value });
@@ -129,6 +134,12 @@ export default function AdsrNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('adsr') : ''
         }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">

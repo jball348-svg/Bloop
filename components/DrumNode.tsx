@@ -7,6 +7,7 @@ import {
     DRUM_STEP_COUNT,
     type DrumMode,
     type DrumPart,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     isControlEdge,
@@ -14,6 +15,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
@@ -40,7 +42,8 @@ export default function DrumNode({ id }: { id: string }) {
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const activeDrumPads = useStore((state) => state.activeDrumPads);
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
@@ -56,6 +59,8 @@ export default function DrumNode({ id }: { id: string }) {
     const currentStep = nodeData?.currentStep ?? -1;
     const accentStyle = useNodeAccentStyle('drum');
     const mix = nodeData?.mix ?? 80;
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     useEffect(() => {
         if (drumMode !== 'hits') {
@@ -107,6 +112,12 @@ export default function DrumNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('drum') : ''
         }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
 
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle

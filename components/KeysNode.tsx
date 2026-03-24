@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
@@ -9,6 +10,7 @@ import {
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import * as Tone from 'tone';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const buildKeyMap = (oct: number): Record<string, string> => ({
@@ -33,18 +35,21 @@ export default function KeysNode({ id }: { id: string }) {
     const fireNoteOff = useStore((state) => state.fireNoteOff);
     const updateOctave = useStore((state) => state.updateOctave);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
         return !edges.some((edge) => isControlEdge(edge) && (edge.source === id || edge.target === id));
     });
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const nodeData = node?.data;
     const octave = nodeData?.octave ?? 4;
 
     const keyMap = buildKeyMap(octave);
     const [activeKeys, setActiveKeys] = useState<Set<string>>(new Set());
     const heldKeys = useRef<Set<string>>(new Set());
     const accentStyle = useNodeAccentStyle('keys');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     useEffect(() => {
         const currentKeyMap = buildKeyMap(octave);
@@ -118,6 +123,12 @@ export default function KeysNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('keys') : ''
         }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex flex-1 flex-col justify-between">

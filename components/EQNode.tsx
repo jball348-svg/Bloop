@@ -4,12 +4,14 @@ import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
     AUDIO_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import ModulationTargetHandle from './ModulationTargetHandle';
 import PackedNode from './PackedNode';
 
@@ -57,13 +59,16 @@ const SliderRow = ({
 export default function EQNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
         return !edges.some((edge) => isAudioEdge(edge) && (edge.source === id || edge.target === id));
     });
     const accentStyle = useNodeAccentStyle('eq');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -83,6 +88,12 @@ export default function EQNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('eq') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle
                     type="target"

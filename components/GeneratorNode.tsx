@@ -5,6 +5,7 @@ import {
     AUDIO_OUTPUT_HANDLE_ID,
     type GeneratorMode,
     type WaveShape,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     isControlEdge,
@@ -12,6 +13,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import NodeMixControl from './NodeMixControl';
 import PackedNode from './PackedNode';
 
@@ -26,7 +28,8 @@ const GENERATOR_MODES: Array<{ value: GeneratorMode; label: string }> = [
 export default function GeneratorNode({ id }: { id: string }) {
     const updateNodeValue = useStore((state) => state.updateNodeValue);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -34,6 +37,8 @@ export default function GeneratorNode({ id }: { id: string }) {
         const hasAudioOut = edges.some(e => isAudioEdge(e) && e.source === id);
         return !hasControlIn && !hasAudioOut;
     });
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     const waveShape = nodeData?.waveShape || 'sine';
     const generatorMode = nodeData?.generatorMode ?? (waveShape === 'noise' ? 'noise' : 'wave');
@@ -60,6 +65,12 @@ export default function GeneratorNode({ id }: { id: string }) {
             isAdjacent ? getAdjacencyGlowClasses('generator') : ''
         }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
 
             {/* Input handle for MIDI data from Controller */}
             {(!nodeData?.isLocked || nodeData?.isEntry) && (

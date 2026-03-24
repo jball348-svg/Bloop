@@ -28,10 +28,13 @@ export const TEMPO_INPUT_HANDLE_ID = 'tempo-in';
 export const TEMPO_OUTPUT_HANDLE_ID = 'tempo-out';
 export const CONTROL_INPUT_HANDLE_ID = 'control-in';
 export const CONTROL_OUTPUT_HANDLE_ID = 'control-out';
+export const MATH_INPUT_HANDLE_ID = 'math';
+export const MATH_OUTPUT_HANDLE_ID = 'math-out';
 export const MODULATION_OUTPUT_HANDLE_ID = 'mod-out';
 export const MODULATION_INPUT_HANDLE_PREFIX = 'mod-in:';
 export const AUDIO_SIGNAL_COLOR = '#22d3ee';
 export const CONTROL_SIGNAL_COLOR = '#39ff14';
+export const MATH_SIGNAL_COLOR = '#8b5cf6';
 export const MODULATION_SIGNAL_COLOR = '#bef264';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
@@ -106,7 +109,7 @@ export type AudioNodeType =
     | 'stepsequencer'
     | 'quantizer'
     | 'moodpad';
-export type ConnectionKind = 'audio' | 'tempo' | 'control' | 'modulation';
+export type ConnectionKind = 'audio' | 'tempo' | 'control' | 'modulation' | 'math';
 export type WaveShape = 'sine' | 'square' | 'triangle' | 'sawtooth' | 'noise';
 export type GeneratorMode = 'wave' | 'noise' | 'fm' | 'am';
 export type ModulationWaveShape = 'sine' | 'triangle' | 'square' | 'sawtooth';
@@ -190,6 +193,7 @@ export type AppEdgeData = {
     originalSource?: string;
     originalTarget?: string;
     targetParam?: AutomatableParamKey;
+    mathTarget?: string;
 };
 export type AppEdge = Edge<AppEdgeData>;
 type DisposablePattern = {
@@ -292,6 +296,7 @@ export type AppNode = Node & {
         midiSupported?: boolean;
         audioInStatus?: 'idle' | 'requesting' | 'active' | 'denied' | 'unsupported' | 'error';
         inputGain?: number;
+        mathInputTarget?: string;
         isPlaying?: boolean;
         mix?: number;
         wet?: number;
@@ -311,6 +316,7 @@ export type AppNode = Node & {
         currentStep?: number;
         rootNote?: string;
         scaleType?: string;
+        arpRate?: number;
         waveShape?: WaveShape;
         generatorMode?: GeneratorMode;
         harmonicity?: number;
@@ -1345,6 +1351,349 @@ export const createDefaultAdvancedDrumTracks = (): AdvancedDrumTrackData[] => [
     },
 ];
 
+export type MathTargetKind = 'number' | 'int' | 'toggle' | 'enum' | 'contextual';
+export type MathTargetOption = {
+    value: string;
+    label: string;
+};
+export type MathTargetContext = {
+    selectedPatternNoteId?: string | null;
+    selectedArrangerSceneId?: string | null;
+};
+
+type MathTargetDescriptor = {
+    id: string;
+    label: string;
+    kind: MathTargetKind;
+};
+
+const MATH_NONE_TARGET = 'none';
+const MATH_NONE_OPTION: MathTargetOption = {
+    value: MATH_NONE_TARGET,
+    label: '— no target —',
+};
+const GENERATOR_WAVE_OPTIONS: WaveShape[] = ['sine', 'square', 'triangle', 'sawtooth'];
+const GENERATOR_MODE_OPTIONS: GeneratorMode[] = ['wave', 'fm', 'am', 'noise'];
+const EFFECT_SUBTYPE_OPTIONS = ['reverb', 'delay', 'distortion', 'phaser', 'bitcrusher'] as const;
+const LFO_WAVE_OPTIONS: ModulationWaveShape[] = ['sine', 'triangle', 'square', 'sawtooth'];
+const SEQUENCER_NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
+    ROOT_NOTES.map((note) => `${note}${octave}`)
+);
+const PULSE_NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
+    ROOT_NOTES.map((note) => `${note}${octave}`)
+);
+const PATTERN_NOTE_OPTIONS = ['C5', 'B4', 'A4', 'G4', 'F4', 'E4', 'D4', 'C4'] as const;
+const VISUALISER_MODE_OPTIONS = ['waveform', 'spectrum', 'vu', 'lissajous'] as const;
+const ADVANCED_DRUM_TRACK_LENGTHS = [4, 8, 12, 16] as const;
+const DEFAULT_ARP_RATE_MS = 200;
+
+const asMathOptions = (descriptors: MathTargetDescriptor[]): MathTargetOption[] => [
+    MATH_NONE_OPTION,
+    ...descriptors.map((descriptor) => ({
+        value: descriptor.id,
+        label: descriptor.label,
+    })),
+];
+
+const mapMathRange = (value: number, min: number, max: number) =>
+    min + Math.max(0, Math.min(1, value)) * (max - min);
+
+const mapMathIntRange = (value: number, min: number, max: number) =>
+    Math.round(mapMathRange(value, min, max));
+
+const mapMathToggle = (value: number) =>
+    Math.max(0, Math.min(1, value)) >= 0.5;
+
+const mapMathEnum = <T extends string | number>(value: number, options: readonly T[]) => {
+    const safeOptions = options.length > 0 ? options : [0 as T];
+    const index = Math.min(
+        safeOptions.length - 1,
+        Math.floor(Math.max(0, Math.min(1, value)) * safeOptions.length)
+    );
+    return safeOptions[index] ?? safeOptions[0];
+};
+
+const withNoteLabel = (value: string) => value.replace('#', '♯');
+
+export const getMathTargetOptionsForNode = (
+    node: Pick<AppNode, 'type' | 'data'> | undefined,
+    context: MathTargetContext = {}
+): MathTargetOption[] => {
+    if (!node) {
+        return [MATH_NONE_OPTION];
+    }
+
+    const descriptors: MathTargetDescriptor[] = [];
+
+    switch (node.type) {
+        case 'generator': {
+            const generatorMode = getGeneratorMode(node.data);
+            descriptors.push(
+                { id: 'mix', label: 'Mix', kind: 'number' },
+                { id: 'generatorMode', label: 'Voice Mode', kind: 'enum' }
+            );
+            if (generatorMode !== 'noise') {
+                descriptors.push({ id: 'waveShape', label: 'Wave Shape', kind: 'enum' });
+            }
+            if (generatorMode === 'fm' || generatorMode === 'am') {
+                descriptors.push({ id: 'harmonicity', label: 'Harmonicity', kind: 'number' });
+            }
+            if (generatorMode === 'fm') {
+                descriptors.push({ id: 'modulationIndex', label: 'Mod Index', kind: 'number' });
+            }
+            break;
+        }
+        case 'effect': {
+            const subType = node.data.subType ?? 'reverb';
+            descriptors.push(
+                { id: 'wet', label: 'Mix', kind: 'number' },
+                { id: 'subType', label: 'Effect Type', kind: 'enum' }
+            );
+            if (subType === 'reverb') descriptors.push({ id: 'roomSize', label: 'Room Size', kind: 'number' });
+            if (subType === 'delay') {
+                descriptors.push(
+                    { id: 'delayTime', label: 'Delay Time', kind: 'number' },
+                    { id: 'feedback', label: 'Feedback', kind: 'number' }
+                );
+            }
+            if (subType === 'distortion') descriptors.push({ id: 'distortion', label: 'Drive', kind: 'number' });
+            if (subType === 'phaser') descriptors.push({ id: 'frequency', label: 'Speed', kind: 'number' });
+            if (subType === 'bitcrusher') descriptors.push({ id: 'bits', label: 'Bit Depth', kind: 'int' });
+            break;
+        }
+        case 'speaker':
+            descriptors.push({ id: 'volume', label: 'Volume', kind: 'number' });
+            break;
+        case 'controller':
+            descriptors.push(
+                { id: 'rootNote', label: 'Root', kind: 'enum' },
+                { id: 'scaleType', label: 'Scale', kind: 'enum' },
+                { id: 'arpRate', label: 'Arp Rate', kind: 'number' }
+            );
+            break;
+        case 'adsr':
+            descriptors.push(
+                { id: 'attack', label: 'Attack', kind: 'number' },
+                { id: 'decay', label: 'Decay', kind: 'number' },
+                { id: 'sustain', label: 'Sustain', kind: 'number' },
+                { id: 'release', label: 'Release', kind: 'number' }
+            );
+            break;
+        case 'audioin':
+            descriptors.push({ id: 'inputGain', label: 'Mix', kind: 'number' });
+            break;
+        case 'drum':
+            descriptors.push(
+                { id: 'mix', label: 'Mix', kind: 'number' },
+                { id: 'drumMode', label: 'Mode', kind: 'enum' }
+            );
+            break;
+        case 'advanceddrum': {
+            descriptors.push(
+                { id: 'mix', label: 'Mix', kind: 'number' },
+                { id: 'swing', label: 'Swing', kind: 'number' }
+            );
+            const tracks = node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks();
+            tracks.forEach((track: AdvancedDrumTrackData, index: number) => {
+                descriptors.push({
+                    id: `advanceddrum:track:length:${index}`,
+                    label: `${track.label} Length`,
+                    kind: 'contextual',
+                });
+            });
+            break;
+        }
+        case 'unison':
+            descriptors.push(
+                { id: 'wet', label: 'Mix', kind: 'number' },
+                { id: 'depth', label: 'Depth', kind: 'number' },
+                { id: 'frequency', label: 'Speed', kind: 'number' }
+            );
+            break;
+        case 'detune':
+            descriptors.push(
+                { id: 'wet', label: 'Mix', kind: 'number' },
+                { id: 'pitch', label: 'Pitch', kind: 'number' }
+            );
+            break;
+        case 'eq':
+            descriptors.push(
+                { id: 'low', label: 'Low', kind: 'number' },
+                { id: 'mid', label: 'Mid', kind: 'number' },
+                { id: 'high', label: 'High', kind: 'number' },
+                { id: 'lowFrequency', label: 'Low Xover', kind: 'number' },
+                { id: 'highFrequency', label: 'High Xover', kind: 'number' }
+            );
+            break;
+        case 'sampler':
+            descriptors.push(
+                { id: 'mix', label: 'Mix', kind: 'number' },
+                { id: 'loop', label: 'Loop', kind: 'toggle' },
+                { id: 'playbackRate', label: 'Speed', kind: 'number' },
+                { id: 'pitchShift', label: 'Pitch', kind: 'int' },
+                { id: 'reverse', label: 'Reverse', kind: 'toggle' }
+            );
+            break;
+        case 'tempo':
+            descriptors.push({ id: 'bpm', label: 'BPM', kind: 'int' });
+            break;
+        case 'lfo':
+            descriptors.push(
+                { id: 'lfoWaveform', label: 'Wave', kind: 'enum' },
+                { id: 'lfoSync', label: 'Sync', kind: 'toggle' },
+                { id: 'lfoDepth', label: 'Depth', kind: 'number' }
+            );
+            descriptors.push(
+                node.data.lfoSync ?? true
+                    ? { id: 'lfoRate', label: 'Rate', kind: 'enum' }
+                    : { id: 'lfoHz', label: 'Hz', kind: 'number' }
+            );
+            break;
+        case 'quantizer':
+            descriptors.push(
+                { id: 'rootNote', label: 'Root', kind: 'enum' },
+                { id: 'scaleType', label: 'Scale', kind: 'enum' },
+                { id: 'bypass', label: 'Bypass', kind: 'toggle' }
+            );
+            break;
+        case 'keys':
+            descriptors.push({ id: 'octave', label: 'Octave', kind: 'int' });
+            break;
+        case 'chord':
+            descriptors.push({ id: 'subType', label: 'Quality', kind: 'enum' });
+            break;
+        case 'visualiser':
+            descriptors.push({ id: 'visualiserMode', label: 'Mode', kind: 'enum' });
+            break;
+        case 'mixer': {
+            descriptors.push(
+                { id: 'volume', label: 'Master Volume', kind: 'number' },
+                { id: 'pan', label: 'Master Pan', kind: 'number' }
+            );
+            (node.data.mixerChannels ?? []).forEach((channel: MixerChannelState) => {
+                const channelLabel = channel.sourceId;
+                descriptors.push(
+                    {
+                        id: `mixer:channel:volume:${channel.sourceId}`,
+                        label: `${channelLabel} Vol`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `mixer:channel:pan:${channel.sourceId}`,
+                        label: `${channelLabel} Pan`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `mixer:channel:muted:${channel.sourceId}`,
+                        label: `${channelLabel} Mute`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `mixer:channel:solo:${channel.sourceId}`,
+                        label: `${channelLabel} Solo`,
+                        kind: 'contextual',
+                    }
+                );
+            });
+            break;
+        }
+        case 'pulse':
+            descriptors.push(
+                { id: 'pulseSync', label: 'Sync', kind: 'toggle' },
+                node.data.pulseSync ?? true
+                    ? { id: 'pulseRate', label: 'Division', kind: 'enum' }
+                    : { id: 'pulseIntervalMs', label: 'Interval', kind: 'number' },
+                { id: 'pulseNote', label: 'Trigger Note', kind: 'enum' }
+            );
+            break;
+        case 'moodpad':
+            descriptors.push(
+                { id: 'moodX', label: 'Mood', kind: 'number' },
+                { id: 'moodY', label: 'Register', kind: 'number' }
+            );
+            break;
+        case 'stepsequencer': {
+            const selectedStep = node.data.selectedStep ?? 0;
+            descriptors.push(
+                { id: 'sequenceSync', label: 'Sync', kind: 'toggle' },
+                node.data.sequenceSync ?? true
+                    ? { id: 'sequenceRate', label: 'Rate', kind: 'enum' }
+                    : { id: 'sequenceIntervalMs', label: 'Interval', kind: 'number' },
+                { id: 'selectedStep', label: 'Selected Step', kind: 'int' },
+                {
+                    id: `stepsequencer:step:enabled:${selectedStep}`,
+                    label: `Step ${selectedStep + 1} Enabled`,
+                    kind: 'contextual',
+                },
+                {
+                    id: `stepsequencer:step:note:${selectedStep}`,
+                    label: `Step ${selectedStep + 1} Pitch`,
+                    kind: 'contextual',
+                },
+                {
+                    id: `stepsequencer:step:mix:${selectedStep}`,
+                    label: `Step ${selectedStep + 1} Mix`,
+                    kind: 'contextual',
+                }
+            );
+            break;
+        }
+        case 'pattern': {
+            descriptors.push({ id: 'patternLoopBars', label: 'Loop Bars', kind: 'int' });
+            const selectedNoteId = context.selectedPatternNoteId;
+            const selectedNote = (node.data.patternNotes ?? []).find((note: PatternNote) => note.id === selectedNoteId);
+            if (selectedNote) {
+                descriptors.push(
+                    {
+                        id: `pattern:note:note:${selectedNote.id}`,
+                        label: `${withNoteLabel(selectedNote.note)} Pitch`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `pattern:note:startStep:${selectedNote.id}`,
+                        label: `${withNoteLabel(selectedNote.note)} Start`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `pattern:note:lengthSteps:${selectedNote.id}`,
+                        label: `${withNoteLabel(selectedNote.note)} Length`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `pattern:note:velocity:${selectedNote.id}`,
+                        label: `${withNoteLabel(selectedNote.note)} Velocity`,
+                        kind: 'contextual',
+                    }
+                );
+            }
+            break;
+        }
+        case 'arranger': {
+            const selectedSceneId = context.selectedArrangerSceneId;
+            const selectedScene = (node.data.arrangerScenes ?? []).find((scene: ArrangerScene) => scene.id === selectedSceneId);
+            if (selectedScene) {
+                descriptors.push(
+                    {
+                        id: `arranger:scene:startBar:${selectedScene.id}`,
+                        label: `${selectedScene.name} Start`,
+                        kind: 'contextual',
+                    },
+                    {
+                        id: `arranger:scene:lengthBars:${selectedScene.id}`,
+                        label: `${selectedScene.name} Length`,
+                        kind: 'contextual',
+                    }
+                );
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    return asMathOptions(descriptors);
+};
+
 export const getGeneratorMode = (nodeData?: Partial<AppNode['data']>) => {
     if (nodeData?.generatorMode) {
         return nodeData.generatorMode;
@@ -1676,8 +2025,13 @@ export const isModulationEdge = (edge: Edge<AppEdgeData>) =>
     edge.sourceHandle === MODULATION_OUTPUT_HANDLE_ID ||
     Boolean(getModulationParamFromHandle(edge.targetHandle));
 
+export const isMathEdge = (edge: Edge<AppEdgeData>) =>
+    edge.data?.kind === 'math' ||
+    edge.sourceHandle === MATH_OUTPUT_HANDLE_ID ||
+    edge.targetHandle === MATH_INPUT_HANDLE_ID;
+
 export const isAudioEdge = (edge: Edge<AppEdgeData>) =>
-    !isTempoEdge(edge) && !isControlEdge(edge) && !isModulationEdge(edge);
+    !isTempoEdge(edge) && !isControlEdge(edge) && !isModulationEdge(edge) && !isMathEdge(edge);
 
 const stripLegacyTempoEdges = (edges: AppEdge[]) =>
     edges.filter((edge) => !isTempoEdge(edge));
@@ -1700,19 +2054,25 @@ const isValidGraphConnection = (
         return false;
     }
 
-    // Singletons cannot be wired
-    if (sourceNode.type === 'speaker' || targetNode.type === 'speaker') {
-        return false;
-    }
-    if (sourceNode.type === 'tempo' || targetNode.type === 'tempo') {
-        return false;
-    }
-
     const modulationParam = getModulationParamFromHandle(connection.targetHandle);
     const isModulationConn =
         connection.sourceHandle === MODULATION_OUTPUT_HANDLE_ID &&
         Boolean(modulationParam) &&
         sourceNode.type === 'lfo';
+
+    const isMathConn =
+        connection.sourceHandle === MATH_OUTPUT_HANDLE_ID &&
+        connection.targetHandle === MATH_INPUT_HANDLE_ID;
+
+    if (isMathConn) {
+        return !edges.some((edge) =>
+            edge.id !== ignoredEdgeId &&
+            edge.source === connection.source &&
+            edge.target === connection.target &&
+            edge.sourceHandle === connection.sourceHandle &&
+            edge.targetHandle === connection.targetHandle
+        );
+    }
 
     if (isModulationConn) {
         if (!modulationParam) {
@@ -1731,6 +2091,14 @@ const isValidGraphConnection = (
             edge.sourceHandle === connection.sourceHandle &&
             edge.targetHandle === connection.targetHandle
         );
+    }
+
+    // Singletons cannot be wired in audio/control domains.
+    if (sourceNode.type === 'speaker' || targetNode.type === 'speaker') {
+        return false;
+    }
+    if (sourceNode.type === 'tempo' || targetNode.type === 'tempo') {
+        return false;
     }
 
     // Strict domain matching — control-out MUST connect to control-in, audio-out MUST connect to audio-in
@@ -1767,6 +2135,7 @@ const getConnectionKind = (
         targetHandle?: string | null;
     }
 ): ConnectionKind | null => {
+    if (connection.sourceHandle === MATH_OUTPUT_HANDLE_ID) return 'math';
     if (connection.sourceHandle === MODULATION_OUTPUT_HANDLE_ID) return 'modulation';
     if (connection.sourceHandle === CONTROL_OUTPUT_HANDLE_ID) return 'control';
     if (connection.sourceHandle === AUDIO_OUTPUT_HANDLE_ID) return 'audio';
@@ -1774,6 +2143,17 @@ const getConnectionKind = (
 };
 
 const getEdgePresentation = (kind: ConnectionKind) => {
+    if (kind === 'math') {
+        return {
+            style: {
+                stroke: MATH_SIGNAL_COLOR,
+                strokeWidth: 2,
+                strokeDasharray: '4 2',
+                filter: `drop-shadow(0 0 6px ${MATH_SIGNAL_COLOR})`,
+            },
+            data: { kind },
+        };
+    }
     if (kind === 'modulation') {
         return {
             style: {
@@ -1822,6 +2202,8 @@ const collectReachableEdgeIds = (
                 ? isControlEdge(edge)
                 : kind === 'audio'
                     ? isAudioEdge(edge)
+                    : kind === 'math'
+                        ? isMathEdge(edge)
                     : kind === 'modulation'
                         ? isModulationEdge(edge)
                         : isTempoEdge(edge)
@@ -1893,6 +2275,8 @@ type AppState = {
     removeAudioNode: (id: string) => void;
     updateNodeValue: (id: string, value: NodeValueUpdate) => void;
     updateNodeData: (id: string, data: Partial<AppNode['data']>) => void;
+    setMathInputTarget: (nodeId: string, targetId: string) => void;
+    receiveMathValue: (nodeId: string, normalizedValue: number) => void;
     updateSequencerStep: (id: string, stepIndex: number, step: Partial<SequencerStep>) => void;
     updatePatternData: (id: string, clip: Partial<PatternClip>) => void;
     upsertPatternNote: (id: string, note: PatternNote) => void;
@@ -1956,6 +2340,477 @@ type AppState = {
     saveSnapshot: () => void;
     undo: () => void;
     redo: () => void;
+};
+
+const getPatternNoteById = (node: AppNode, noteId: string) =>
+    (node.data.patternNotes ?? []).find((note: PatternNote) => note.id === noteId) ?? null;
+
+const getArrangerSceneById = (node: AppNode, sceneId: string) =>
+    (node.data.arrangerScenes ?? []).find((scene: ArrangerScene) => scene.id === sceneId) ?? null;
+
+const applyMathTargetValue = (
+    store: Pick<
+        AppState,
+        | 'changeNodeSubType'
+        | 'setDrumMode'
+        | 'setMasterVolume'
+        | 'setMathInputTarget'
+        | 'updateArpScale'
+        | 'updateMixerChannel'
+        | 'updateNodeData'
+        | 'updateNodeValue'
+        | 'updateOctave'
+        | 'updatePatternData'
+        | 'updateSamplerSettings'
+        | 'updateSequencerStep'
+        | 'updateTempoBpm'
+        | 'upsertArrangerScene'
+        | 'upsertPatternNote'
+    >,
+    node: AppNode,
+    targetId: string,
+    normalizedValue: number
+) => {
+    const safeValue = Math.max(0, Math.min(1, normalizedValue));
+    const [targetScope, contextScope, fieldName, entityId] = targetId.split(':');
+
+    if (targetId === 'mix') {
+        store.updateNodeValue(node.id, { mix: mapMathIntRange(safeValue, 0, 100) });
+        return;
+    }
+
+    if (targetId === 'generatorMode') {
+        store.updateNodeValue(node.id, {
+            generatorMode: mapMathEnum(safeValue, GENERATOR_MODE_OPTIONS),
+        });
+        return;
+    }
+
+    if (targetId === 'waveShape') {
+        store.updateNodeValue(node.id, {
+            waveShape: mapMathEnum(safeValue, GENERATOR_WAVE_OPTIONS),
+        });
+        return;
+    }
+
+    if (targetId === 'harmonicity') {
+        store.updateNodeValue(node.id, { harmonicity: mapMathRange(safeValue, 0.25, 8) });
+        return;
+    }
+
+    if (targetId === 'modulationIndex') {
+        store.updateNodeValue(node.id, { modulationIndex: mapMathRange(safeValue, 0.5, 20) });
+        return;
+    }
+
+    if (targetId === 'wet') {
+        store.updateNodeValue(node.id, { wet: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'subType') {
+        const nextSubType =
+            node.type === 'effect'
+                ? mapMathEnum(safeValue, EFFECT_SUBTYPE_OPTIONS)
+                : mapMathEnum(
+                    safeValue,
+                    CHORD_QUALITY_OPTIONS.map((option) => option.value)
+                );
+        if (node.data.subType !== nextSubType) {
+            store.changeNodeSubType(node.id, node.type, nextSubType);
+        }
+        return;
+    }
+
+    if (targetId === 'roomSize') {
+        store.updateNodeValue(node.id, { roomSize: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'delayTime') {
+        store.updateNodeValue(node.id, { delayTime: mapMathRange(safeValue, 0.1, 1) });
+        return;
+    }
+
+    if (targetId === 'feedback') {
+        store.updateNodeValue(node.id, { feedback: mapMathRange(safeValue, 0, 0.95) });
+        return;
+    }
+
+    if (targetId === 'distortion') {
+        store.updateNodeValue(node.id, { distortion: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'frequency') {
+        const max = node.type === 'unison' ? 10 : 20;
+        store.updateNodeValue(node.id, { frequency: mapMathRange(safeValue, 0.1, max) });
+        return;
+    }
+
+    if (targetId === 'bits') {
+        store.updateNodeValue(node.id, { bits: mapMathIntRange(safeValue, 1, 8) });
+        return;
+    }
+
+    if (targetId === 'volume') {
+        const nextVolume = mapMathIntRange(safeValue, 0, 100);
+        if (node.type === 'speaker') {
+            store.setMasterVolume(nextVolume);
+            store.updateNodeData(node.id, { volume: nextVolume });
+            return;
+        }
+        store.updateNodeValue(node.id, { volume: nextVolume });
+        return;
+    }
+
+    if (targetId === 'rootNote') {
+        const nextRoot = mapMathEnum(safeValue, ROOT_NOTES);
+        if (node.type === 'controller') {
+            store.updateArpScale(node.id, nextRoot, node.data.scaleType ?? 'major pentatonic');
+            return;
+        }
+        store.updateNodeData(node.id, { rootNote: nextRoot });
+        return;
+    }
+
+    if (targetId === 'scaleType') {
+        const scaleOptions = node.type === 'controller'
+            ? TONAL_SCALE_OPTIONS
+            : TONAL_SCALE_OPTIONS;
+        const nextScale = mapMathEnum(safeValue, scaleOptions);
+        if (node.type === 'controller') {
+            store.updateArpScale(node.id, node.data.rootNote ?? 'C', nextScale);
+            return;
+        }
+        store.updateNodeData(node.id, { scaleType: nextScale });
+        return;
+    }
+
+    if (targetId === 'arpRate') {
+        store.updateNodeData(node.id, { arpRate: mapMathRange(safeValue, 400, 50) });
+        return;
+    }
+
+    if (targetId === 'attack') {
+        store.updateNodeValue(node.id, { attack: mapMathRange(safeValue, 0.001, 2) });
+        return;
+    }
+
+    if (targetId === 'decay') {
+        store.updateNodeValue(node.id, { decay: mapMathRange(safeValue, 0.01, 2) });
+        return;
+    }
+
+    if (targetId === 'sustain') {
+        store.updateNodeValue(node.id, { sustain: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'release') {
+        store.updateNodeValue(node.id, { release: mapMathRange(safeValue, 0.01, 4) });
+        return;
+    }
+
+    if (targetId === 'inputGain') {
+        store.updateNodeValue(node.id, { inputGain: mapMathIntRange(safeValue, 0, 100) });
+        return;
+    }
+
+    if (targetId === 'drumMode') {
+        store.setDrumMode(node.id, mapMathEnum(safeValue, ['hits', 'grid'] as const));
+        return;
+    }
+
+    if (targetId === 'swing') {
+        store.updateNodeData(node.id, { swing: mapMathRange(safeValue, 0, 0.6) });
+        return;
+    }
+
+    if (targetScope === 'advanceddrum' && contextScope === 'track' && fieldName === 'length' && entityId) {
+        const trackIndex = Number(entityId);
+        const tracks = [...(node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks())];
+        const track = tracks[trackIndex];
+        if (!track) {
+            return;
+        }
+        tracks[trackIndex] = {
+            ...track,
+            length: mapMathEnum(safeValue, ADVANCED_DRUM_TRACK_LENGTHS),
+        };
+        store.updateNodeData(node.id, { advancedDrumTracks: tracks });
+        return;
+    }
+
+    if (targetId === 'depth') {
+        store.updateNodeValue(node.id, { depth: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'pitch') {
+        store.updateNodeValue(node.id, { pitch: mapMathRange(safeValue, -12, 12) });
+        return;
+    }
+
+    if (targetId === 'low') {
+        store.updateNodeValue(node.id, { low: mapMathRange(safeValue, -24, 24) });
+        return;
+    }
+
+    if (targetId === 'mid') {
+        store.updateNodeValue(node.id, { mid: mapMathRange(safeValue, -24, 24) });
+        return;
+    }
+
+    if (targetId === 'high') {
+        store.updateNodeValue(node.id, { high: mapMathRange(safeValue, -24, 24) });
+        return;
+    }
+
+    if (targetId === 'lowFrequency') {
+        store.updateNodeValue(node.id, { lowFrequency: mapMathRange(safeValue, 80, 1200) });
+        return;
+    }
+
+    if (targetId === 'highFrequency') {
+        store.updateNodeValue(node.id, { highFrequency: mapMathRange(safeValue, 1200, 8000) });
+        return;
+    }
+
+    if (targetId === 'loop') {
+        store.updateSamplerSettings(node.id, { loop: mapMathToggle(safeValue) });
+        return;
+    }
+
+    if (targetId === 'playbackRate') {
+        store.updateSamplerSettings(node.id, { playbackRate: mapMathRange(safeValue, 0.25, 2) });
+        return;
+    }
+
+    if (targetId === 'pitchShift') {
+        store.updateSamplerSettings(node.id, { pitchShift: mapMathIntRange(safeValue, -12, 12) });
+        return;
+    }
+
+    if (targetId === 'reverse') {
+        store.updateSamplerSettings(node.id, { reverse: mapMathToggle(safeValue) });
+        return;
+    }
+
+    if (targetId === 'bpm') {
+        store.updateTempoBpm(node.id, mapMathIntRange(safeValue, MIN_TEMPO_BPM, MAX_TEMPO_BPM));
+        return;
+    }
+
+    if (targetId === 'lfoWaveform') {
+        store.updateNodeData(node.id, { lfoWaveform: mapMathEnum(safeValue, LFO_WAVE_OPTIONS) });
+        return;
+    }
+
+    if (targetId === 'lfoSync') {
+        store.updateNodeData(node.id, { lfoSync: mapMathToggle(safeValue) });
+        return;
+    }
+
+    if (targetId === 'lfoRate') {
+        store.updateNodeData(node.id, { lfoRate: mapMathEnum(safeValue, TRANSPORT_RATE_OPTIONS.map((option) => option.value)) });
+        return;
+    }
+
+    if (targetId === 'lfoHz') {
+        store.updateNodeData(node.id, { lfoHz: mapMathRange(safeValue, 0.1, 12) });
+        return;
+    }
+
+    if (targetId === 'lfoDepth') {
+        store.updateNodeData(node.id, { lfoDepth: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'bypass') {
+        store.updateNodeData(node.id, { bypass: mapMathToggle(safeValue) });
+        return;
+    }
+
+    if (targetId === 'octave') {
+        store.updateOctave(node.id, mapMathIntRange(safeValue, 1, 7));
+        return;
+    }
+
+    if (targetId === 'visualiserMode') {
+        store.updateNodeData(node.id, { visualiserMode: mapMathEnum(safeValue, VISUALISER_MODE_OPTIONS) });
+        return;
+    }
+
+    if (targetId === 'pan') {
+        store.updateNodeValue(node.id, { pan: mapMathRange(safeValue, -1, 1) });
+        return;
+    }
+
+    if (targetId === 'pulseSync') {
+        store.updateNodeData(node.id, { pulseSync: mapMathToggle(safeValue) });
+        return;
+    }
+
+    if (targetId === 'pulseRate') {
+        store.updateNodeData(node.id, {
+            pulseRate: mapMathEnum(safeValue, TRANSPORT_RATE_OPTIONS.map((option) => option.value)),
+        });
+        return;
+    }
+
+    if (targetId === 'pulseIntervalMs') {
+        store.updateNodeData(node.id, { pulseIntervalMs: mapMathIntRange(safeValue, 100, 2000) });
+        return;
+    }
+
+    if (targetId === 'pulseNote') {
+        store.updateNodeData(node.id, { pulseNote: mapMathEnum(safeValue, PULSE_NOTE_OPTIONS) });
+        return;
+    }
+
+    if (targetId === 'moodX') {
+        store.updateNodeData(node.id, { moodX: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'moodY') {
+        store.updateNodeData(node.id, { moodY: mapMathRange(safeValue, 0, 1) });
+        return;
+    }
+
+    if (targetId === 'sequenceSync') {
+        store.updateNodeData(node.id, { sequenceSync: mapMathToggle(safeValue) });
+        return;
+    }
+
+    if (targetId === 'sequenceRate') {
+        store.updateNodeData(node.id, {
+            sequenceRate: mapMathEnum(safeValue, TRANSPORT_RATE_OPTIONS.map((option) => option.value)),
+        });
+        return;
+    }
+
+    if (targetId === 'sequenceIntervalMs') {
+        store.updateNodeData(node.id, { sequenceIntervalMs: mapMathIntRange(safeValue, 100, 1200) });
+        return;
+    }
+
+    if (targetId === 'selectedStep') {
+        const maxStepIndex = Math.max((node.data.stepSequence ?? createDefaultStepSequence()).length - 1, 0);
+        store.updateNodeData(node.id, { selectedStep: mapMathIntRange(safeValue, 0, maxStepIndex) });
+        return;
+    }
+
+    if (targetScope === 'stepsequencer' && contextScope === 'step' && entityId) {
+        const stepIndex = Number(entityId);
+        if (fieldName === 'enabled') {
+            store.updateSequencerStep(node.id, stepIndex, { enabled: mapMathToggle(safeValue) });
+            return;
+        }
+        if (fieldName === 'note') {
+            store.updateSequencerStep(node.id, stepIndex, {
+                note: mapMathEnum(safeValue, SEQUENCER_NOTE_OPTIONS),
+            });
+            return;
+        }
+        if (fieldName === 'mix') {
+            store.updateSequencerStep(node.id, stepIndex, {
+                mix: mapMathIntRange(safeValue, 10, 100),
+            });
+            return;
+        }
+    }
+
+    if (targetId === 'patternLoopBars') {
+        store.updatePatternData(node.id, { loopBars: mapMathIntRange(safeValue, 1, 8) });
+        return;
+    }
+
+    if (targetScope === 'pattern' && contextScope === 'note' && entityId) {
+        const targetNote = getPatternNoteById(node, entityId);
+        if (!targetNote) {
+            return;
+        }
+
+        if (fieldName === 'note') {
+            store.upsertPatternNote(node.id, {
+                ...targetNote,
+                note: mapMathEnum(safeValue, PATTERN_NOTE_OPTIONS),
+            });
+            return;
+        }
+        if (fieldName === 'startStep') {
+            const totalSteps =
+                Math.max(1, node.data.patternLoopBars ?? 2) *
+                Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR);
+            store.upsertPatternNote(node.id, {
+                ...targetNote,
+                startStep: mapMathIntRange(safeValue, 0, Math.max(0, totalSteps - 1)),
+            });
+            return;
+        }
+        if (fieldName === 'lengthSteps') {
+            const totalSteps =
+                Math.max(1, node.data.patternLoopBars ?? 2) *
+                Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR);
+            store.upsertPatternNote(node.id, {
+                ...targetNote,
+                lengthSteps: mapMathIntRange(
+                    safeValue,
+                    1,
+                    Math.max(1, totalSteps - targetNote.startStep)
+                ),
+            });
+            return;
+        }
+        if (fieldName === 'velocity') {
+            store.upsertPatternNote(node.id, {
+                ...targetNote,
+                velocity: mapMathRange(safeValue, 0.05, 1),
+            });
+            return;
+        }
+    }
+
+    if (targetScope === 'mixer' && contextScope === 'channel' && entityId) {
+        if (fieldName === 'volume') {
+            store.updateMixerChannel(node.id, entityId, { volume: mapMathIntRange(safeValue, 0, 100) });
+            return;
+        }
+        if (fieldName === 'pan') {
+            store.updateMixerChannel(node.id, entityId, { pan: mapMathRange(safeValue, -1, 1) });
+            return;
+        }
+        if (fieldName === 'muted') {
+            store.updateMixerChannel(node.id, entityId, { muted: mapMathToggle(safeValue) });
+            return;
+        }
+        if (fieldName === 'solo') {
+            store.updateMixerChannel(node.id, entityId, { solo: mapMathToggle(safeValue) });
+            return;
+        }
+    }
+
+    if (targetScope === 'arranger' && contextScope === 'scene' && entityId) {
+        const scene = getArrangerSceneById(node, entityId);
+        if (!scene) {
+            return;
+        }
+        if (fieldName === 'startBar') {
+            store.upsertArrangerScene(node.id, {
+                ...scene,
+                startBar: mapMathIntRange(safeValue, 0, 64),
+            });
+            return;
+        }
+        if (fieldName === 'lengthBars') {
+            store.upsertArrangerScene(node.id, {
+                ...scene,
+                lengthBars: mapMathIntRange(safeValue, 1, 16),
+            });
+        }
+    }
 };
 
 const getPatternClipFromNode = (node: AppNode): PatternClip => ({
@@ -2356,6 +3211,11 @@ export const useStore = create<AppState>((set, get) => ({
                                 kind === 'modulation'
                                     ? getModulationParamFromHandle(newConnection.targetHandle)
                                     : undefined,
+                            mathTarget:
+                                kind === 'math'
+                                    ? get().nodes.find((node: AppNode) => node.id === (newConnection.target ?? edge.target))
+                                        ?.data.mathInputTarget ?? MATH_NONE_TARGET
+                                    : undefined,
                         },
                     }
                     : edge
@@ -2406,6 +3266,10 @@ export const useStore = create<AppState>((set, get) => ({
                     targetParam:
                         kind === 'modulation'
                             ? getModulationParamFromHandle(connection.targetHandle)
+                            : undefined,
+                    mathTarget:
+                        kind === 'math'
+                            ? targetNode?.data.mathInputTarget ?? MATH_NONE_TARGET
                             : undefined,
                 },
             }, edges),
@@ -3214,6 +4078,45 @@ export const useStore = create<AppState>((set, get) => ({
         ) {
             get().rebuildModulationGraph();
         }
+    },
+
+    setMathInputTarget: (nodeId: string, targetId: string) => {
+        const nextTargetId = targetId || MATH_NONE_TARGET;
+        set({
+            nodes: get().nodes.map((node: AppNode) =>
+                node.id === nodeId
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            mathInputTarget: nextTargetId,
+                        },
+                    }
+                    : node
+            ),
+            edges: get().edges.map((edge: AppEdge) =>
+                isMathEdge(edge) && (edge.data?.originalTarget || edge.target) === nodeId
+                    ? {
+                        ...edge,
+                        data: {
+                            ...edge.data,
+                            mathTarget: nextTargetId,
+                        },
+                    }
+                    : edge
+            ),
+        });
+    },
+
+    receiveMathValue: (nodeId: string, normalizedValue: number) => {
+        const node = get().nodes.find((candidate: AppNode) => candidate.id === nodeId);
+        const targetId = node?.data.mathInputTarget ?? MATH_NONE_TARGET;
+
+        if (!node || targetId === MATH_NONE_TARGET) {
+            return;
+        }
+
+        applyMathTargetValue(get(), node, targetId, normalizedValue);
     },
 
     updateSequencerStep: (id: string, stepIndex: number, step: Partial<SequencerStep>) => {
@@ -4805,6 +5708,7 @@ export const useStore = create<AppState>((set, get) => ({
                         data: {
                             ...node.data,
                             label: node.data.label || 'Master Out',
+                            volume: node.data.volume ?? get().masterVolume,
                         },
                         }
                         : node.type === 'controller'
@@ -4815,6 +5719,7 @@ export const useStore = create<AppState>((set, get) => ({
                                     label: node.data.label || 'Arpeggiator',
                                     rootNote: node.data.rootNote ?? 'C',
                                     scaleType: node.data.scaleType ?? 'major pentatonic',
+                                    arpRate: node.data.arpRate ?? DEFAULT_ARP_RATE_MS,
                                     isPlaying: node.data.isPlaying ?? false,
                                 },
                             }
@@ -5080,24 +5985,32 @@ export const useStore = create<AppState>((set, get) => ({
                                                     }
                                 : node;
 
-        set((state: AppState) => ({ nodes: [...state.nodes, nextNode] }));
+        const persistedNode: AppNode = {
+            ...nextNode,
+            data: {
+                ...nextNode.data,
+                mathInputTarget: nextNode.data.mathInputTarget ?? MATH_NONE_TARGET,
+            },
+        };
 
-        if (nextNode.type === 'tempo') {
-            Tone.getTransport().bpm.rampTo(nextNode.data.bpm ?? DEFAULT_TRANSPORT_BPM, 0.1);
+        set((state: AppState) => ({ nodes: [...state.nodes, persistedNode] }));
+
+        if (persistedNode.type === 'tempo') {
+            Tone.getTransport().bpm.rampTo(persistedNode.data.bpm ?? DEFAULT_TRANSPORT_BPM, 0.1);
             return;
         }
 
-        if (nextNode.type === 'speaker') {
+        if (persistedNode.type === 'speaker') {
             get().resetMasterVolume();
             return;
         }
 
-        if (shouldInitAudioNode(nextNode)) {
-            get().initAudioNode(nextNode.id, nextNode.type, getNodeInitSubType(nextNode));
+        if (shouldInitAudioNode(persistedNode)) {
+            get().initAudioNode(persistedNode.id, persistedNode.type, getNodeInitSubType(persistedNode));
         }
 
-        if (isPatternRuntimeNode(nextNode.type) && nextNode.data.isPlaying) {
-            get().toggleNodePlayback(nextNode.id, true);
+        if (isPatternRuntimeNode(persistedNode.type) && persistedNode.data.isPlaying) {
+            get().toggleNodePlayback(persistedNode.id, true);
         }
 
         get().rebuildAudioGraph();
@@ -5262,6 +6175,10 @@ export const useStore = create<AppState>((set, get) => ({
         edges
             .filter((edge: AppEdge) => isAudioEdge(edge))
             .forEach((edge: AppEdge) => {
+                if (isMathEdge(edge)) {
+                    return;
+                }
+
                 const sourceInfo = nodesById.get(edge.source);
                 const targetInfo = nodesById.get(edge.target);
 
@@ -5642,13 +6559,25 @@ export const useStore = create<AppState>((set, get) => ({
         const { nodes, edges, masterVolume } = data;
 
         const hydratedEdges = (edges || []).map((edge) => {
-            const kind = edge.data?.kind || (edge.sourceHandle === AUDIO_OUTPUT_HANDLE_ID ? 'audio' : 'control');
+            const kind =
+                edge.data?.kind ||
+                (edge.sourceHandle === MATH_OUTPUT_HANDLE_ID
+                    ? 'math'
+                    : edge.sourceHandle === MODULATION_OUTPUT_HANDLE_ID
+                        ? 'modulation'
+                        : edge.sourceHandle === AUDIO_OUTPUT_HANDLE_ID
+                            ? 'audio'
+                            : 'control');
             return {
                 ...edge,
                 ...getEdgePresentation(kind),
                 data: {
                     ...edge.data,
                     kind,
+                    mathTarget:
+                        kind === 'math'
+                            ? edge.data?.mathTarget ?? nodes.find((node) => node.id === edge.target)?.data.mathInputTarget ?? MATH_NONE_TARGET
+                            : edge.data?.mathTarget,
                 },
             };
         });

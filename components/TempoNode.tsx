@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Tone from 'tone';
 import {
     DEFAULT_TRANSPORT_BPM,
+    getMathTargetOptionsForNode,
     MAX_TEMPO_BPM,
     MIN_TEMPO_BPM,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 
 const clampTempoBpm = (bpm: number) =>
     Math.min(MAX_TEMPO_BPM, Math.max(MIN_TEMPO_BPM, Math.round(bpm)));
@@ -14,10 +16,13 @@ const clampTempoBpm = (bpm: number) =>
 export default function TempoNode({ id }: { id: string }) {
     const updateTempoBpm = useStore((state) => state.updateTempoBpm);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
     const bpm = useStore((state) =>
         state.nodes.find((node) => node.id === id)?.data.bpm ?? DEFAULT_TRANSPORT_BPM
     );
     const accentStyle = useNodeAccentStyle('tempo');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     const [inputValue, setInputValue] = useState(String(bpm));
     const [isBeatActive, setIsBeatActive] = useState(false);
@@ -94,6 +99,12 @@ export default function TempoNode({ id }: { id: string }) {
             style={accentStyle}
             className="themed-node bg-slate-800 border-2 border-indigo-500 rounded-2xl p-3 shadow-2xl text-white w-64 flex flex-col transition-all hover:shadow-indigo-500/20 group relative select-none"
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
 
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex items-start justify-between gap-4 mb-3">

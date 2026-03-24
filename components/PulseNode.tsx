@@ -7,12 +7,14 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
     TRANSPORT_RATE_OPTIONS,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
@@ -24,7 +26,8 @@ export default function PulseNode({ id }: { id: string }) {
     const firePulse = useStore((state) => state.firePulse);
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -37,6 +40,8 @@ export default function PulseNode({ id }: { id: string }) {
     const pulseNote = nodeData?.pulseNote ?? 'C4';
     const isPlaying = nodeData?.isPlaying ?? false;
     const accentStyle = useNodeAccentStyle('pulse');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     const effectiveIntervalMs = useMemo(
         () => (pulseSync ? Tone.Time(pulseRate).toMilliseconds() : pulseIntervalMs),
@@ -61,6 +66,12 @@ export default function PulseNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('pulse') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <div className="relative z-10 flex flex-1 flex-col">
                 <div className="flex justify-between items-center mb-3">
                     <button

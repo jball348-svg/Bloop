@@ -8,11 +8,13 @@ import {
     type AutomationPoint,
     getAdjacencyGlowClasses,
     getAutomatableParamsForNode,
+    getMathTargetOptionsForNode,
     getNodeAutomatableValue,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const createScene = (): ArrangerScene => ({
@@ -37,7 +39,8 @@ export default function ArrangerNode({ id }: { id: string }) {
     const toggleNodePlayback = useStore((state) => state.toggleNodePlayback);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
     const nodes = useStore((state) => state.nodes);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const accentStyle = useNodeAccentStyle('arranger');
     const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
@@ -47,6 +50,10 @@ export default function ArrangerNode({ id }: { id: string }) {
     const currentBar = nodeData?.currentStep ?? -1;
 
     const selectedScene = scenes.find((scene: ArrangerScene) => scene.id === selectedSceneId) ?? scenes[0] ?? null;
+    const targetOptions = getMathTargetOptionsForNode(node, {
+        selectedArrangerSceneId: selectedScene?.id ?? null,
+    });
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
     const patternNodes = useMemo(
         () => nodes.filter((node) => node.type === 'pattern'),
         [nodes]
@@ -90,6 +97,12 @@ export default function ArrangerNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('arranger') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <div className="relative z-10 flex flex-col">
                 <div className="mb-3 flex items-center justify-between">
                     <button

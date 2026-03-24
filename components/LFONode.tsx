@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import {
     MODULATION_OUTPUT_HANDLE_ID,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isModulationEdge,
     TRANSPORT_RATE_OPTIONS,
@@ -11,6 +12,7 @@ import {
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 const WAVE_OPTIONS = ['sine', 'triangle', 'square', 'sawtooth'] as const;
@@ -19,7 +21,8 @@ export default function LFONode({ id }: { id: string }) {
     const updateNodeData = useStore((state) => state.updateNodeData);
     const rebuildModulationGraph = useStore((state) => state.rebuildModulationGraph);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isConnected = useStore((state) =>
         state.edges.some((edge) => isModulationEdge(edge) && edge.source === id)
@@ -31,6 +34,8 @@ export default function LFONode({ id }: { id: string }) {
     const rate = nodeData?.lfoRate ?? '4n';
     const hz = nodeData?.lfoHz ?? 1;
     const depth = nodeData?.lfoDepth ?? 0.35;
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     useEffect(() => {
         rebuildModulationGraph();
@@ -48,6 +53,12 @@ export default function LFONode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('lfo') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             {(!nodeData?.isLocked || nodeData?.isExit) && (
                 <Handle
                     type="source"

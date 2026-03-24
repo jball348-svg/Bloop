@@ -4,12 +4,14 @@ import { Handle, Position } from 'reactflow';
 import {
     AUDIO_INPUT_HANDLE_ID,
     type MixerChannelState,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isAudioEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 export default function MixerNode({ id }: { id: string }) {
@@ -27,6 +29,8 @@ export default function MixerNode({ id }: { id: string }) {
     const channels: MixerChannelState[] = node?.data.mixerChannels ?? [];
     const masterVolume = node?.data.volume ?? 70;
     const masterPan = node?.data.pan ?? 0;
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     if (node?.data.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -40,6 +44,12 @@ export default function MixerNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('mixer') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             <Handle
                 type="target"
                 id={AUDIO_INPUT_HANDLE_ID}

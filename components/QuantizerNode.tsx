@@ -6,18 +6,21 @@ import {
     CONTROL_OUTPUT_HANDLE_ID,
     ROOT_NOTES,
     TONAL_SCALE_OPTIONS,
+    getMathTargetOptionsForNode,
     getAdjacencyGlowClasses,
     isControlEdge,
     useStore,
 } from '@/store/useStore';
 import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
+import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
 
 export default function QuantizerNode({ id }: { id: string }) {
     const updateNodeData = useStore((state) => state.updateNodeData);
     const removeNodeAndCleanUp = useStore((state) => state.removeNodeAndCleanUp);
-    const nodeData = useStore((state) => state.nodes.find((node) => node.id === id)?.data);
+    const node = useStore((state) => state.nodes.find((entry) => entry.id === id));
+    const nodeData = node?.data;
     const isAdjacent = useStore((state) => state.adjacentNodeIds.has(id));
     const isUnconnected = useStore((state) => {
         const edges = state.edges;
@@ -28,6 +31,8 @@ export default function QuantizerNode({ id }: { id: string }) {
     const scaleType = nodeData?.scaleType ?? 'major';
     const bypass = nodeData?.bypass ?? false;
     const accentStyle = useNodeAccentStyle('quantizer');
+    const targetOptions = getMathTargetOptionsForNode(node);
+    const { mathInputTarget, setMathInputTarget } = useMathInputSelection(id, targetOptions);
 
     if (nodeData?.isPackedVisible) {
         return <PackedNode id={id} />;
@@ -41,6 +46,12 @@ export default function QuantizerNode({ id }: { id: string }) {
                 isAdjacent ? getAdjacencyGlowClasses('quantizer') : ''
             }`}
         >
+            <MathInputHandle
+                nodeId={id}
+                mathInputTarget={mathInputTarget}
+                targetOptions={targetOptions}
+                onTargetChange={(target) => setMathInputTarget(id, target)}
+            />
             {(!nodeData?.isLocked || nodeData?.isEntry) && (
                 <Handle
                     type="target"
