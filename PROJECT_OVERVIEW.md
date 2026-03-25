@@ -167,7 +167,7 @@ Only one of each is allowed on the canvas.
 
 - Piano-roll style note editing
 - Scrollable note range across C2-C6
-- Up to 16 bars per loop
+- Up to 48 bars per loop
 - Pattern notes are persisted directly in node data
 
 ### 6.2 Step Sequencer

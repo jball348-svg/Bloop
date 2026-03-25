@@ -1,0 +1,3116 @@
+{
+  "version": 1,
+  "metadata": {
+    "title": "Neon Afterglow",
+    "description": "AI-authored synthwave track plan in F natural minor at 120 BPM with a nocturnal melodic arc and section-driven automation.",
+    "scaffoldId": "ai-song-v1",
+    "blueprintId": "ai-neon-afterglow",
+    "authoringMode": "compiled",
+    "generatedAt": "2026-03-25T13:15:25.904Z",
+    "planId": "ai-neon-afterglow",
+    "globalKey": "F minor",
+    "brainRefs": [
+      "10_music_ontology",
+      "11_time_schema",
+      "12_pitch_harmony_schema",
+      "13_rhythm_schema",
+      "21_transform_ops",
+      "30_composition_pipeline"
+    ],
+    "validationPass": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "groundedSong": {
+      "version": 1,
+      "plan_id": "ai-neon-afterglow",
+      "global_key": "F minor",
+      "brain_refs": [
+        "10_music_ontology",
+        "11_time_schema",
+        "12_pitch_harmony_schema",
+        "13_rhythm_schema",
+        "21_transform_ops",
+        "30_composition_pipeline"
+      ],
+      "validation_pass": true,
+      "error_count": 0,
+      "warning_count": 0
+    }
+  },
+  "nodes": [
+    {
+      "id": "song-tempo",
+      "type": "tempo",
+      "position": {
+        "x": 72,
+        "y": 52
+      },
+      "data": {
+        "label": "Tempo",
+        "bpm": 120
+      }
+    },
+    {
+      "id": "song-bass-pattern",
+      "type": "pattern",
+      "position": {
+        "x": 92,
+        "y": 138
+      },
+      "data": {
+        "label": "Pattern",
+        "patternLoopBars": 44,
+        "patternStepsPerBar": 16,
+        "patternNotes": [
+          {
+            "id": "song-bass-note-1",
+            "note": "F1",
+            "startStep": 0,
+            "lengthSteps": 12,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-bass-note-2",
+            "note": "C2",
+            "startStep": 12,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-bass-note-3",
+            "note": "F1",
+            "startStep": 16,
+            "lengthSteps": 12,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-bass-note-4",
+            "note": "C#2",
+            "startStep": 28,
+            "lengthSteps": 4,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-bass-note-5",
+            "note": "F1",
+            "startStep": 32,
+            "lengthSteps": 16,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-bass-note-6",
+            "note": "F1",
+            "startStep": 48,
+            "lengthSteps": 12,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-bass-note-7",
+            "note": "C2",
+            "startStep": 60,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-bass-note-8",
+            "note": "F1",
+            "startStep": 64,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-9",
+            "note": "C2",
+            "startStep": 68,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-10",
+            "note": "F1",
+            "startStep": 72,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-11",
+            "note": "G#1",
+            "startStep": 76,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-12",
+            "note": "C#2",
+            "startStep": 80,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-13",
+            "note": "G#1",
+            "startStep": 84,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-14",
+            "note": "C#2",
+            "startStep": 88,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-15",
+            "note": "C2",
+            "startStep": 92,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-16",
+            "note": "G#1",
+            "startStep": 96,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-17",
+            "note": "D#2",
+            "startStep": 100,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-18",
+            "note": "G#1",
+            "startStep": 104,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-19",
+            "note": "G1",
+            "startStep": 108,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-20",
+            "note": "D#2",
+            "startStep": 112,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-21",
+            "note": "A#1",
+            "startStep": 116,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-22",
+            "note": "D#2",
+            "startStep": 120,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-23",
+            "note": "C2",
+            "startStep": 124,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-24",
+            "note": "F1",
+            "startStep": 128,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-25",
+            "note": "C2",
+            "startStep": 132,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-26",
+            "note": "F1",
+            "startStep": 136,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-27",
+            "note": "G#1",
+            "startStep": 140,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-28",
+            "note": "C#2",
+            "startStep": 144,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-29",
+            "note": "G#1",
+            "startStep": 148,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-30",
+            "note": "C#2",
+            "startStep": 152,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-31",
+            "note": "C2",
+            "startStep": 156,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-32",
+            "note": "G#1",
+            "startStep": 160,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-33",
+            "note": "D#2",
+            "startStep": 164,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-34",
+            "note": "G#1",
+            "startStep": 168,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-35",
+            "note": "G1",
+            "startStep": 172,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-36",
+            "note": "D#2",
+            "startStep": 176,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-37",
+            "note": "A#1",
+            "startStep": 180,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-38",
+            "note": "D#2",
+            "startStep": 184,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-39",
+            "note": "C2",
+            "startStep": 188,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-40",
+            "note": "F1",
+            "startStep": 192,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-41",
+            "note": "C2",
+            "startStep": 196,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-42",
+            "note": "F1",
+            "startStep": 200,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-43",
+            "note": "G#1",
+            "startStep": 204,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-44",
+            "note": "D#2",
+            "startStep": 208,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-45",
+            "note": "A#1",
+            "startStep": 212,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-46",
+            "note": "D#2",
+            "startStep": 216,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-47",
+            "note": "C#2",
+            "startStep": 220,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-48",
+            "note": "C#2",
+            "startStep": 224,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-49",
+            "note": "G#1",
+            "startStep": 228,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-50",
+            "note": "C#2",
+            "startStep": 232,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-51",
+            "note": "C2",
+            "startStep": 236,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-52",
+            "note": "C2",
+            "startStep": 240,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-53",
+            "note": "G1",
+            "startStep": 244,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-54",
+            "note": "C2",
+            "startStep": 248,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-55",
+            "note": "C2",
+            "startStep": 252,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-56",
+            "note": "F1",
+            "startStep": 256,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-57",
+            "note": "C2",
+            "startStep": 260,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-58",
+            "note": "F2",
+            "startStep": 264,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-59",
+            "note": "G#1",
+            "startStep": 268,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-60",
+            "note": "D#2",
+            "startStep": 272,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-61",
+            "note": "A#1",
+            "startStep": 276,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-62",
+            "note": "D#2",
+            "startStep": 280,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-63",
+            "note": "C#2",
+            "startStep": 284,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-64",
+            "note": "C#2",
+            "startStep": 288,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-65",
+            "note": "G#1",
+            "startStep": 292,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-66",
+            "note": "C#2",
+            "startStep": 296,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-67",
+            "note": "C2",
+            "startStep": 300,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-68",
+            "note": "C2",
+            "startStep": 304,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-69",
+            "note": "G1",
+            "startStep": 308,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-70",
+            "note": "C2",
+            "startStep": 312,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-71",
+            "note": "F1",
+            "startStep": 316,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-72",
+            "note": "C#2",
+            "startStep": 320,
+            "lengthSteps": 8,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-bass-note-73",
+            "note": "G#1",
+            "startStep": 328,
+            "lengthSteps": 8,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-bass-note-74",
+            "note": "G#1",
+            "startStep": 336,
+            "lengthSteps": 8,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-bass-note-75",
+            "note": "D#2",
+            "startStep": 344,
+            "lengthSteps": 8,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-bass-note-76",
+            "note": "D#2",
+            "startStep": 352,
+            "lengthSteps": 8,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-77",
+            "note": "A#1",
+            "startStep": 360,
+            "lengthSteps": 8,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-bass-note-78",
+            "note": "F1",
+            "startStep": 368,
+            "lengthSteps": 12,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-bass-note-79",
+            "note": "C2",
+            "startStep": 380,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-bass-note-80",
+            "note": "C#2",
+            "startStep": 384,
+            "lengthSteps": 8,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-81",
+            "note": "C2",
+            "startStep": 392,
+            "lengthSteps": 8,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-bass-note-82",
+            "note": "G#1",
+            "startStep": 400,
+            "lengthSteps": 8,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-bass-note-83",
+            "note": "G1",
+            "startStep": 408,
+            "lengthSteps": 8,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-bass-note-84",
+            "note": "D#2",
+            "startStep": 416,
+            "lengthSteps": 8,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-85",
+            "note": "C#2",
+            "startStep": 424,
+            "lengthSteps": 8,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-bass-note-86",
+            "note": "F1",
+            "startStep": 432,
+            "lengthSteps": 12,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-bass-note-87",
+            "note": "C2",
+            "startStep": 444,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-bass-note-88",
+            "note": "F1",
+            "startStep": 448,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-89",
+            "note": "C2",
+            "startStep": 452,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-90",
+            "note": "F1",
+            "startStep": 456,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-91",
+            "note": "G#1",
+            "startStep": 460,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-92",
+            "note": "C#2",
+            "startStep": 464,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-93",
+            "note": "G#1",
+            "startStep": 468,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-94",
+            "note": "C#2",
+            "startStep": 472,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-95",
+            "note": "C2",
+            "startStep": 476,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-96",
+            "note": "G#1",
+            "startStep": 480,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-97",
+            "note": "D#2",
+            "startStep": 484,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-98",
+            "note": "G#1",
+            "startStep": 488,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-99",
+            "note": "G1",
+            "startStep": 492,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-100",
+            "note": "D#2",
+            "startStep": 496,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-101",
+            "note": "A#1",
+            "startStep": 500,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-102",
+            "note": "D#2",
+            "startStep": 504,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-103",
+            "note": "C2",
+            "startStep": 508,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-104",
+            "note": "F1",
+            "startStep": 512,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-105",
+            "note": "C2",
+            "startStep": 516,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-106",
+            "note": "F2",
+            "startStep": 520,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-107",
+            "note": "G#1",
+            "startStep": 524,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-108",
+            "note": "C#2",
+            "startStep": 528,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-109",
+            "note": "G#1",
+            "startStep": 532,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-110",
+            "note": "C#2",
+            "startStep": 536,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-111",
+            "note": "C2",
+            "startStep": 540,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-112",
+            "note": "F1",
+            "startStep": 544,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-113",
+            "note": "C2",
+            "startStep": 548,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-114",
+            "note": "F1",
+            "startStep": 552,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-115",
+            "note": "C2",
+            "startStep": 556,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-116",
+            "note": "C2",
+            "startStep": 560,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-bass-note-117",
+            "note": "G1",
+            "startStep": 564,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-118",
+            "note": "C#2",
+            "startStep": 568,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-119",
+            "note": "F1",
+            "startStep": 572,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-120",
+            "note": "F1",
+            "startStep": 576,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-121",
+            "note": "C2",
+            "startStep": 580,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-122",
+            "note": "F1",
+            "startStep": 584,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-123",
+            "note": "G#1",
+            "startStep": 588,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-124",
+            "note": "C#2",
+            "startStep": 592,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-125",
+            "note": "G#1",
+            "startStep": 596,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-126",
+            "note": "C#2",
+            "startStep": 600,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-127",
+            "note": "C2",
+            "startStep": 604,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-128",
+            "note": "G#1",
+            "startStep": 608,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-129",
+            "note": "D#2",
+            "startStep": 612,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-130",
+            "note": "G#1",
+            "startStep": 616,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-131",
+            "note": "G1",
+            "startStep": 620,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-132",
+            "note": "D#2",
+            "startStep": 624,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-133",
+            "note": "A#1",
+            "startStep": 628,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-134",
+            "note": "D#2",
+            "startStep": 632,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-135",
+            "note": "C2",
+            "startStep": 636,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-136",
+            "note": "F1",
+            "startStep": 640,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-137",
+            "note": "C2",
+            "startStep": 644,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-138",
+            "note": "F2",
+            "startStep": 648,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-139",
+            "note": "G#1",
+            "startStep": 652,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-140",
+            "note": "C#2",
+            "startStep": 656,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-141",
+            "note": "G#1",
+            "startStep": 660,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-142",
+            "note": "C#2",
+            "startStep": 664,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-143",
+            "note": "C2",
+            "startStep": 668,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-144",
+            "note": "F1",
+            "startStep": 672,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-bass-note-145",
+            "note": "C2",
+            "startStep": 676,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-146",
+            "note": "F1",
+            "startStep": 680,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-bass-note-147",
+            "note": "C2",
+            "startStep": 684,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-148",
+            "note": "C2",
+            "startStep": 688,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-bass-note-149",
+            "note": "G1",
+            "startStep": 692,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-150",
+            "note": "C#2",
+            "startStep": 696,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-bass-note-151",
+            "note": "F1",
+            "startStep": 700,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-bass-adsr",
+      "type": "adsr",
+      "position": {
+        "x": 430,
+        "y": 154
+      },
+      "data": {
+        "label": "ADSR",
+        "attack": 0.01,
+        "decay": 0.24,
+        "sustain": 0.68,
+        "release": 0.32
+      }
+    },
+    {
+      "id": "song-bass-gen",
+      "type": "generator",
+      "position": {
+        "x": 734,
+        "y": 154
+      },
+      "data": {
+        "label": "Afterglow Bass",
+        "generatorMode": "fm",
+        "waveShape": "sine",
+        "mix": 82,
+        "harmonicity": 1.35,
+        "modulationIndex": 10.2
+      }
+    },
+    {
+      "id": "song-bass-eq",
+      "type": "eq",
+      "position": {
+        "x": 1016,
+        "y": 154
+      },
+      "data": {
+        "label": "EQ",
+        "eqLow": 4,
+        "eqMid": -2,
+        "eqHigh": -3,
+        "eqLowFrequency": 240,
+        "eqHighFrequency": 2600
+      }
+    },
+    {
+      "id": "song-lead-pattern",
+      "type": "pattern",
+      "position": {
+        "x": 92,
+        "y": 450
+      },
+      "data": {
+        "label": "Pattern",
+        "patternLoopBars": 44,
+        "patternStepsPerBar": 16,
+        "patternNotes": [
+          {
+            "id": "song-lead-note-1",
+            "note": "C5",
+            "startStep": 4,
+            "lengthSteps": 6,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-lead-note-2",
+            "note": "G#4",
+            "startStep": 12,
+            "lengthSteps": 4,
+            "velocity": 0.64
+          },
+          {
+            "id": "song-lead-note-3",
+            "note": "G4",
+            "startStep": 20,
+            "lengthSteps": 4,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-4",
+            "note": "F4",
+            "startStep": 24,
+            "lengthSteps": 8,
+            "velocity": 0.62
+          },
+          {
+            "id": "song-lead-note-5",
+            "note": "C5",
+            "startStep": 36,
+            "lengthSteps": 6,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-6",
+            "note": "G#4",
+            "startStep": 44,
+            "lengthSteps": 4,
+            "velocity": 0.64
+          },
+          {
+            "id": "song-lead-note-7",
+            "note": "G4",
+            "startStep": 52,
+            "lengthSteps": 4,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-8",
+            "note": "F4",
+            "startStep": 56,
+            "lengthSteps": 8,
+            "velocity": 0.62
+          },
+          {
+            "id": "song-lead-note-9",
+            "note": "F4",
+            "startStep": 64,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-10",
+            "note": "G4",
+            "startStep": 68,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-11",
+            "note": "G#4",
+            "startStep": 72,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-12",
+            "note": "C5",
+            "startStep": 76,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-13",
+            "note": "A#4",
+            "startStep": 80,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-14",
+            "note": "G#4",
+            "startStep": 84,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-15",
+            "note": "G4",
+            "startStep": 88,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-lead-note-16",
+            "note": "F4",
+            "startStep": 92,
+            "lengthSteps": 4,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-17",
+            "note": "F4",
+            "startStep": 96,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-18",
+            "note": "G4",
+            "startStep": 100,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-19",
+            "note": "G#4",
+            "startStep": 104,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-20",
+            "note": "C5",
+            "startStep": 108,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-21",
+            "note": "D#5",
+            "startStep": 112,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-22",
+            "note": "C5",
+            "startStep": 116,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-23",
+            "note": "G#4",
+            "startStep": 120,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-24",
+            "note": "F4",
+            "startStep": 124,
+            "lengthSteps": 4,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-25",
+            "note": "G4",
+            "startStep": 128,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-26",
+            "note": "G#4",
+            "startStep": 132,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-27",
+            "note": "A#4",
+            "startStep": 136,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-28",
+            "note": "C5",
+            "startStep": 140,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-29",
+            "note": "D#5",
+            "startStep": 144,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-30",
+            "note": "C5",
+            "startStep": 148,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-31",
+            "note": "G#4",
+            "startStep": 152,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-32",
+            "note": "F4",
+            "startStep": 156,
+            "lengthSteps": 4,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-lead-note-33",
+            "note": "F4",
+            "startStep": 160,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-34",
+            "note": "G4",
+            "startStep": 164,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-35",
+            "note": "G#4",
+            "startStep": 168,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-36",
+            "note": "C5",
+            "startStep": 172,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-37",
+            "note": "A#4",
+            "startStep": 176,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-38",
+            "note": "G#4",
+            "startStep": 180,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-39",
+            "note": "G4",
+            "startStep": 184,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-lead-note-40",
+            "note": "F4",
+            "startStep": 188,
+            "lengthSteps": 4,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-41",
+            "note": "F4",
+            "startStep": 192,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-42",
+            "note": "G4",
+            "startStep": 196,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-43",
+            "note": "G#4",
+            "startStep": 200,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-44",
+            "note": "C5",
+            "startStep": 204,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-45",
+            "note": "D#5",
+            "startStep": 208,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-46",
+            "note": "F5",
+            "startStep": 212,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-47",
+            "note": "D#5",
+            "startStep": 216,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-48",
+            "note": "C5",
+            "startStep": 220,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-49",
+            "note": "G#4",
+            "startStep": 224,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-50",
+            "note": "A#4",
+            "startStep": 228,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-51",
+            "note": "C5",
+            "startStep": 232,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-52",
+            "note": "D#5",
+            "startStep": 236,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-53",
+            "note": "F5",
+            "startStep": 240,
+            "lengthSteps": 6,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-54",
+            "note": "D#5",
+            "startStep": 246,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-55",
+            "note": "C5",
+            "startStep": 250,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-56",
+            "note": "G#4",
+            "startStep": 254,
+            "lengthSteps": 2,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-lead-note-57",
+            "note": "C5",
+            "startStep": 256,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-58",
+            "note": "D#5",
+            "startStep": 260,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-59",
+            "note": "F5",
+            "startStep": 264,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-60",
+            "note": "G#5",
+            "startStep": 268,
+            "lengthSteps": 4,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-61",
+            "note": "F5",
+            "startStep": 272,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-62",
+            "note": "D#5",
+            "startStep": 276,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-63",
+            "note": "C5",
+            "startStep": 280,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-64",
+            "note": "G#4",
+            "startStep": 284,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-lead-note-65",
+            "note": "G#4",
+            "startStep": 288,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-66",
+            "note": "A#4",
+            "startStep": 292,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-67",
+            "note": "C5",
+            "startStep": 296,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-68",
+            "note": "D#5",
+            "startStep": 300,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-69",
+            "note": "F5",
+            "startStep": 304,
+            "lengthSteps": 6,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-70",
+            "note": "D#5",
+            "startStep": 310,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-71",
+            "note": "C5",
+            "startStep": 314,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-72",
+            "note": "F4",
+            "startStep": 318,
+            "lengthSteps": 2,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-lead-note-73",
+            "note": "G#4",
+            "startStep": 320,
+            "lengthSteps": 6,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-74",
+            "note": "F4",
+            "startStep": 326,
+            "lengthSteps": 6,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-lead-note-75",
+            "note": "D#4",
+            "startStep": 332,
+            "lengthSteps": 8,
+            "velocity": 0.64
+          },
+          {
+            "id": "song-lead-note-76",
+            "note": "C#4",
+            "startStep": 340,
+            "lengthSteps": 6,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-77",
+            "note": "D#4",
+            "startStep": 346,
+            "lengthSteps": 6,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-78",
+            "note": "F4",
+            "startStep": 352,
+            "lengthSteps": 8,
+            "velocity": 0.62
+          },
+          {
+            "id": "song-lead-note-79",
+            "note": "G#4",
+            "startStep": 360,
+            "lengthSteps": 6,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-80",
+            "note": "G4",
+            "startStep": 366,
+            "lengthSteps": 6,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-81",
+            "note": "F4",
+            "startStep": 372,
+            "lengthSteps": 8,
+            "velocity": 0.62
+          },
+          {
+            "id": "song-lead-note-82",
+            "note": "C5",
+            "startStep": 380,
+            "lengthSteps": 4,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-83",
+            "note": "G#4",
+            "startStep": 384,
+            "lengthSteps": 4,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-84",
+            "note": "F4",
+            "startStep": 388,
+            "lengthSteps": 8,
+            "velocity": 0.6
+          },
+          {
+            "id": "song-lead-note-85",
+            "note": "F4",
+            "startStep": 396,
+            "lengthSteps": 6,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-86",
+            "note": "G4",
+            "startStep": 402,
+            "lengthSteps": 6,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-lead-note-87",
+            "note": "G#4",
+            "startStep": 408,
+            "lengthSteps": 8,
+            "velocity": 0.64
+          },
+          {
+            "id": "song-lead-note-88",
+            "note": "C5",
+            "startStep": 416,
+            "lengthSteps": 4,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-89",
+            "note": "G#4",
+            "startStep": 420,
+            "lengthSteps": 4,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-90",
+            "note": "F4",
+            "startStep": 424,
+            "lengthSteps": 8,
+            "velocity": 0.6
+          },
+          {
+            "id": "song-lead-note-91",
+            "note": "F4",
+            "startStep": 448,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-92",
+            "note": "G4",
+            "startStep": 452,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-93",
+            "note": "G#4",
+            "startStep": 456,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-94",
+            "note": "C5",
+            "startStep": 460,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-95",
+            "note": "D#5",
+            "startStep": 464,
+            "lengthSteps": 4,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-96",
+            "note": "F5",
+            "startStep": 468,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-97",
+            "note": "D#5",
+            "startStep": 472,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-98",
+            "note": "C5",
+            "startStep": 476,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-99",
+            "note": "G#4",
+            "startStep": 480,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-100",
+            "note": "A#4",
+            "startStep": 484,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-101",
+            "note": "C5",
+            "startStep": 488,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-102",
+            "note": "D#5",
+            "startStep": 492,
+            "lengthSteps": 4,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-103",
+            "note": "F5",
+            "startStep": 496,
+            "lengthSteps": 6,
+            "velocity": 1
+          },
+          {
+            "id": "song-lead-note-104",
+            "note": "D#5",
+            "startStep": 502,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-105",
+            "note": "C5",
+            "startStep": 506,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-106",
+            "note": "G#4",
+            "startStep": 510,
+            "lengthSteps": 2,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-107",
+            "note": "C5",
+            "startStep": 512,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-108",
+            "note": "D#5",
+            "startStep": 516,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-109",
+            "note": "F5",
+            "startStep": 520,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-110",
+            "note": "G#5",
+            "startStep": 524,
+            "lengthSteps": 4,
+            "velocity": 1
+          },
+          {
+            "id": "song-lead-note-111",
+            "note": "F5",
+            "startStep": 528,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-112",
+            "note": "D#5",
+            "startStep": 532,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-113",
+            "note": "C5",
+            "startStep": 536,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-114",
+            "note": "G#4",
+            "startStep": 540,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-115",
+            "note": "F4",
+            "startStep": 544,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-116",
+            "note": "G4",
+            "startStep": 548,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-117",
+            "note": "G#4",
+            "startStep": 552,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-118",
+            "note": "C5",
+            "startStep": 556,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-119",
+            "note": "C5",
+            "startStep": 560,
+            "lengthSteps": 6,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-120",
+            "note": "G#4",
+            "startStep": 566,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-121",
+            "note": "F4",
+            "startStep": 570,
+            "lengthSteps": 6,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-lead-note-122",
+            "note": "F4",
+            "startStep": 576,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-123",
+            "note": "G4",
+            "startStep": 580,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-124",
+            "note": "G#4",
+            "startStep": 584,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-125",
+            "note": "C5",
+            "startStep": 588,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-126",
+            "note": "D#5",
+            "startStep": 592,
+            "lengthSteps": 4,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-127",
+            "note": "F5",
+            "startStep": 596,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-128",
+            "note": "D#5",
+            "startStep": 600,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-129",
+            "note": "C5",
+            "startStep": 604,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-130",
+            "note": "G#4",
+            "startStep": 608,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-131",
+            "note": "A#4",
+            "startStep": 612,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-132",
+            "note": "C5",
+            "startStep": 616,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-133",
+            "note": "D#5",
+            "startStep": 620,
+            "lengthSteps": 4,
+            "velocity": 0.98
+          },
+          {
+            "id": "song-lead-note-134",
+            "note": "F5",
+            "startStep": 624,
+            "lengthSteps": 6,
+            "velocity": 1
+          },
+          {
+            "id": "song-lead-note-135",
+            "note": "D#5",
+            "startStep": 630,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-136",
+            "note": "C5",
+            "startStep": 634,
+            "lengthSteps": 4,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-lead-note-137",
+            "note": "G#4",
+            "startStep": 638,
+            "lengthSteps": 2,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-138",
+            "note": "C5",
+            "startStep": 640,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-139",
+            "note": "D#5",
+            "startStep": 644,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-140",
+            "note": "F5",
+            "startStep": 648,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-141",
+            "note": "G#5",
+            "startStep": 652,
+            "lengthSteps": 4,
+            "velocity": 1
+          },
+          {
+            "id": "song-lead-note-142",
+            "note": "F5",
+            "startStep": 656,
+            "lengthSteps": 4,
+            "velocity": 0.94
+          },
+          {
+            "id": "song-lead-note-143",
+            "note": "D#5",
+            "startStep": 660,
+            "lengthSteps": 4,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-144",
+            "note": "C5",
+            "startStep": 664,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-145",
+            "note": "G#4",
+            "startStep": 668,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-146",
+            "note": "F4",
+            "startStep": 672,
+            "lengthSteps": 4,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-lead-note-147",
+            "note": "G4",
+            "startStep": 676,
+            "lengthSteps": 4,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-lead-note-148",
+            "note": "G#4",
+            "startStep": 680,
+            "lengthSteps": 4,
+            "velocity": 0.92
+          },
+          {
+            "id": "song-lead-note-149",
+            "note": "C5",
+            "startStep": 684,
+            "lengthSteps": 4,
+            "velocity": 0.96
+          },
+          {
+            "id": "song-lead-note-150",
+            "note": "C5",
+            "startStep": 688,
+            "lengthSteps": 6,
+            "velocity": 0.9
+          },
+          {
+            "id": "song-lead-note-151",
+            "note": "G#4",
+            "startStep": 694,
+            "lengthSteps": 4,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-lead-note-152",
+            "note": "F4",
+            "startStep": 698,
+            "lengthSteps": 6,
+            "velocity": 0.74
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-lead-quant",
+      "type": "quantizer",
+      "position": {
+        "x": 432,
+        "y": 466
+      },
+      "data": {
+        "label": "Quantizer",
+        "rootNote": "F",
+        "scaleType": "minor",
+        "bypass": false
+      }
+    },
+    {
+      "id": "song-lead-gen",
+      "type": "generator",
+      "position": {
+        "x": 734,
+        "y": 466
+      },
+      "data": {
+        "label": "Neon Lead",
+        "generatorMode": "am",
+        "waveShape": "triangle",
+        "mix": 76,
+        "harmonicity": 2.4
+      }
+    },
+    {
+      "id": "song-lead-delay",
+      "type": "effect",
+      "position": {
+        "x": 1016,
+        "y": 466
+      },
+      "data": {
+        "label": "Horizon Delay",
+        "subType": "delay",
+        "wet": 0.28,
+        "delayTime": 0.36,
+        "feedback": 0.32
+      }
+    },
+    {
+      "id": "song-support-pattern",
+      "type": "pattern",
+      "position": {
+        "x": 92,
+        "y": 762
+      },
+      "data": {
+        "label": "Pattern",
+        "patternLoopBars": 44,
+        "patternStepsPerBar": 16,
+        "patternNotes": [
+          {
+            "id": "song-support-note-1",
+            "note": "F4",
+            "startStep": 0,
+            "lengthSteps": 64,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-support-note-2",
+            "note": "F4",
+            "startStep": 64,
+            "lengthSteps": 32,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-support-note-3",
+            "note": "C#4",
+            "startStep": 96,
+            "lengthSteps": 32,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-support-note-4",
+            "note": "G#4",
+            "startStep": 128,
+            "lengthSteps": 32,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-support-note-5",
+            "note": "D#4",
+            "startStep": 160,
+            "lengthSteps": 32,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-support-note-6",
+            "note": "F4",
+            "startStep": 192,
+            "lengthSteps": 32,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-support-note-7",
+            "note": "D#4",
+            "startStep": 224,
+            "lengthSteps": 32,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-support-note-8",
+            "note": "C#4",
+            "startStep": 256,
+            "lengthSteps": 32,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-support-note-9",
+            "note": "C4",
+            "startStep": 288,
+            "lengthSteps": 32,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-support-note-10",
+            "note": "C#4",
+            "startStep": 320,
+            "lengthSteps": 32,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-support-note-11",
+            "note": "G#4",
+            "startStep": 352,
+            "lengthSteps": 32,
+            "velocity": 0.64
+          },
+          {
+            "id": "song-support-note-12",
+            "note": "D#4",
+            "startStep": 384,
+            "lengthSteps": 32,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-support-note-13",
+            "note": "F4",
+            "startStep": 416,
+            "lengthSteps": 32,
+            "velocity": 0.62
+          },
+          {
+            "id": "song-support-note-14",
+            "note": "F4",
+            "startStep": 448,
+            "lengthSteps": 32,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-support-note-15",
+            "note": "C#4",
+            "startStep": 480,
+            "lengthSteps": 32,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-support-note-16",
+            "note": "G#4",
+            "startStep": 512,
+            "lengthSteps": 32,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-support-note-17",
+            "note": "D#4",
+            "startStep": 544,
+            "lengthSteps": 32,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-support-note-18",
+            "note": "F4",
+            "startStep": 576,
+            "lengthSteps": 32,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-support-note-19",
+            "note": "C4",
+            "startStep": 608,
+            "lengthSteps": 32,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-support-note-20",
+            "note": "C#4",
+            "startStep": 640,
+            "lengthSteps": 32,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-support-note-21",
+            "note": "F4",
+            "startStep": 672,
+            "lengthSteps": 32,
+            "velocity": 0.66
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-support-sampler",
+      "type": "sampler",
+      "position": {
+        "x": 432,
+        "y": 742
+      },
+      "data": {
+        "label": "Fog Texture",
+        "hasSample": true,
+        "sampleName": "support-texture.wav",
+        "sampleDataUrl": "/ai-song-kit/support-texture.wav",
+        "sampleWaveform": [],
+        "loop": true,
+        "playbackRate": 0.96,
+        "reverse": false,
+        "pitchShift": -2,
+        "mix": 62
+      }
+    },
+    {
+      "id": "song-support-reverb",
+      "type": "effect",
+      "position": {
+        "x": 794,
+        "y": 754
+      },
+      "data": {
+        "label": "Fog Reverb",
+        "subType": "reverb",
+        "wet": 0.68,
+        "roomSize": 0.9
+      }
+    },
+    {
+      "id": "song-drums",
+      "type": "advanceddrum",
+      "position": {
+        "x": 90,
+        "y": 1060
+      },
+      "data": {
+        "label": "Advanced Drums",
+        "mix": 82,
+        "swing": 0.14,
+        "advancedDrumTracks": [
+          {
+            "label": "Kick",
+            "steps": [
+              3,
+              0,
+              0,
+              0,
+              2,
+              0,
+              0,
+              1,
+              3,
+              0,
+              0,
+              0,
+              2,
+              0,
+              1,
+              0
+            ],
+            "length": 16,
+            "sampleName": "kick.wav",
+            "sampleDataUrl": "/ai-song-kit/kick.wav"
+          },
+          {
+            "label": "Snare",
+            "steps": [
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              0,
+              1
+            ],
+            "length": 16,
+            "sampleName": "snare.wav",
+            "sampleDataUrl": "/ai-song-kit/snare.wav"
+          },
+          {
+            "label": "Hat",
+            "steps": [
+              2,
+              0,
+              2,
+              1,
+              2,
+              0,
+              2,
+              0,
+              2,
+              1,
+              2,
+              0,
+              2,
+              0,
+              2,
+              1
+            ],
+            "length": 16,
+            "sampleName": "hat.wav",
+            "sampleDataUrl": "/ai-song-kit/hat.wav"
+          },
+          {
+            "label": "Clap",
+            "steps": [
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              2,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              2,
+              0
+            ],
+            "length": 16,
+            "sampleName": "clap.wav",
+            "sampleDataUrl": "/ai-song-kit/clap.wav"
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-drum-eq",
+      "type": "eq",
+      "position": {
+        "x": 472,
+        "y": 1060
+      },
+      "data": {
+        "label": "EQ",
+        "eqLow": 2,
+        "eqMid": -1,
+        "eqHigh": 3,
+        "eqLowFrequency": 230,
+        "eqHighFrequency": 5000
+      }
+    },
+    {
+      "id": "song-mixer",
+      "type": "mixer",
+      "position": {
+        "x": 1344,
+        "y": 508
+      },
+      "data": {
+        "label": "Mixer",
+        "volume": 72,
+        "pan": 0
+      }
+    },
+    {
+      "id": "song-arranger",
+      "type": "arranger",
+      "position": {
+        "x": 1344,
+        "y": 868
+      },
+      "data": {
+        "label": "Arranger",
+        "arrangerScenes": [
+          {
+            "id": "song-scene-intro",
+            "name": "Intro Fog",
+            "startBar": 0,
+            "lengthBars": 4,
+            "patternNodeIds": [
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-intro-open",
+                "targetNodeId": "song-support-reverb",
+                "targetParam": "wet",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-intro-open-point-1",
+                    "barOffset": 0,
+                    "value": 0.58
+                  },
+                  {
+                    "id": "song-scene-intro-open-point-2",
+                    "barOffset": 3.75,
+                    "value": 0.78
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-intro-rise",
+                "targetNodeId": "song-mixer",
+                "targetParam": "volume",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-intro-rise-point-1",
+                    "barOffset": 0,
+                    "value": 60
+                  },
+                  {
+                    "id": "song-scene-intro-rise-point-2",
+                    "barOffset": 3.75,
+                    "value": 66
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-drive",
+            "name": "Night Drive",
+            "startBar": 4,
+            "lengthBars": 8,
+            "patternNodeIds": [
+              "song-bass-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-drive-build",
+                "targetNodeId": "song-bass-eq",
+                "targetParam": "low",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-drive-build-point-1",
+                    "barOffset": 0,
+                    "value": 3
+                  },
+                  {
+                    "id": "song-scene-drive-build-point-2",
+                    "barOffset": 7.75,
+                    "value": 6
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-drive-motion",
+                "targetNodeId": "song-support-sampler",
+                "targetParam": "playbackRate",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-drive-motion-point-1",
+                    "barOffset": 0,
+                    "value": 0.94
+                  },
+                  {
+                    "id": "song-scene-drive-motion-point-2",
+                    "barOffset": 7.75,
+                    "value": 1.04
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-peak",
+            "name": "City Lights Peak",
+            "startBar": 12,
+            "lengthBars": 8,
+            "patternNodeIds": [
+              "song-bass-pattern",
+              "song-lead-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-peak-open",
+                "targetNodeId": "song-lead-delay",
+                "targetParam": "wet",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-peak-open-point-1",
+                    "barOffset": 0,
+                    "value": 0.24
+                  },
+                  {
+                    "id": "song-scene-peak-open-point-2",
+                    "barOffset": 7.75,
+                    "value": 0.54
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-peak-air",
+                "targetNodeId": "song-drum-eq",
+                "targetParam": "high",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-peak-air-point-1",
+                    "barOffset": 0,
+                    "value": 2
+                  },
+                  {
+                    "id": "song-scene-peak-air-point-2",
+                    "barOffset": 7.75,
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-peak-lift",
+                "targetNodeId": "song-mixer",
+                "targetParam": "volume",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-peak-lift-point-1",
+                    "barOffset": 0,
+                    "value": 68
+                  },
+                  {
+                    "id": "song-scene-peak-lift-point-2",
+                    "barOffset": 7.75,
+                    "value": 73
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-break",
+            "name": "Empty Boulevard",
+            "startBar": 20,
+            "lengthBars": 8,
+            "patternNodeIds": [
+              "song-lead-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [],
+            "automationLanes": [
+              {
+                "id": "song-scene-break-close",
+                "targetNodeId": "song-mixer",
+                "targetParam": "volume",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-break-close-point-1",
+                    "barOffset": 0,
+                    "value": 72
+                  },
+                  {
+                    "id": "song-scene-break-close-point-2",
+                    "barOffset": 7.75,
+                    "value": 65
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-break-breathe",
+                "targetNodeId": "song-lead-delay",
+                "targetParam": "feedback",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-break-breathe-point-1",
+                    "barOffset": 0,
+                    "value": 0.28
+                  },
+                  {
+                    "id": "song-scene-break-breathe-point-2",
+                    "barOffset": 7.75,
+                    "value": 0.46
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-break-space",
+                "targetNodeId": "song-support-reverb",
+                "targetParam": "wet",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-break-space-point-1",
+                    "barOffset": 0,
+                    "value": 0.7
+                  },
+                  {
+                    "id": "song-scene-break-space-point-2",
+                    "barOffset": 7.75,
+                    "value": 0.88
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-horizon",
+            "name": "Final Horizon",
+            "startBar": 28,
+            "lengthBars": 16,
+            "patternNodeIds": [
+              "song-bass-pattern",
+              "song-lead-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-horizon-push",
+                "targetNodeId": "song-mixer",
+                "targetParam": "volume",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-horizon-push-point-1",
+                    "barOffset": 0,
+                    "value": 70
+                  },
+                  {
+                    "id": "song-scene-horizon-push-point-2",
+                    "barOffset": 15.75,
+                    "value": 76
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-horizon-focus",
+                "targetNodeId": "song-lead-delay",
+                "targetParam": "wet",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-horizon-focus-point-1",
+                    "barOffset": 0,
+                    "value": 0.5
+                  },
+                  {
+                    "id": "song-scene-horizon-focus-point-2",
+                    "barOffset": 15.75,
+                    "value": 0.34
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-horizon-weight",
+                "targetNodeId": "song-bass-eq",
+                "targetParam": "low",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-horizon-weight-point-1",
+                    "barOffset": 0,
+                    "value": 5
+                  },
+                  {
+                    "id": "song-scene-horizon-weight-point-2",
+                    "barOffset": 15.75,
+                    "value": 7
+                  }
+                ]
+              },
+              {
+                "id": "song-scene-horizon-settle",
+                "targetNodeId": "song-support-sampler",
+                "targetParam": "playbackRate",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-horizon-settle-point-1",
+                    "barOffset": 0,
+                    "value": 1.04
+                  },
+                  {
+                    "id": "song-scene-horizon-settle-point-2",
+                    "barOffset": 15.75,
+                    "value": 0.98
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-speaker",
+      "type": "speaker",
+      "position": {
+        "x": 1638,
+        "y": 512
+      },
+      "data": {
+        "label": "Amplifier",
+        "volume": 70
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "song-edge-bass-pattern-adsr",
+      "source": "song-bass-pattern",
+      "target": "song-bass-adsr",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-bass-adsr-gen",
+      "source": "song-bass-adsr",
+      "target": "song-bass-gen",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-lead-pattern-quant",
+      "source": "song-lead-pattern",
+      "target": "song-lead-quant",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-lead-quant-gen",
+      "source": "song-lead-quant",
+      "target": "song-lead-gen",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-support-pattern-sampler",
+      "source": "song-support-pattern",
+      "target": "song-support-sampler",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-bass-gen-eq",
+      "source": "song-bass-gen",
+      "target": "song-bass-eq",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-bass-eq-mixer",
+      "source": "song-bass-eq",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-lead-gen-delay",
+      "source": "song-lead-gen",
+      "target": "song-lead-delay",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-lead-delay-mixer",
+      "source": "song-lead-delay",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-support-sampler-reverb",
+      "source": "song-support-sampler",
+      "target": "song-support-reverb",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-support-reverb-mixer",
+      "source": "song-support-reverb",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-drums-eq",
+      "source": "song-drums",
+      "target": "song-drum-eq",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-drum-eq-mixer",
+      "source": "song-drum-eq",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    }
+  ],
+  "masterVolume": 70
+}

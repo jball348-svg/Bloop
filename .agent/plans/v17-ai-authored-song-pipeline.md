@@ -23,6 +23,7 @@ This milestone targets the fastest practical route to a believable AI song:
 - [x] (2026-03-25) Milestone 5 — Ground the AI-song compiler in `.agent/composer` via `MusicalPlanV1`, strict theory validation, and provenance sidecars.
 - [x] (2026-03-25) Milestone 6 — Refresh top-level docs so README, overview, roadmap, tickets, and agent guidance all describe the shipped v17 app accurately.
 - [x] (2026-03-25) Run `npm run compile:ai-songs`, `npm run build`, and `npm run lint`.
+- [x] (2026-03-25) Follow-up hardening — raise the Pattern loop ceiling to 48 bars and compile the Neon Afterglow grounded song assets without altering locked musical content.
 
 ## Surprises & Discoveries
 
@@ -42,6 +43,8 @@ This milestone targets the fastest practical route to a believable AI song:
   Evidence: no repo code referenced `.agent/composer/10_music_ontology.yaml`, `11_time_schema.yaml`, `12_pitch_harmony_schema.yaml`, `13_rhythm_schema.yaml`, `21_transform_ops.yaml`, or `30_composition_pipeline.md` until the grounding pass added those files as compiler inputs.
 - Observation: the original flagship song relied on runtime quantization and still contained non-diatonic source notes.
   Evidence: the pre-grounding bass and lead blueprint material included `A` and `E` naturals even though the lead quantizer was set to `C minor`.
+- Observation: the first post-ship grounded follow-up song exceeded the app's original 16-bar Pattern ceiling even though its authored material was otherwise valid.
+  Evidence: a dry-run compile of `ai-neon-afterglow` failed only on `pattern_loop_out_of_bounds` for three 44-bar melodic clips.
 
 ## Decision Log
 
@@ -73,6 +76,7 @@ This milestone targets the fastest practical route to a believable AI song:
 - The repo now contains a scaffold-first AI song contract: fixed node IDs, `MusicalPlanV1` YAML sources, generated blueprint JSON files, a compiler script, and shipped sample assets.
 - Pattern, Step Sequencer, Arranger, and sampler automation are now broad enough to support a longer multi-scene flagship song without inventing a new timeline model.
 - The compiler now ingests the musical-brain files from `.agent/composer`, emits grounding/evaluation reports, and refuses to build theory-invalid songs.
+- The Pattern/runtime ceiling now supports up to 48-bar clips, allowing longer grounded authored songs like Neon Afterglow to compile, load, and preserve late-form note data intact.
 - Top-level docs now reflect the real shipped app instead of older v3/v15 snapshots, including the partial-but-visible math receiver foundation and the grounded AI-song asset pipeline.
 - Build, lint, and the grounded `compile:ai-songs` pipeline all pass after the new asset pipeline, UI limits, and generated song files were added.
 

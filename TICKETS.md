@@ -169,7 +169,7 @@ Expanded receiver workstreams tracked in code for V16:
 
 ### V17 — AI-Authored Song Pipeline Shipped ✅
 
-Implementation note: v17 shipped through the repo milestone in [`.agent/plans/v17-ai-authored-song-pipeline.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/.agent/plans/v17-ai-authored-song-pipeline.md), the grounded compiler in [`scripts/compile-ai-song-assets.mjs`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/scripts/compile-ai-song-assets.mjs), the authoring docs in [`AI_SONG_AUTHORING.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/AI_SONG_AUTHORING.md), and the shipped patch assets in [`public/patches/`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/public/patches). The showcase song and AI scaffold are now asset-backed presets, and the flagship song compiles from `MusicalPlanV1` plus `.agent/composer/*` grounding inputs.
+Implementation note: v17 shipped through the repo milestone in [`.agent/plans/v17-ai-authored-song-pipeline.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/.agent/plans/v17-ai-authored-song-pipeline.md), the grounded compiler in [`scripts/compile-ai-song-assets.mjs`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/scripts/compile-ai-song-assets.mjs), the authoring docs in [`AI_SONG_AUTHORING.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/AI_SONG_AUTHORING.md), and the shipped patch assets in [`public/patches/`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/public/patches). The showcase song and AI scaffold are now asset-backed presets, the flagship song compiles from `MusicalPlanV1` plus `.agent/composer/*` grounding inputs, and post-ship hardening widened Pattern loops to 48 bars so longer grounded authored songs like Neon Afterglow can compile and load intact.
 
 ### Superseded / Closed
 

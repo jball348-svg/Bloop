@@ -39,6 +39,7 @@ export const MODULATION_SIGNAL_COLOR = '#bef264';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
 export const PATTERN_STEPS_PER_BAR = 16;
+export const MAX_PATTERN_LOOP_BARS = 48;
 const SONG_NOTE_OCTAVES = [2, 3, 4, 5, 6] as const;
 export const SONG_NOTE_OPTIONS = SONG_NOTE_OCTAVES.flatMap((octave) =>
     ROOT_NOTES.map((note) => `${note}${octave}`)
@@ -2317,7 +2318,7 @@ const normalizeArrangerScene = (
 const normalizePatternClipData = (
     nodeData: Partial<AppNode['data']> | undefined
 ): PatternClip => {
-    const loopBars = Math.max(1, Math.min(16, Math.round(coerceNumber(nodeData?.patternLoopBars, 2))));
+    const loopBars = Math.max(1, Math.min(MAX_PATTERN_LOOP_BARS, Math.round(coerceNumber(nodeData?.patternLoopBars, 2))));
     const stepsPerBar = Math.max(1, Math.round(coerceNumber(nodeData?.patternStepsPerBar, PATTERN_STEPS_PER_BAR)));
     const totalSteps = loopBars * stepsPerBar;
     const fallbackNotes = createDefaultPatternClip().notes;
@@ -3507,7 +3508,7 @@ const applyMathTargetValue = (
     }
 
     if (targetId === 'patternLoopBars') {
-        store.updatePatternData(node.id, { loopBars: mapMathIntRange(safeValue, 1, 16) });
+        store.updatePatternData(node.id, { loopBars: mapMathIntRange(safeValue, 1, MAX_PATTERN_LOOP_BARS) });
         return;
     }
 
@@ -3526,7 +3527,7 @@ const applyMathTargetValue = (
         }
         if (fieldName === 'startStep') {
             const totalSteps =
-                Math.max(1, Math.min(16, node.data.patternLoopBars ?? 2)) *
+                Math.max(1, Math.min(MAX_PATTERN_LOOP_BARS, node.data.patternLoopBars ?? 2)) *
                 Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR);
             store.upsertPatternNote(node.id, {
                 ...targetNote,
@@ -3536,7 +3537,7 @@ const applyMathTargetValue = (
         }
         if (fieldName === 'lengthSteps') {
             const totalSteps =
-                Math.max(1, Math.min(16, node.data.patternLoopBars ?? 2)) *
+                Math.max(1, Math.min(MAX_PATTERN_LOOP_BARS, node.data.patternLoopBars ?? 2)) *
                 Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR);
             store.upsertPatternNote(node.id, {
                 ...targetNote,
@@ -3599,7 +3600,7 @@ const applyMathTargetValue = (
 
 const getPatternClipFromNode = (node: AppNode): PatternClip => ({
     notes: node.data.patternNotes ?? createDefaultPatternClip().notes,
-    loopBars: Math.max(1, Math.min(16, node.data.patternLoopBars ?? 2)),
+    loopBars: Math.max(1, Math.min(MAX_PATTERN_LOOP_BARS, node.data.patternLoopBars ?? 2)),
     stepsPerBar: Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR),
 });
 

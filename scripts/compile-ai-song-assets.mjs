@@ -13,6 +13,7 @@ const PATCH_DIR = path.join(ROOT, 'public', 'patches');
 const SAMPLE_DIR = path.join(ROOT, 'public', 'ai-song-kit');
 const SAMPLE_RATE = 44100;
 const STEPS_PER_BAR = 16;
+const MAX_PATTERN_LOOP_BARS = 48;
 const REQUIRED_ROLES = ['bass', 'lead', 'support', 'drums'];
 const MELODIC_ROLES = ['bass', 'lead', 'support'];
 const BRAIN_SOURCE_FILES = [
@@ -960,11 +961,11 @@ const validateBlueprintAgainstRuntime = (blueprint) => {
   const orderedScenes = [...scenes].sort((left, right) => left.startBar - right.startBar);
 
   Object.entries(blueprint.patterns ?? {}).forEach(([patternId, pattern]) => {
-    if (pattern.loopBars < 1 || pattern.loopBars > 16) {
+    if (pattern.loopBars < 1 || pattern.loopBars > MAX_PATTERN_LOOP_BARS) {
       issues.push(createIssue(
         'error',
         'pattern_loop_out_of_bounds',
-        `Pattern "${patternId}" uses loopBars=${pattern.loopBars}, outside Bloop's 1-16 bar authoring surface.`,
+        `Pattern "${patternId}" uses loopBars=${pattern.loopBars}, outside Bloop's 1-${MAX_PATTERN_LOOP_BARS} bar authoring surface.`,
         { patternId }
       ));
     }

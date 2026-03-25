@@ -5,6 +5,7 @@ import * as Tone from 'tone';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
+    MAX_PATTERN_LOOP_BARS,
     PIANO_ROLL_NOTE_OPTIONS,
     PATTERN_STEPS_PER_BAR,
     type PatternNote,
@@ -42,7 +43,7 @@ export default function PatternNode({ id }: { id: string }) {
     const accentStyle = useNodeAccentStyle('pattern');
 
     const notes: PatternNote[] = nodeData?.patternNotes ?? [];
-    const loopBars = Math.max(1, Math.min(16, nodeData?.patternLoopBars ?? 2));
+    const loopBars = Math.max(1, Math.min(MAX_PATTERN_LOOP_BARS, nodeData?.patternLoopBars ?? 2));
     const stepsPerBar = nodeData?.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR;
     const totalSteps = loopBars * stepsPerBar;
     const currentStep = nodeData?.currentStep ?? -1;
@@ -125,7 +126,7 @@ export default function PatternNode({ id }: { id: string }) {
                             }
                             className="nodrag mt-1 w-full bg-transparent text-[11px] font-bold text-blue-200 outline-none"
                         >
-                            {Array.from({ length: 16 }, (_, index) => index + 1).map((bars) => (
+                            {Array.from({ length: MAX_PATTERN_LOOP_BARS }, (_, index) => index + 1).map((bars) => (
                                 <option key={bars} value={bars} className="bg-slate-900 text-blue-200">
                                     {bars} bar{bars === 1 ? '' : 's'}
                                 </option>

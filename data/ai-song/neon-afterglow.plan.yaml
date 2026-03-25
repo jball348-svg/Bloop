@@ -1,0 +1,699 @@
+version: 1
+id: ai-neon-afterglow
+description: AI-authored synthwave track plan in F natural minor at 120 BPM with a nocturnal melodic arc and section-driven automation.
+scaffold_id: ai-song-v1
+output:
+  patch_file: ai-neon-afterglow.bloop
+  blueprint_file: neon-afterglow.blueprint.json
+  report_file: neon-afterglow.grounding-report.json
+
+intent:
+  title: Neon Afterglow
+  mood: nocturnal, nostalgic, melodic, driving
+  target_duration_sec: 88
+  bpm: 120
+  global_key:
+    root: F
+    scale_type: minor
+    name: F natural minor
+  style_tags:
+    - electronic
+    - synthwave
+    - cinematic
+    - melodic
+    - retro-futurist
+  energy_curve:
+    - 0.22
+    - 0.48
+    - 0.82
+    - 0.38
+    - 0.88
+
+structure:
+  meter:
+    numerator: 4
+    denominator: 4
+  sections:
+    - id: intro
+      name: Intro Fog
+      bars: 4
+      energy: 0.22
+      density: 0.24
+      active_roles:
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-intro-open
+          targetNodeId: song-support-reverb
+          targetParam: wet
+          mode: ramp
+          points:
+            - [0, 0.58]
+            - [3.75, 0.78]
+        - id: song-scene-intro-rise
+          targetNodeId: song-mixer
+          targetParam: volume
+          mode: ramp
+          points:
+            - [0, 60]
+            - [3.75, 66]
+    - id: drive
+      name: Night Drive
+      bars: 8
+      energy: 0.48
+      density: 0.5
+      active_roles:
+        - bass
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-drive-build
+          targetNodeId: song-bass-eq
+          targetParam: low
+          mode: ramp
+          points:
+            - [0, 3]
+            - [7.75, 6]
+        - id: song-scene-drive-motion
+          targetNodeId: song-support-sampler
+          targetParam: playbackRate
+          mode: ramp
+          points:
+            - [0, 0.94]
+            - [7.75, 1.04]
+    - id: peak
+      name: City Lights Peak
+      bars: 8
+      energy: 0.82
+      density: 0.84
+      active_roles:
+        - bass
+        - lead
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-peak-open
+          targetNodeId: song-lead-delay
+          targetParam: wet
+          mode: ramp
+          points:
+            - [0, 0.24]
+            - [7.75, 0.54]
+        - id: song-scene-peak-air
+          targetNodeId: song-drum-eq
+          targetParam: high
+          mode: ramp
+          points:
+            - [0, 2]
+            - [7.75, 5]
+        - id: song-scene-peak-lift
+          targetNodeId: song-mixer
+          targetParam: volume
+          mode: ramp
+          points:
+            - [0, 68]
+            - [7.75, 73]
+    - id: break
+      name: Empty Boulevard
+      bars: 8
+      energy: 0.38
+      density: 0.34
+      active_roles:
+        - lead
+        - support
+      automation_lanes:
+        - id: song-scene-break-close
+          targetNodeId: song-mixer
+          targetParam: volume
+          mode: ramp
+          points:
+            - [0, 72]
+            - [7.75, 65]
+        - id: song-scene-break-breathe
+          targetNodeId: song-lead-delay
+          targetParam: feedback
+          mode: ramp
+          points:
+            - [0, 0.28]
+            - [7.75, 0.46]
+        - id: song-scene-break-space
+          targetNodeId: song-support-reverb
+          targetParam: wet
+          mode: ramp
+          points:
+            - [0, 0.7]
+            - [7.75, 0.88]
+    - id: horizon
+      name: Final Horizon
+      bars: 16
+      energy: 0.88
+      density: 0.9
+      active_roles:
+        - bass
+        - lead
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-horizon-push
+          targetNodeId: song-mixer
+          targetParam: volume
+          mode: ramp
+          points:
+            - [0, 70]
+            - [15.75, 76]
+        - id: song-scene-horizon-focus
+          targetNodeId: song-lead-delay
+          targetParam: wet
+          mode: ramp
+          points:
+            - [0, 0.5]
+            - [15.75, 0.34]
+        - id: song-scene-horizon-weight
+          targetNodeId: song-bass-eq
+          targetParam: low
+          mode: ramp
+          points:
+            - [0, 5]
+            - [15.75, 7]
+        - id: song-scene-horizon-settle
+          targetNodeId: song-support-sampler
+          targetParam: playbackRate
+          mode: ramp
+          points:
+            - [0, 1.04]
+            - [15.75, 0.98]
+
+harmony:
+  section_harmonic_centers:
+    intro: tonic
+    drive: tonic
+    peak: dominant
+    break: ambiguous
+    horizon: tonic
+  allowed_exception_pitches: []
+
+rhythm:
+  subdivision: 16
+  swing_policy:
+    mode: constant
+    ratio: 0.14
+  drum_layers:
+    - id: kick
+      label: Kick
+      role: pulse
+      length: 16
+      sample_path: /ai-song-kit/kick.wav
+      steps: [3, 0, 0, 0, 2, 0, 0, 1, 3, 0, 0, 0, 2, 0, 1, 0]
+    - id: snare
+      label: Snare
+      role: accent
+      length: 16
+      sample_path: /ai-song-kit/snare.wav
+      steps: [0, 0, 0, 0, 3, 0, 0, 1, 0, 0, 0, 0, 3, 0, 0, 1]
+    - id: hat
+      label: Hat
+      role: subdivision
+      length: 16
+      sample_path: /ai-song-kit/hat.wav
+      steps: [2, 0, 2, 1, 2, 0, 2, 0, 2, 1, 2, 0, 2, 0, 2, 1]
+    - id: clap
+      label: Clap
+      role: fill
+      length: 16
+      sample_path: /ai-song-kit/clap.wav
+      steps: [0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0]
+
+arrangement:
+  roles:
+    bass:
+      pattern_node_id: song-bass-pattern
+      voice_node_id: song-bass-gen
+      register_range:
+        low: F1
+        high: F2
+      timbre_intent: FM sub-bass with a dark synthwave body, strong downbeat anchoring, and tight root-fifth motion.
+      loop_bars: 44
+      notes:
+        - [F1, 0, 12, 0.72]
+        - [C2, 12, 4, 0.68]
+        - [F1, 16, 12, 0.74]
+        - [Db2, 28, 4, 0.66]
+        - [F1, 32, 16, 0.7]
+        - [F1, 48, 12, 0.72]
+        - [C2, 60, 4, 0.68]
+        - [F1, 64, 4, 0.82]
+        - [C2, 68, 4, 0.78]
+        - [F1, 72, 4, 0.8]
+        - [Ab1, 76, 4, 0.76]
+        - [Db2, 80, 4, 0.82]
+        - [Ab1, 84, 4, 0.78]
+        - [Db2, 88, 4, 0.8]
+        - [C2, 92, 4, 0.76]
+        - [Ab1, 96, 4, 0.84]
+        - [Eb2, 100, 4, 0.8]
+        - [Ab1, 104, 4, 0.82]
+        - [G1, 108, 4, 0.76]
+        - [Eb2, 112, 4, 0.84]
+        - [Bb1, 116, 4, 0.8]
+        - [Eb2, 120, 4, 0.82]
+        - [C2, 124, 4, 0.76]
+        - [F1, 128, 4, 0.86]
+        - [C2, 132, 4, 0.8]
+        - [F1, 136, 4, 0.84]
+        - [Ab1, 140, 4, 0.78]
+        - [Db2, 144, 4, 0.86]
+        - [Ab1, 148, 4, 0.8]
+        - [Db2, 152, 4, 0.84]
+        - [C2, 156, 4, 0.78]
+        - [Ab1, 160, 4, 0.88]
+        - [Eb2, 164, 4, 0.82]
+        - [Ab1, 168, 4, 0.86]
+        - [G1, 172, 4, 0.78]
+        - [Eb2, 176, 4, 0.88]
+        - [Bb1, 180, 4, 0.82]
+        - [Eb2, 184, 4, 0.86]
+        - [C2, 188, 4, 0.78]
+        - [F1, 192, 4, 0.9]
+        - [C2, 196, 4, 0.84]
+        - [F1, 200, 4, 0.88]
+        - [Ab1, 204, 4, 0.82]
+        - [Eb2, 208, 4, 0.9]
+        - [Bb1, 212, 4, 0.84]
+        - [Eb2, 216, 4, 0.88]
+        - [Db2, 220, 4, 0.82]
+        - [Db2, 224, 4, 0.9]
+        - [Ab1, 228, 4, 0.84]
+        - [Db2, 232, 4, 0.88]
+        - [C2, 236, 4, 0.82]
+        - [C2, 240, 4, 0.92]
+        - [G1, 244, 4, 0.84]
+        - [C2, 248, 4, 0.88]
+        - [C2, 252, 4, 0.8]
+        - [F1, 256, 4, 0.92]
+        - [C2, 260, 4, 0.86]
+        - [F2, 264, 4, 0.9]
+        - [Ab1, 268, 4, 0.84]
+        - [Eb2, 272, 4, 0.92]
+        - [Bb1, 276, 4, 0.86]
+        - [Eb2, 280, 4, 0.9]
+        - [Db2, 284, 4, 0.84]
+        - [Db2, 288, 4, 0.92]
+        - [Ab1, 292, 4, 0.86]
+        - [Db2, 296, 4, 0.9]
+        - [C2, 300, 4, 0.84]
+        - [C2, 304, 4, 0.94]
+        - [G1, 308, 4, 0.86]
+        - [C2, 312, 4, 0.9]
+        - [F1, 316, 4, 0.82]
+        - [Db2, 320, 8, 0.74]
+        - [Ab1, 328, 8, 0.7]
+        - [Ab1, 336, 8, 0.74]
+        - [Eb2, 344, 8, 0.7]
+        - [Eb2, 352, 8, 0.76]
+        - [Bb1, 360, 8, 0.72]
+        - [F1, 368, 12, 0.74]
+        - [C2, 380, 4, 0.68]
+        - [Db2, 384, 8, 0.76]
+        - [C2, 392, 8, 0.7]
+        - [Ab1, 400, 8, 0.76]
+        - [G1, 408, 8, 0.7]
+        - [Eb2, 416, 8, 0.78]
+        - [Db2, 424, 8, 0.72]
+        - [F1, 432, 12, 0.74]
+        - [C2, 444, 4, 0.68]
+        - [F1, 448, 4, 0.92]
+        - [C2, 452, 4, 0.86]
+        - [F1, 456, 4, 0.9]
+        - [Ab1, 460, 4, 0.84]
+        - [Db2, 464, 4, 0.92]
+        - [Ab1, 468, 4, 0.86]
+        - [Db2, 472, 4, 0.9]
+        - [C2, 476, 4, 0.84]
+        - [Ab1, 480, 4, 0.94]
+        - [Eb2, 484, 4, 0.88]
+        - [Ab1, 488, 4, 0.92]
+        - [G1, 492, 4, 0.84]
+        - [Eb2, 496, 4, 0.94]
+        - [Bb1, 500, 4, 0.88]
+        - [Eb2, 504, 4, 0.92]
+        - [C2, 508, 4, 0.84]
+        - [F1, 512, 4, 0.94]
+        - [C2, 516, 4, 0.88]
+        - [F2, 520, 4, 0.92]
+        - [Ab1, 524, 4, 0.86]
+        - [Db2, 528, 4, 0.94]
+        - [Ab1, 532, 4, 0.88]
+        - [Db2, 536, 4, 0.92]
+        - [C2, 540, 4, 0.86]
+        - [F1, 544, 4, 0.94]
+        - [C2, 548, 4, 0.88]
+        - [F1, 552, 4, 0.92]
+        - [C2, 556, 4, 0.86]
+        - [C2, 560, 4, 0.96]
+        - [G1, 564, 4, 0.88]
+        - [Db2, 568, 4, 0.9]
+        - [F1, 572, 4, 0.8]
+        - [F1, 576, 4, 0.92]
+        - [C2, 580, 4, 0.86]
+        - [F1, 584, 4, 0.9]
+        - [Ab1, 588, 4, 0.84]
+        - [Db2, 592, 4, 0.92]
+        - [Ab1, 596, 4, 0.86]
+        - [Db2, 600, 4, 0.9]
+        - [C2, 604, 4, 0.84]
+        - [Ab1, 608, 4, 0.94]
+        - [Eb2, 612, 4, 0.88]
+        - [Ab1, 616, 4, 0.92]
+        - [G1, 620, 4, 0.84]
+        - [Eb2, 624, 4, 0.94]
+        - [Bb1, 628, 4, 0.88]
+        - [Eb2, 632, 4, 0.92]
+        - [C2, 636, 4, 0.84]
+        - [F1, 640, 4, 0.94]
+        - [C2, 644, 4, 0.88]
+        - [F2, 648, 4, 0.92]
+        - [Ab1, 652, 4, 0.86]
+        - [Db2, 656, 4, 0.94]
+        - [Ab1, 660, 4, 0.88]
+        - [Db2, 664, 4, 0.92]
+        - [C2, 668, 4, 0.86]
+        - [F1, 672, 4, 0.94]
+        - [C2, 676, 4, 0.88]
+        - [F1, 680, 4, 0.92]
+        - [C2, 684, 4, 0.86]
+        - [C2, 688, 4, 0.96]
+        - [G1, 692, 4, 0.88]
+        - [Db2, 696, 4, 0.9]
+        - [F1, 700, 4, 0.8]
+    lead:
+      pattern_node_id: song-lead-pattern
+      voice_node_id: song-lead-gen
+      register_range:
+        low: Db4
+        high: Ab5
+      timbre_intent: Focused AM synth lead with a vocal edge, expressive peaks, and delay-borne width for the hook line.
+      loop_bars: 44
+      notes:
+        - [C5, 4, 6, 0.68]
+        - [Ab4, 12, 4, 0.64]
+        - [G4, 20, 4, 0.66]
+        - [F4, 24, 8, 0.62]
+        - [C5, 36, 6, 0.7]
+        - [Ab4, 44, 4, 0.64]
+        - [G4, 52, 4, 0.66]
+        - [F4, 56, 8, 0.62]
+        - [F4, 64, 4, 0.78]
+        - [G4, 68, 4, 0.82]
+        - [Ab4, 72, 4, 0.86]
+        - [C5, 76, 4, 0.9]
+        - [Bb4, 80, 4, 0.84]
+        - [Ab4, 84, 4, 0.8]
+        - [G4, 88, 4, 0.76]
+        - [F4, 92, 4, 0.7]
+        - [F4, 96, 4, 0.78]
+        - [G4, 100, 4, 0.82]
+        - [Ab4, 104, 4, 0.86]
+        - [C5, 108, 4, 0.9]
+        - [Eb5, 112, 4, 0.92]
+        - [C5, 116, 4, 0.86]
+        - [Ab4, 120, 4, 0.8]
+        - [F4, 124, 4, 0.72]
+        - [G4, 128, 4, 0.8]
+        - [Ab4, 132, 4, 0.84]
+        - [Bb4, 136, 4, 0.88]
+        - [C5, 140, 4, 0.92]
+        - [Eb5, 144, 4, 0.94]
+        - [C5, 148, 4, 0.88]
+        - [Ab4, 152, 4, 0.82]
+        - [F4, 156, 4, 0.74]
+        - [F4, 160, 4, 0.78]
+        - [G4, 164, 4, 0.82]
+        - [Ab4, 168, 4, 0.86]
+        - [C5, 172, 4, 0.9]
+        - [Bb4, 176, 4, 0.84]
+        - [Ab4, 180, 4, 0.8]
+        - [G4, 184, 4, 0.76]
+        - [F4, 188, 4, 0.7]
+        - [F4, 192, 4, 0.82]
+        - [G4, 196, 4, 0.86]
+        - [Ab4, 200, 4, 0.9]
+        - [C5, 204, 4, 0.94]
+        - [Eb5, 208, 4, 0.96]
+        - [F5, 212, 4, 0.94]
+        - [Eb5, 216, 4, 0.88]
+        - [C5, 220, 4, 0.8]
+        - [Ab4, 224, 4, 0.84]
+        - [Bb4, 228, 4, 0.88]
+        - [C5, 232, 4, 0.92]
+        - [Eb5, 236, 4, 0.96]
+        - [F5, 240, 6, 0.98]
+        - [Eb5, 246, 4, 0.9]
+        - [C5, 250, 4, 0.84]
+        - [Ab4, 254, 2, 0.76]
+        - [C5, 256, 4, 0.86]
+        - [Eb5, 260, 4, 0.9]
+        - [F5, 264, 4, 0.96]
+        - [Ab5, 268, 4, 0.98]
+        - [F5, 272, 4, 0.92]
+        - [Eb5, 276, 4, 0.88]
+        - [C5, 280, 4, 0.82]
+        - [Ab4, 284, 4, 0.76]
+        - [Ab4, 288, 4, 0.84]
+        - [Bb4, 292, 4, 0.88]
+        - [C5, 296, 4, 0.92]
+        - [Eb5, 300, 4, 0.96]
+        - [F5, 304, 6, 0.98]
+        - [Eb5, 310, 4, 0.9]
+        - [C5, 314, 4, 0.84]
+        - [F4, 318, 2, 0.74]
+        - [Ab4, 320, 6, 0.72]
+        - [F4, 326, 6, 0.68]
+        - [Eb4, 332, 8, 0.64]
+        - [Db4, 340, 6, 0.7]
+        - [Eb4, 346, 6, 0.66]
+        - [F4, 352, 8, 0.62]
+        - [Ab4, 360, 6, 0.72]
+        - [G4, 366, 6, 0.66]
+        - [F4, 372, 8, 0.62]
+        - [C5, 380, 4, 0.7]
+        - [Ab4, 384, 4, 0.66]
+        - [F4, 388, 8, 0.6]
+        - [F4, 396, 6, 0.72]
+        - [G4, 402, 6, 0.68]
+        - [Ab4, 408, 8, 0.64]
+        - [C5, 416, 4, 0.72]
+        - [Ab4, 420, 4, 0.66]
+        - [F4, 424, 8, 0.6]
+        - [F4, 448, 4, 0.84]
+        - [G4, 452, 4, 0.88]
+        - [Ab4, 456, 4, 0.92]
+        - [C5, 460, 4, 0.96]
+        - [Eb5, 464, 4, 0.98]
+        - [F5, 468, 4, 0.96]
+        - [Eb5, 472, 4, 0.9]
+        - [C5, 476, 4, 0.82]
+        - [Ab4, 480, 4, 0.86]
+        - [Bb4, 484, 4, 0.9]
+        - [C5, 488, 4, 0.94]
+        - [Eb5, 492, 4, 0.98]
+        - [F5, 496, 6, 1]
+        - [Eb5, 502, 4, 0.92]
+        - [C5, 506, 4, 0.86]
+        - [Ab4, 510, 2, 0.78]
+        - [C5, 512, 4, 0.88]
+        - [Eb5, 516, 4, 0.92]
+        - [F5, 520, 4, 0.96]
+        - [Ab5, 524, 4, 1]
+        - [F5, 528, 4, 0.94]
+        - [Eb5, 532, 4, 0.9]
+        - [C5, 536, 4, 0.84]
+        - [Ab4, 540, 4, 0.78]
+        - [F4, 544, 4, 0.84]
+        - [G4, 548, 4, 0.88]
+        - [Ab4, 552, 4, 0.92]
+        - [C5, 556, 4, 0.96]
+        - [C5, 560, 6, 0.9]
+        - [Ab4, 566, 4, 0.82]
+        - [F4, 570, 6, 0.74]
+        - [F4, 576, 4, 0.84]
+        - [G4, 580, 4, 0.88]
+        - [Ab4, 584, 4, 0.92]
+        - [C5, 588, 4, 0.96]
+        - [Eb5, 592, 4, 0.98]
+        - [F5, 596, 4, 0.96]
+        - [Eb5, 600, 4, 0.9]
+        - [C5, 604, 4, 0.82]
+        - [Ab4, 608, 4, 0.86]
+        - [Bb4, 612, 4, 0.9]
+        - [C5, 616, 4, 0.94]
+        - [Eb5, 620, 4, 0.98]
+        - [F5, 624, 6, 1]
+        - [Eb5, 630, 4, 0.92]
+        - [C5, 634, 4, 0.86]
+        - [Ab4, 638, 2, 0.78]
+        - [C5, 640, 4, 0.88]
+        - [Eb5, 644, 4, 0.92]
+        - [F5, 648, 4, 0.96]
+        - [Ab5, 652, 4, 1]
+        - [F5, 656, 4, 0.94]
+        - [Eb5, 660, 4, 0.9]
+        - [C5, 664, 4, 0.84]
+        - [Ab4, 668, 4, 0.78]
+        - [F4, 672, 4, 0.84]
+        - [G4, 676, 4, 0.88]
+        - [Ab4, 680, 4, 0.92]
+        - [C5, 684, 4, 0.96]
+        - [C5, 688, 6, 0.9]
+        - [Ab4, 694, 4, 0.82]
+        - [F4, 698, 6, 0.74]
+    support:
+      pattern_node_id: song-support-pattern
+      voice_node_id: song-support-sampler
+      register_range:
+        low: C4
+        high: Ab4
+      timbre_intent: Looped atmospheric texture bed that carries the cinematic space and glues the sectional arc together.
+      loop_bars: 44
+      notes:
+        - [F4, 0, 64, 0.66]
+        - [F4, 64, 32, 0.7]
+        - [Db4, 96, 32, 0.68]
+        - [Ab4, 128, 32, 0.72]
+        - [Eb4, 160, 32, 0.68]
+        - [F4, 192, 32, 0.74]
+        - [Eb4, 224, 32, 0.7]
+        - [Db4, 256, 32, 0.72]
+        - [C4, 288, 32, 0.68]
+        - [Db4, 320, 32, 0.66]
+        - [Ab4, 352, 32, 0.64]
+        - [Eb4, 384, 32, 0.66]
+        - [F4, 416, 32, 0.62]
+        - [F4, 448, 32, 0.74]
+        - [Db4, 480, 32, 0.7]
+        - [Ab4, 512, 32, 0.74]
+        - [Eb4, 544, 32, 0.7]
+        - [F4, 576, 32, 0.76]
+        - [C4, 608, 32, 0.7]
+        - [Db4, 640, 32, 0.72]
+        - [F4, 672, 32, 0.66]
+    drums:
+      rhythm_node_id: song-drums
+      timbre_intent: Punchy electronic drum stack with clear backbeat, swung hat motion, and restrained fill energy.
+
+sound_design:
+  bass:
+    generator:
+      label: Afterglow Bass
+      generatorMode: fm
+      waveShape: sine
+      mix: 82
+      harmonicity: 1.35
+      modulationIndex: 10.2
+    eq:
+      eqLow: 4
+      eqMid: -2
+      eqHigh: -3
+      eqLowFrequency: 240
+      eqHighFrequency: 2600
+  lead:
+    quantizer:
+      rootNote: F
+      scaleType: minor
+      bypass: false
+    generator:
+      label: Neon Lead
+      generatorMode: am
+      waveShape: triangle
+      mix: 76
+      harmonicity: 2.4
+    delay:
+      label: Horizon Delay
+      subType: delay
+      wet: 0.28
+      delayTime: 0.36
+      feedback: 0.32
+  support:
+    sampler:
+      label: Fog Texture
+      samplePath: /ai-song-kit/support-texture.wav
+      sampleName: support-texture.wav
+      loop: true
+      playbackRate: 0.96
+      pitchShift: -2
+      mix: 62
+    reverb:
+      label: Fog Reverb
+      subType: reverb
+      wet: 0.68
+      roomSize: 0.9
+  drums:
+    drumNode:
+      mix: 82
+    eq:
+      eqLow: 2
+      eqMid: -1
+      eqHigh: 3
+      eqLowFrequency: 230
+      eqHighFrequency: 5000
+  mixer:
+    volume: 72
+    pan: 0
+  speaker:
+    volume: 70
+
+transforms:
+  - id: neon-afterglow-bass-quantize
+    category: pitch
+    operation: quantize_to_scale
+    target_role: bass
+    applies_to_sections: [drive, peak, horizon]
+    description: Keep the bass strictly in F natural minor while preserving the downbeat root-fifth structure.
+    parameters:
+      root: F
+      scale_type: minor
+  - id: neon-afterglow-lead-quantize
+    category: pitch
+    operation: quantize_to_scale
+    target_role: lead
+    applies_to_sections: [peak, break, horizon]
+    description: Hold the hook to the F natural minor collection so the melodic contour remains compile-safe and coherent.
+    parameters:
+      root: F
+      scale_type: minor
+  - id: neon-afterglow-support-quantize
+    category: pitch
+    operation: quantize_to_scale
+    target_role: support
+    applies_to_sections: [intro, drive, peak, break, horizon]
+    description: Keep the support bed on tonic-compatible material to reinforce the formal harmonic centers.
+    parameters:
+      root: F
+      scale_type: minor
+  - id: neon-afterglow-groove-swing
+    category: time
+    operation: apply_swing
+    target_role: drums
+    applies_to_sections: [intro, drive, peak, horizon]
+    description: Apply a gentle synthwave swing to the drum grid in the groove-bearing sections.
+    parameters:
+      ratio: 0.14
+
+evaluation_targets:
+  duration_window_sec: [86, 90]
+  minimum_role_coverage:
+    bass: 3
+    lead: 3
+    support: 5
+    drums: 4
+  minimum_automation_lanes: 5
+  section_contrast_min: 0.2
+  density_curve_target:
+    - 0.24
+    - 0.5
+    - 0.84
+    - 0.34
+    - 0.9
+
+revision_notes:
+  - The final 16-bar horizon section repeats the authored 8-bar climax phrase once to preserve the 90-second target while keeping the user-approved note language intact.
+  - All melodic material is constrained to F natural minor with no chromatic exception pitches required.
