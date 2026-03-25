@@ -184,7 +184,8 @@ When translating musical intent into Bloop behavior, prefer:
 
 - direct actions over contextual actions
 - persisted state over local UI state
-- Step Sequencer control over fragile Pattern note targeting
+- persisted Pattern note IDs and Arranger scene IDs over selected-note or selected-scene math targeting
+- Step Sequencer control over fragile contextual math note targeting
 - broad musical moves over brittle micro-edits
 - reuse of existing nodes over unnecessary graph expansion
 
@@ -197,15 +198,17 @@ Do not depend on fragile UI-local state unless unavoidable.
 
 Treat these as fragile unless context is already known to be present:
 
-- Pattern selected-note targeting
-- Arranger selected-scene targeting
-- mixer-channel targets that depend on existing channels
-- mode- or subtype-specific parameter assumptions unless confirmed
+- Pattern selected-note math targeting
+- Arranger selected-scene math targeting
+- mixer-channel math targets that depend on existing channels
+- mode- or subtype-specific math target assumptions unless confirmed
 
 If a task depends on fragile context:
 1. check whether context is present
 2. use it only if already valid
 3. otherwise log a manual intervention point or choose a different route
+
+If a stable persisted-ID route already exists, prefer that over contextual math.
 
 
 ---
@@ -215,7 +218,7 @@ If a task depends on fragile context:
 If a musical goal cannot be safely executed using known Bloop capabilities:
 
 - do not invent hidden actions
-- do not imply unsupported automation exists
+- do not imply unsupported automation or control paths exist
 - do not silently replace the goal with something unrelated
 
 Instead:
@@ -236,10 +239,10 @@ If the ideal implementation is blocked, choose the closest musical equivalent.
 Examples:
 
 ### Instead of:
-editing many Pattern notes through fragile selection logic
+editing Pattern material through selected-note math when stable note IDs are not available
 
 ### Prefer:
-using Step Sequencer, arp rate, rhythmic layering, or timbral contrast
+using direct Pattern note-ID mutation when available, or Step Sequencer, arp rate, rhythmic layering, or timbral contrast
 
 ---
 
@@ -252,10 +255,10 @@ clear tonic gravity, bass motion, density arcs, and timbral development
 ---
 
 ### Instead of:
-precise scene automation that depends on unavailable context
+selected-scene math retargeting that depends on unavailable UI context
 
 ### Prefer:
-representing formal intent in overlay memory and realizing only the supported parts
+using persisted Arranger scene IDs when they are known, or representing formal intent in overlay memory and realizing only the supported parts
 
 The piece must remain musical even when the implementation is imperfect.
 
@@ -596,6 +599,8 @@ When the agent reaches a step that depends on unsupported or fragile interaction
 - suggest the minimum manual action needed
 - continue from there if possible
 
+If the only blocked route is contextual math, first check whether a direct persisted-ID store mutation can achieve the same musical result.
+
 Manual intervention is not failure.
 Hidden dependence is failure.
 
@@ -617,6 +622,8 @@ Always preserve in overlay memory:
 - next best action
 
 Do not rely on `.bloop` patch persistence for composer memory.
+
+`.bloop` files preserve serialized Bloop patch state such as nodes, edges, and master volume, but not overlay-only intent, evaluation, revision history, or manual-intervention reasoning.
 
 
 ---

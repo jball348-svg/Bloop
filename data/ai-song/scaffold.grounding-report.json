@@ -1,0 +1,581 @@
+{
+  "version": 1,
+  "plan_id": "ai-song-scaffold",
+  "title": "AI Song Scaffold",
+  "validation_pass": true,
+  "brain_schema_bundle": {
+    "version": 1,
+    "refs": [
+      {
+        "id": "10_music_ontology",
+        "fileName": "10_music_ontology.yaml",
+        "path": ".agent/composer/10_music_ontology.yaml"
+      },
+      {
+        "id": "11_time_schema",
+        "fileName": "11_time_schema.yaml",
+        "path": ".agent/composer/11_time_schema.yaml"
+      },
+      {
+        "id": "12_pitch_harmony_schema",
+        "fileName": "12_pitch_harmony_schema.yaml",
+        "path": ".agent/composer/12_pitch_harmony_schema.yaml"
+      },
+      {
+        "id": "13_rhythm_schema",
+        "fileName": "13_rhythm_schema.yaml",
+        "path": ".agent/composer/13_rhythm_schema.yaml"
+      },
+      {
+        "id": "21_transform_ops",
+        "fileName": "21_transform_ops.yaml",
+        "path": ".agent/composer/21_transform_ops.yaml"
+      },
+      {
+        "id": "30_composition_pipeline",
+        "fileName": "30_composition_pipeline.md",
+        "path": ".agent/composer/30_composition_pipeline.md"
+      }
+    ],
+    "ontology": {
+      "entityNames": [
+        "TimePoint",
+        "TimeRange",
+        "Tempo",
+        "Pitch",
+        "Interval",
+        "Scale",
+        "Chord",
+        "Note",
+        "Rest",
+        "EventGroup",
+        "RhythmPattern",
+        "Pulse",
+        "Motif",
+        "Phrase",
+        "Section",
+        "Composition",
+        "Instrument",
+        "Voice",
+        "Arrangement",
+        "Performance",
+        "Gesture",
+        "SoundPatch",
+        "Effect",
+        "SignalChain",
+        "Constraint",
+        "Transformation",
+        "Annotation"
+      ],
+      "relationshipCount": 9
+    },
+    "time": {
+      "expressiveModels": [
+        "swing",
+        "rubato",
+        "humanization",
+        "anticipation",
+        "lag"
+      ],
+      "meterDenominators": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "tempoCurves": [
+        "constant",
+        "linear",
+        "exponential"
+      ]
+    },
+    "pitch_harmony": {
+      "harmonicFunctions": [
+        "tonic",
+        "subdominant",
+        "dominant",
+        "passing",
+        "pedal",
+        "ambiguous"
+      ],
+      "voiceLeadingRules": [
+        "minimize_motion",
+        "avoid_parallel_fifths",
+        "resolve_leading_tone",
+        "avoid_voice_crossing",
+        "maintain_common_tones"
+      ],
+      "scaleOperations": [
+        "transpose_scale",
+        "mode_shift"
+      ]
+    },
+    "rhythm": {
+      "roles": [
+        "pulse",
+        "subdivision",
+        "accent",
+        "syncopation",
+        "fill",
+        "texture"
+      ],
+      "generatorNames": [
+        "euclidean",
+        "modulo",
+        "recursive",
+        "stochastic"
+      ],
+      "transformNames": [
+        "rotate",
+        "invert",
+        "densify",
+        "sparsify",
+        "syncopate",
+        "quantize",
+        "humanize"
+      ]
+    },
+    "transform_ops": {
+      "categories": [
+        "pitch",
+        "harmony",
+        "rhythm",
+        "time",
+        "structure",
+        "arrangement",
+        "performance"
+      ],
+      "operationsByCategory": {
+        "pitch": [
+          "transpose",
+          "invert",
+          "retrograde",
+          "octave_shift",
+          "quantize_to_scale"
+        ],
+        "harmony": [
+          "reharmonize",
+          "chord_inversion",
+          "extend_chord",
+          "simplify_harmony"
+        ],
+        "rhythm": [
+          "rotate",
+          "densify",
+          "sparsify",
+          "syncopate",
+          "subdivide",
+          "merge_patterns"
+        ],
+        "time": [
+          "stretch",
+          "compress",
+          "shift",
+          "quantize",
+          "apply_swing"
+        ],
+        "structure": [
+          "repeat",
+          "truncate",
+          "expand",
+          "reorder",
+          "interpolate"
+        ],
+        "motif": [
+          "fragment",
+          "augment",
+          "diminish",
+          "sequence",
+          "canon",
+          "mobius_transform"
+        ],
+        "arrangement": [
+          "reassign_voice",
+          "register_shift",
+          "thin_texture",
+          "thicken_texture",
+          "redistribute_roles"
+        ],
+        "performance": [
+          "apply_dynamics",
+          "humanize",
+          "accentuate",
+          "phrase_shape"
+        ],
+        "composition": [
+          "TransformationChain",
+          "apply_chain"
+        ]
+      },
+      "operations": [
+        "transpose",
+        "invert",
+        "retrograde",
+        "octave_shift",
+        "quantize_to_scale",
+        "reharmonize",
+        "chord_inversion",
+        "extend_chord",
+        "simplify_harmony",
+        "rotate",
+        "densify",
+        "sparsify",
+        "syncopate",
+        "subdivide",
+        "merge_patterns",
+        "stretch",
+        "compress",
+        "shift",
+        "quantize",
+        "apply_swing",
+        "repeat",
+        "truncate",
+        "expand",
+        "reorder",
+        "interpolate",
+        "fragment",
+        "augment",
+        "diminish",
+        "sequence",
+        "canon",
+        "mobius_transform",
+        "reassign_voice",
+        "register_shift",
+        "thin_texture",
+        "thicken_texture",
+        "redistribute_roles",
+        "apply_dynamics",
+        "humanize",
+        "accentuate",
+        "phrase_shape",
+        "TransformationChain",
+        "apply_chain"
+      ]
+    },
+    "composition_pipeline": {
+      "highLevelStages": [
+        "Intent Definition",
+        "Structural Planning",
+        "Material Generation",
+        "Harmonic & Rhythmic Development",
+        "Arrangement",
+        "Performance Mapping",
+        "Rendering",
+        "Evaluation",
+        "Revision Loop"
+      ],
+      "evaluationAreas": [
+        "Structural",
+        "Harmonic",
+        "Rhythmic",
+        "Arrangement",
+        "Expressive"
+      ]
+    }
+  },
+  "intent_snapshot": {
+    "title": "AI Song Scaffold",
+    "mood": "focused, spacious, synthetic",
+    "target_duration_sec": 34.3,
+    "bpm": 112,
+    "global_key": {
+      "root": "C",
+      "scale_type": "minor",
+      "name": "C natural minor"
+    },
+    "style_tags": [
+      "electronic",
+      "cinematic",
+      "scaffold"
+    ],
+    "energy_curve": [
+      0.22,
+      0.44,
+      0.78,
+      0.28
+    ]
+  },
+  "section_plan": [
+    {
+      "id": "intro",
+      "name": "Intro",
+      "bars": 4,
+      "energy": 0.22,
+      "density": 0.24,
+      "active_roles": [
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-intro-mixer",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              60
+            ],
+            [
+              3.75,
+              66
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lift",
+      "name": "Lift",
+      "bars": 4,
+      "energy": 0.44,
+      "density": 0.42,
+      "active_roles": [
+        "bass",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-lift-support",
+          "targetNodeId": "song-support-sampler",
+          "targetParam": "playbackRate",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.9
+            ],
+            [
+              3.75,
+              1.02
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "arrival",
+      "name": "Arrival",
+      "bars": 4,
+      "energy": 0.78,
+      "density": 0.78,
+      "active_roles": [
+        "bass",
+        "lead",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-arrival-delay",
+          "targetNodeId": "song-lead-delay",
+          "targetParam": "wet",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.26
+            ],
+            [
+              3.75,
+              0.52
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outro",
+      "name": "Outro",
+      "bars": 4,
+      "energy": 0.28,
+      "density": 0.32,
+      "active_roles": [
+        "bass",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-outro-fade",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              68
+            ],
+            [
+              3.75,
+              58
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "transform_log": [
+    {
+      "version": 1,
+      "id": "scaffold-bass-quantize",
+      "operation": "quantize_to_scale",
+      "category": "pitch",
+      "target_role": "bass",
+      "applies_to_sections": [
+        "lift",
+        "arrival",
+        "outro"
+      ],
+      "description": "Keep the bass role locked to the global C natural minor collection.",
+      "changed_count": 0,
+      "summary_before": [
+        "C2",
+        "G2",
+        "G#2",
+        "F2"
+      ],
+      "summary_after": [
+        "C2",
+        "G2",
+        "G#2",
+        "F2"
+      ]
+    },
+    {
+      "version": 1,
+      "id": "scaffold-lead-quantize",
+      "operation": "quantize_to_scale",
+      "category": "pitch",
+      "target_role": "lead",
+      "applies_to_sections": [
+        "arrival"
+      ],
+      "description": "Constrain the lead role to the same minor palette used by the section plan.",
+      "changed_count": 0,
+      "summary_before": [
+        "G4",
+        "G#4",
+        "C5",
+        "D5",
+        "D#4",
+        "D4"
+      ],
+      "summary_after": [
+        "G4",
+        "G#4",
+        "C5",
+        "D5",
+        "D#4",
+        "D4"
+      ]
+    },
+    {
+      "version": 1,
+      "id": "scaffold-support-quantize",
+      "operation": "quantize_to_scale",
+      "category": "pitch",
+      "target_role": "support",
+      "applies_to_sections": [
+        "intro",
+        "lift",
+        "arrival",
+        "outro"
+      ],
+      "description": "Anchor the support bed to the tonic center so it stays structurally neutral.",
+      "changed_count": 0,
+      "summary_before": [
+        "C4"
+      ],
+      "summary_after": [
+        "C4"
+      ]
+    },
+    {
+      "version": 1,
+      "id": "scaffold-groove-swing",
+      "operation": "apply_swing",
+      "category": "time",
+      "target_role": "drums",
+      "applies_to_sections": [
+        "intro",
+        "lift",
+        "arrival",
+        "outro"
+      ],
+      "description": "Apply a light swung feel to the drum grid for movement without breaking alignment.",
+      "changed_count": 0,
+      "summary_before": {
+        "swingRatio": 0.1
+      },
+      "summary_after": {
+        "swingRatio": 0.1
+      }
+    }
+  ],
+  "theory_validation": {
+    "version": 1,
+    "issues": [],
+    "errorCount": 0,
+    "warningCount": 0,
+    "hasErrors": false
+  },
+  "runtime_validation": {
+    "version": 1,
+    "issues": [],
+    "errorCount": 0,
+    "warningCount": 0,
+    "hasErrors": false
+  },
+  "evaluation": {
+    "version": 1,
+    "durationSec": 34.285714285714285,
+    "totalBars": 16,
+    "metrics": {
+      "key_consistency": {
+        "score": 1,
+        "detail": "Tracks out-of-key material against the declared C minor plan."
+      },
+      "section_balance": {
+        "score": 1,
+        "detail": "Measures how evenly section bar lengths distribute the overall form."
+      },
+      "density_curve_fit": {
+        "score": 1,
+        "detail": "Compares section densities against the intent-level density curve target."
+      },
+      "role_clarity": {
+        "score": 0.75,
+        "detail": "Estimates whether section role assignments stay legible and purposeful."
+      },
+      "arrangement_coverage": {
+        "score": 1,
+        "detail": "Checks required bass/lead/support/drum coverage against the plan targets."
+      },
+      "automation_richness": {
+        "score": 1,
+        "detail": "Measures scene automation density against the minimum expressive target."
+      }
+    },
+    "composition_pipeline_alignment": {
+      "stages": [
+        "Intent Definition",
+        "Structural Planning",
+        "Material Generation",
+        "Harmonic & Rhythmic Development",
+        "Arrangement",
+        "Performance Mapping",
+        "Rendering",
+        "Evaluation",
+        "Revision Loop"
+      ]
+    }
+  },
+  "revision_notes": [
+    "The scaffold remains intentionally simple and role-focused so later AI songs mutate a stable patch instead of inventing graph topology.",
+    "The pitch material is now strictly C natural minor so the scaffold itself passes the same grounding rules as the flagship song."
+  ]
+}

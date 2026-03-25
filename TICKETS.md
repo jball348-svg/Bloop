@@ -8,7 +8,7 @@ Always read this before picking up a ticket. Some tickets have hard dependencies
 
 ## Current Status Snapshot
 
-Implementation note: v12-v15 are implemented in the codebase and pass `npm run build` and `npm run lint` as of 2026-03-24. V16 is now in progress in the working tree: the math receiver foundation, shared handle UI, and expanded receiver batches are being wired before manual browser/audio QA.
+Implementation note: v12-v17 are implemented in the codebase and pass `npm run compile:ai-songs`, `npm run build`, and `npm run lint` as of 2026-03-25. V16 remains the active open GitHub issue frontier because the receiver-side math foundation is present in the app, but sender-side completion and final issue cleanup are still not done. V17 shipped as a documented milestone and asset pipeline even though its issue bookkeeping is not represented here as a numbered GitHub block.
 
 ### V2 — Complete ✅
 
@@ -167,6 +167,10 @@ Expanded receiver workstreams tracked in code for V16:
 1. Receiver Batch B: ADSR, Audio In, Drum, Advanced Drum, Unison, Detune, EQ, Sampler, Tempo, LFO, Quantizer, Keys, Chord, Visualiser, Mixer, Pulse, and Mood Pad.
 2. Receiver Batch C: Step Sequencer selected-step controls, Pattern selected-note controls, and Arranger selected-scene controls.
 
+### V17 — AI-Authored Song Pipeline Shipped ✅
+
+Implementation note: v17 shipped through the repo milestone in [`.agent/plans/v17-ai-authored-song-pipeline.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/.agent/plans/v17-ai-authored-song-pipeline.md), the grounded compiler in [`scripts/compile-ai-song-assets.mjs`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/scripts/compile-ai-song-assets.mjs), the authoring docs in [`AI_SONG_AUTHORING.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/AI_SONG_AUTHORING.md), and the shipped patch assets in [`public/patches/`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/public/patches). The showcase song and AI scaffold are now asset-backed presets, and the flagship song compiles from `MusicalPlanV1` plus `.agent/composer/*` grounding inputs.
+
 ### Superseded / Closed
 
 | # | Title | Status |
@@ -210,6 +214,10 @@ Expanded receiver workstreams tracked in code for V16:
 4. Receiver Batch B under #80 architecture scope until follow-up GitHub issues are opened
 5. Receiver Batch C under #80 architecture scope until follow-up GitHub issues are opened
 6. **#86** Supersede Pre-V16 Modulation Designs — Align Open Tickets
+
+## V17 Recommended Work Order
+
+V17 is shipped in code and docs. Any follow-up should be treated as hardening, UAT fixes, or v18 planning rather than another round of untracked scope inside the same milestone.
 
 ---
 

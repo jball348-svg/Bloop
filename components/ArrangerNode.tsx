@@ -7,6 +7,7 @@ import {
     type AutomationLane,
     type AutomationPoint,
     getAdjacencyGlowClasses,
+    getArrangerValidationIssues,
     getAutomatableParamsForNode,
     getMathTargetOptionsForNode,
     getNodeAutomatableValue,
@@ -31,6 +32,25 @@ const createPoint = (value: number): AutomationPoint => ({
     id: crypto.randomUUID(),
     barOffset: 0,
     value,
+});
+
+const clonePoint = (point: AutomationPoint): AutomationPoint => ({
+    ...point,
+    id: crypto.randomUUID(),
+});
+
+const cloneLane = (lane: AutomationLane): AutomationLane => ({
+    ...lane,
+    id: crypto.randomUUID(),
+    points: lane.points.map(clonePoint),
+});
+
+const cloneScene = (scene: ArrangerScene): ArrangerScene => ({
+    ...scene,
+    id: crypto.randomUUID(),
+    name: `${scene.name} Copy`,
+    startBar: scene.startBar + scene.lengthBars,
+    automationLanes: scene.automationLanes.map(cloneLane),
 });
 
 export default function ArrangerNode({ id }: { id: string }) {
@@ -65,6 +85,17 @@ export default function ArrangerNode({ id }: { id: string }) {
     const automatableNodes = useMemo(
         () => nodes.filter((node) => getAutomatableParamsForNode(node.type).length > 0),
         [nodes]
+    );
+    const validationIssues = useMemo(
+        () => (node ? getArrangerValidationIssues(node, nodes) : []),
+        [node, nodes]
+    );
+    const selectedSceneIssues = useMemo(
+        () =>
+            selectedScene
+                ? validationIssues.filter((issue) => issue.sceneId === selectedScene.id)
+                : [],
+        [selectedScene, validationIssues]
     );
 
     if (nodeData?.isPackedVisible) {
@@ -153,9 +184,12 @@ export default function ArrangerNode({ id }: { id: string }) {
                         <button
                             onClick={() => {
                                 const nextScene = createScene();
+                                const nextStartBar = scenes.length === 0
+                                    ? 0
+                                    : Math.max(...scenes.map((scene) => scene.startBar + scene.lengthBars));
                                 upsertArrangerScene(id, {
                                     ...nextScene,
-                                    startBar: scenes.length * 4,
+                                    startBar: nextStartBar,
                                     name: `Scene ${scenes.length + 1}`,
                                 });
                                 setSelectedSceneId(nextScene.id);
@@ -193,22 +227,75 @@ export default function ArrangerNode({ id }: { id: string }) {
                     </div>
                 </div>
 
+                {validationIssues.length > 0 && (
+                    <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-3">
+                        <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">
+                            Timeline Warnings
+                        </div>
+                        <div className="space-y-2">
+                            {validationIssues.slice(0, 4).map((issue, index) => (
+                                <div
+                                    key={`${issue.code}-${issue.sceneId ?? issue.nodeId ?? index}`}
+                                    className="rounded-xl border border-amber-500/20 bg-slate-950/50 px-3 py-2 text-[10px] font-bold leading-5 text-amber-100"
+                                >
+                                    {issue.message}
+                                </div>
+                            ))}
+                            {validationIssues.length > 4 && (
+                                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200/80">
+                                    +{validationIssues.length - 4} more
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {selectedScene && (
                     <div className="mt-3 rounded-2xl border border-indigo-500/15 bg-slate-900/40 p-3">
                         <div className="mb-3 flex items-center justify-between">
                             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">
                                 Edit Section
                             </div>
-                            <button
-                                onClick={() => {
-                                    removeArrangerScene(id, selectedScene.id);
-                                    setSelectedSceneId(null);
-                                }}
-                                className="nodrag rounded-full bg-rose-500 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white"
-                            >
-                                Delete
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => {
+                                        const duplicateScene = cloneScene(selectedScene);
+                                        upsertArrangerScene(id, duplicateScene);
+                                        setSelectedSceneId(duplicateScene.id);
+                                    }}
+                                    className="nodrag rounded-full bg-indigo-600 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white"
+                                >
+                                    Duplicate
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        removeArrangerScene(id, selectedScene.id);
+                                        setSelectedSceneId(null);
+                                    }}
+                                    className="nodrag rounded-full bg-rose-500 px-3 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white"
+                                >
+                                    Delete
+                                </button>
+                            </div>
                         </div>
+
+                        {selectedSceneIssues.length > 0 && (
+                            <div className="mb-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
+                                <div className="mb-2 text-[9px] font-black uppercase tracking-[0.16em] text-amber-200">
+                                    Section Checks
+                                </div>
+                                <div className="space-y-2">
+                                    {selectedSceneIssues.map((issue, index) => (
+                                        <div
+                                            key={`${issue.code}-${index}`}
+                                            className="rounded-xl border border-amber-500/15 bg-slate-950/50 px-3 py-2 text-[10px] font-bold leading-5 text-amber-100"
+                                        >
+                                            {issue.message}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-2 gap-3">
                             <div className="flex flex-col gap-1.5">
@@ -240,7 +327,7 @@ export default function ArrangerNode({ id }: { id: string }) {
                                 <input
                                     type="range"
                                     min="1"
-                                    max="16"
+                                    max="32"
                                     step="1"
                                     value={selectedScene.lengthBars}
                                     onChange={(event) => patchScene({ lengthBars: Number(event.target.value) })}

@@ -1,17 +1,22 @@
 version: 1.0
 file_role: composer_session_memory
 purpose: >
-  Defines the persistent state of the composer overlay. This is the agent’s
-  working memory across turns and iterations. It stores intent, structure,
-  decisions, created Bloop elements, unresolved constraints, and revision history.
+  Defines the persistent state of the composer overlay. This is the agent's
+  working memory across turns and iterations. It stores abstract musical intent,
+  concrete Bloop execution refs, unresolved constraints, and revision history
+  without implying that overlay-only reasoning is stored inside .bloop patch files.
 
 design_principles:
   - "Separate composer memory from .bloop patch persistence."
+  - "Separate abstract musical state from concrete Bloop execution state."
   - "Everything important must be explicitly stored."
   - "State must be inspectable and editable."
   - "No hidden assumptions."
   - "Track both plan and execution."
   - "Track uncertainty and limitations explicitly."
+  - "Mirror only repo-proven Bloop state."
+  - "Do not model selected Pattern notes or selected Arranger scenes as stable persisted runtime state."
+  - "Represent UI-local dependencies through blocks and manual_interventions."
 
 # =========================================================
 # ROOT SESSION OBJECT
@@ -30,7 +35,7 @@ session:
     block_count: int
 
 # =========================================================
-# INTENT
+# ABSTRACT MUSICAL STATE (OVERLAY MEMORY, NOT .BLOOP STATE)
 # =========================================================
 
 intent:
@@ -56,10 +61,6 @@ intent:
   confidence: float  # 0–1 how well intent is understood
 
 
-# =========================================================
-# STRUCTURE PLAN (ABSTRACT)
-# =========================================================
-
 structure_plan:
 
   sections:
@@ -84,10 +85,6 @@ structure_plan:
     tension_curve: string
 
 
-# =========================================================
-# MUSICAL MATERIAL
-# =========================================================
-
 musical_material:
 
   key_center:
@@ -98,6 +95,7 @@ musical_material:
   tempo:
     bpm: float
     confidence: float
+    note: string               # overlay tempo intent; Bloop runtime still exposes one global BPM
 
   motifs:
     - id: string
@@ -117,10 +115,6 @@ musical_material:
     stability: float
     tension_profile: string
 
-
-# =========================================================
-# ARRANGEMENT STATE
-# =========================================================
 
 arrangement:
 
@@ -157,43 +151,145 @@ arrangement:
 
 
 # =========================================================
-# BLOOP EXECUTION STATE
+# BLOOP EXECUTION STATE (CONCRETE, REPO-BACKED RUNTIME REFS)
 # =========================================================
 
 bloop_state:
 
+  patch_persistence:
+    current_patch_ref:
+      file_path: string        # empty or null-equivalent if never saved/loaded
+      patch_name: string
+      version: int
+      last_loaded_at: datetime
+      last_saved_at: datetime
+    serialized_fields:
+      - nodes
+      - edges
+      - masterVolume
+    execution_state_carried_in_node_data:
+      - mathInputTarget
+      - patternNotes
+      - patternLoopBars
+      - patternStepsPerBar
+      - arrangerScenes
+      - mixerChannels
+      - selectedStep
+    excluded_overlay_memory:
+      - intent
+      - structure_plan
+      - musical_material
+      - arrangement
+      - transformations
+      - evaluation
+      - manual_interventions
+      - block_reasoning
+
+  transport:
+    bpm: float
+    tempo_node_id: string
+    note: string               # one global BPM only; no native tempo map
+
+  master_output:
+    speaker_node_id: string
+    master_volume: float
+
   nodes:
     - node_id: string
       node_type: string
+      node_label: string
       role: string
       created_by_agent: boolean
+      subtype_or_mode: string
+      is_playing: boolean
 
-  connections:
-    - from_node: string
+  edges:
+    - edge_id: string
+      from_node: string
+      from_handle: string
       to_node: string
-      type: string
+      to_handle: string
+      edge_kind: string        # audio | control | modulation | legacy-loaded-other
+      explicit: boolean
 
-  parameter_changes:
+  selected_math_targets:
     - node_id: string
-      target: string
-      value: float
-      method: string           # math | direct | unknown
+      target_key: string
+      target_label: string
+      target_kind: string
+      confirmed_from_runtime: boolean
 
-  patterns:
-    - id: string
-      node_id: string
-      status: string           # planned | partial | applied
+  pattern_nodes:
+    - node_id: string
+      loop_bars: int
+      steps_per_bar: int
+      note_refs:
+        - note_id: string
+          note: string
+          start_step: int
+          length_steps: int
+          velocity: float
+      notes:
+        - "Pattern note IDs are stable refs stored in node.data.patternNotes and serialized into .bloop."
 
-  arranger:
-    scenes:
-      - id: string
-        name: string
-        planned_bars: int
-        applied: boolean
+  arranger_nodes:
+    - node_id: string
+      scene_refs:
+        - scene_id: string
+          name: string
+          start_bar: int
+          length_bars: int
+          pattern_node_ids: list[string]
+          rhythm_node_ids: list[string]
+          automation_lanes:
+            - lane_id: string
+              target_node_id: string
+              target_param: string
+              mode: string       # step | ramp
+              point_count: int
+      notes:
+        - "Arranger scene IDs are stable refs stored in node.data.arrangerScenes and serialized into .bloop."
+
+  step_sequencers:
+    - node_id: string
+      selected_step: int
+      sequence_sync: boolean
+      sequence_rate: string
+      sequence_interval_ms: float
+      steps:
+        - index: int
+          enabled: boolean
+          note: string
+          mix: float
+      notes:
+        - "selected_step mirrors node.data.selectedStep and is persisted by Bloop."
+
+  mixers:
+    - node_id: string
+      master_volume: float
+      master_pan: float
+      channel_refs:
+        - source_id: string
+          volume: float
+          pan: float
+          muted: boolean
+          solo: boolean
+      notes:
+        - "Mixer channel refs are only valid when routed sources currently feed the mixer."
+
+  ui_local_context_not_assumed:
+    description: >
+      Do not store selectedPatternNoteId or selectedArrangerSceneId here as if
+      they were stable Bloop execution state. Those selections are local
+      component state and should be represented as blocks or manual
+      interventions when required.
+    represented_via:
+      - blocks.active_blocks
+      - manual_interventions
 
 
 # =========================================================
-# ACTION LOG
+# EXECUTION LOGS AND REVISION MEMORY (OVERLAY MEMORY)
 # =========================================================
 
 action_log:
@@ -246,42 +342,57 @@ evaluation:
 
 
 # =========================================================
-# BLOCKS & LIMITATIONS
+# BLOCKS & MANUAL INTERVENTIONS
 # =========================================================
 
 blocks:
 
   active_blocks:
     - id: string
-      type: string            # ui_selection | missing_node | routing | unknown
+      type: string            # ui_selection | missing_graph_state | unsupported_route | external_action | human_preference | unknown
       severity: string        # hard | soft
       description: string
       affected_target: string
       required_action: string
+      preferred_fallback: string
       resume_condition: string
+      related_bloop_refs:
+        node_id: string
+        note_id: string
+        scene_id: string
+        source_id: string
+        edge_id: string
+      direct_route_checked: boolean
+      direct_route_result: string
 
   resolved_blocks:
     - id: string
       resolution: string
       resolved_at: datetime
 
-
-# =========================================================
-# MANUAL INTERVENTIONS
-# =========================================================
-
 manual_interventions:
 
-  pending:
+  requests:
     - id: string
-      description: string
-      minimal_action: string
+      timestamp: datetime
+      type: string            # ui_selection | external_action | human_preference
+      blocked_operation: string
+      reason: string
+      minimal_human_action: string
+      resume_condition: string
+      status: string          # requested | satisfied | bypassed | cancelled
+      related_bloop_refs:
+        node_id: string
+        note_id: string
+        scene_id: string
+        source_id: string
       related_block_id: string
 
   completed:
     - id: string
       description: string
       completed_at: datetime
+      related_block_id: string
 
 
 # =========================================================

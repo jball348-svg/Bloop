@@ -6,7 +6,7 @@ import { Handle, Position } from 'reactflow';
 import {
     CONTROL_INPUT_HANDLE_ID,
     CONTROL_OUTPUT_HANDLE_ID,
-    ROOT_NOTES,
+    SONG_NOTE_OPTIONS,
     TRANSPORT_RATE_OPTIONS,
     getSequencerStepMix,
     type SequencerStep,
@@ -20,10 +20,6 @@ import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
-
-const NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
-    ROOT_NOTES.map((note) => `${note}${octave}`)
-);
 
 export default function StepSequencerNode({ id }: { id: string }) {
     const updateNodeData = useStore((state) => state.updateNodeData);
@@ -237,7 +233,7 @@ export default function StepSequencerNode({ id }: { id: string }) {
                                     onChange={(event) => updateSequencerStep(id, selectedStep, { note: event.target.value })}
                                     className="nodrag rounded-lg border border-blue-500/20 bg-slate-900/60 px-2 py-2 text-[11px] font-bold text-blue-200 outline-none"
                                 >
-                                    {NOTE_OPTIONS.map((note) => (
+                                    {SONG_NOTE_OPTIONS.map((note) => (
                                         <option key={note} value={note} className="bg-slate-900 text-blue-200">
                                             {note}
                                         </option>

@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "id": "ai-song-scaffold",
+  "title": "AI Song Scaffold",
+  "description": "Canonical fixed-id scaffold for AI-authored songs in Bloop.",
+  "scaffoldId": "ai-song-v1",
+  "tempo": 112,
+  "masterVolume": 68,
+  "patterns": {
+    "song-bass-pattern": {
+      "loopBars": 4,
+      "notes": [
+        [
+          "C2",
+          0,
+          8,
+          0.88
+        ],
+        [
+          "G2",
+          8,
+          8,
+          0.8
+        ],
+        [
+          "G#2",
+          16,
+          8,
+          0.84
+        ],
+        [
+          "G2",
+          24,
+          8,
+          0.78
+        ],
+        [
+          "F2",
+          32,
+          8,
+          0.82
+        ],
+        [
+          "G2",
+          40,
+          8,
+          0.78
+        ],
+        [
+          "C2",
+          48,
+          8,
+          0.86
+        ],
+        [
+          "G2",
+          56,
+          8,
+          0.8
+        ]
+      ]
+    },
+    "song-lead-pattern": {
+      "loopBars": 4,
+      "notes": [
+        [
+          "G4",
+          0,
+          4,
+          0.76
+        ],
+        [
+          "G#4",
+          4,
+          4,
+          0.72
+        ],
+        [
+          "C5",
+          8,
+          4,
+          0.8
+        ],
+        [
+          "D5",
+          12,
+          4,
+          0.78
+        ],
+        [
+          "C5",
+          16,
+          4,
+          0.74
+        ],
+        [
+          "G#4",
+          20,
+          4,
+          0.72
+        ],
+        [
+          "G4",
+          24,
+          4,
+          0.7
+        ],
+        [
+          "D#4",
+          28,
+          4,
+          0.68
+        ],
+        [
+          "G4",
+          32,
+          4,
+          0.74
+        ],
+        [
+          "G#4",
+          36,
+          4,
+          0.72
+        ],
+        [
+          "C5",
+          40,
+          4,
+          0.8
+        ],
+        [
+          "G4",
+          44,
+          4,
+          0.7
+        ],
+        [
+          "D#4",
+          48,
+          4,
+          0.68
+        ],
+        [
+          "D4",
+          52,
+          4,
+          0.66
+        ],
+        [
+          "D#4",
+          56,
+          4,
+          0.68
+        ],
+        [
+          "G4",
+          60,
+          4,
+          0.74
+        ]
+      ]
+    },
+    "song-support-pattern": {
+      "loopBars": 4,
+      "notes": [
+        [
+          "C4",
+          0,
+          16,
+          0.68
+        ],
+        [
+          "C4",
+          16,
+          16,
+          0.64
+        ],
+        [
+          "C4",
+          32,
+          16,
+          0.7
+        ],
+        [
+          "C4",
+          48,
+          16,
+          0.66
+        ]
+      ]
+    }
+  },
+  "voices": {
+    "song-bass-gen": {
+      "label": "Bass Engine",
+      "generatorMode": "fm",
+      "waveShape": "sine",
+      "mix": 76,
+      "harmonicity": 1.45,
+      "modulationIndex": 7.5
+    },
+    "song-lead-gen": {
+      "label": "Lead Engine",
+      "generatorMode": "am",
+      "waveShape": "triangle",
+      "mix": 70,
+      "harmonicity": 2.2
+    },
+    "song-support-sampler": {
+      "label": "Texture Bed",
+      "samplePath": "/ai-song-kit/support-texture.wav",
+      "sampleName": "support-texture.wav",
+      "loop": true,
+      "playbackRate": 0.92,
+      "pitchShift": -2,
+      "mix": 58
+    }
+  },
+  "drums": {
+    "song-drums": {
+      "mix": 76,
+      "swing": 0.1,
+      "tracks": [
+        {
+          "label": "Kick",
+          "length": 16,
+          "samplePath": "/ai-song-kit/kick.wav",
+          "steps": [
+            3,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            2,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "label": "Snare",
+          "length": 16,
+          "samplePath": "/ai-song-kit/snare.wav",
+          "steps": [
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "label": "Hat",
+          "length": 12,
+          "samplePath": "/ai-song-kit/hat.wav",
+          "steps": [
+            2,
+            0,
+            2,
+            1,
+            2,
+            0,
+            2,
+            0,
+            2,
+            1,
+            2,
+            0,
+            2,
+            0,
+            2,
+            1
+          ]
+        },
+        {
+          "label": "Clap",
+          "length": 8,
+          "samplePath": "/ai-song-kit/clap.wav",
+          "steps": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            2,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            2,
+            0
+          ]
+        }
+      ]
+    }
+  },
+  "fx": {
+    "song-bass-eq": {
+      "eqLow": 3,
+      "eqMid": -2,
+      "eqHigh": -4,
+      "eqLowFrequency": 220,
+      "eqHighFrequency": 2600
+    },
+    "song-lead-quant": {
+      "rootNote": "C",
+      "scaleType": "minor",
+      "bypass": false
+    },
+    "song-lead-delay": {
+      "label": "Lead Delay",
+      "subType": "delay",
+      "wet": 0.28,
+      "delayTime": 0.36,
+      "feedback": 0.34
+    },
+    "song-support-reverb": {
+      "label": "Texture Reverb",
+      "subType": "reverb",
+      "wet": 0.62,
+      "roomSize": 0.82
+    },
+    "song-drum-eq": {
+      "eqLow": 2,
+      "eqMid": -1,
+      "eqHigh": 2,
+      "eqLowFrequency": 240,
+      "eqHighFrequency": 4800
+    },
+    "song-mixer": {
+      "volume": 70,
+      "pan": 0
+    }
+  },
+  "scenes": [
+    {
+      "id": "song-scene-intro",
+      "name": "Intro",
+      "startBar": 0,
+      "lengthBars": 4,
+      "patternNodeIds": [
+        "song-support-pattern"
+      ],
+      "rhythmNodeIds": [
+        "song-drums"
+      ],
+      "automationLanes": [
+        {
+          "id": "song-scene-intro-mixer",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              60
+            ],
+            [
+              3.75,
+              66
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "song-scene-lift",
+      "name": "Lift",
+      "startBar": 4,
+      "lengthBars": 4,
+      "patternNodeIds": [
+        "song-bass-pattern",
+        "song-support-pattern"
+      ],
+      "rhythmNodeIds": [
+        "song-drums"
+      ],
+      "automationLanes": [
+        {
+          "id": "song-scene-lift-support",
+          "targetNodeId": "song-support-sampler",
+          "targetParam": "playbackRate",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.9
+            ],
+            [
+              3.75,
+              1.02
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "song-scene-arrival",
+      "name": "Arrival",
+      "startBar": 8,
+      "lengthBars": 4,
+      "patternNodeIds": [
+        "song-bass-pattern",
+        "song-lead-pattern",
+        "song-support-pattern"
+      ],
+      "rhythmNodeIds": [
+        "song-drums"
+      ],
+      "automationLanes": [
+        {
+          "id": "song-scene-arrival-delay",
+          "targetNodeId": "song-lead-delay",
+          "targetParam": "wet",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.26
+            ],
+            [
+              3.75,
+              0.52
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "song-scene-outro",
+      "name": "Outro",
+      "startBar": 12,
+      "lengthBars": 4,
+      "patternNodeIds": [
+        "song-bass-pattern",
+        "song-support-pattern"
+      ],
+      "rhythmNodeIds": [
+        "song-drums"
+      ],
+      "automationLanes": [
+        {
+          "id": "song-scene-outro-fade",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              68
+            ],
+            [
+              3.75,
+              58
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,807 @@
+{
+  "version": 1,
+  "plan_id": "ai-flagship-song",
+  "title": "Midnight Circuit",
+  "validation_pass": true,
+  "brain_schema_bundle": {
+    "version": 1,
+    "refs": [
+      {
+        "id": "10_music_ontology",
+        "fileName": "10_music_ontology.yaml",
+        "path": ".agent/composer/10_music_ontology.yaml"
+      },
+      {
+        "id": "11_time_schema",
+        "fileName": "11_time_schema.yaml",
+        "path": ".agent/composer/11_time_schema.yaml"
+      },
+      {
+        "id": "12_pitch_harmony_schema",
+        "fileName": "12_pitch_harmony_schema.yaml",
+        "path": ".agent/composer/12_pitch_harmony_schema.yaml"
+      },
+      {
+        "id": "13_rhythm_schema",
+        "fileName": "13_rhythm_schema.yaml",
+        "path": ".agent/composer/13_rhythm_schema.yaml"
+      },
+      {
+        "id": "21_transform_ops",
+        "fileName": "21_transform_ops.yaml",
+        "path": ".agent/composer/21_transform_ops.yaml"
+      },
+      {
+        "id": "30_composition_pipeline",
+        "fileName": "30_composition_pipeline.md",
+        "path": ".agent/composer/30_composition_pipeline.md"
+      }
+    ],
+    "ontology": {
+      "entityNames": [
+        "TimePoint",
+        "TimeRange",
+        "Tempo",
+        "Pitch",
+        "Interval",
+        "Scale",
+        "Chord",
+        "Note",
+        "Rest",
+        "EventGroup",
+        "RhythmPattern",
+        "Pulse",
+        "Motif",
+        "Phrase",
+        "Section",
+        "Composition",
+        "Instrument",
+        "Voice",
+        "Arrangement",
+        "Performance",
+        "Gesture",
+        "SoundPatch",
+        "Effect",
+        "SignalChain",
+        "Constraint",
+        "Transformation",
+        "Annotation"
+      ],
+      "relationshipCount": 9
+    },
+    "time": {
+      "expressiveModels": [
+        "swing",
+        "rubato",
+        "humanization",
+        "anticipation",
+        "lag"
+      ],
+      "meterDenominators": [
+        1,
+        2,
+        4,
+        8,
+        16
+      ],
+      "tempoCurves": [
+        "constant",
+        "linear",
+        "exponential"
+      ]
+    },
+    "pitch_harmony": {
+      "harmonicFunctions": [
+        "tonic",
+        "subdominant",
+        "dominant",
+        "passing",
+        "pedal",
+        "ambiguous"
+      ],
+      "voiceLeadingRules": [
+        "minimize_motion",
+        "avoid_parallel_fifths",
+        "resolve_leading_tone",
+        "avoid_voice_crossing",
+        "maintain_common_tones"
+      ],
+      "scaleOperations": [
+        "transpose_scale",
+        "mode_shift"
+      ]
+    },
+    "rhythm": {
+      "roles": [
+        "pulse",
+        "subdivision",
+        "accent",
+        "syncopation",
+        "fill",
+        "texture"
+      ],
+      "generatorNames": [
+        "euclidean",
+        "modulo",
+        "recursive",
+        "stochastic"
+      ],
+      "transformNames": [
+        "rotate",
+        "invert",
+        "densify",
+        "sparsify",
+        "syncopate",
+        "quantize",
+        "humanize"
+      ]
+    },
+    "transform_ops": {
+      "categories": [
+        "pitch",
+        "harmony",
+        "rhythm",
+        "time",
+        "structure",
+        "arrangement",
+        "performance"
+      ],
+      "operationsByCategory": {
+        "pitch": [
+          "transpose",
+          "invert",
+          "retrograde",
+          "octave_shift",
+          "quantize_to_scale"
+        ],
+        "harmony": [
+          "reharmonize",
+          "chord_inversion",
+          "extend_chord",
+          "simplify_harmony"
+        ],
+        "rhythm": [
+          "rotate",
+          "densify",
+          "sparsify",
+          "syncopate",
+          "subdivide",
+          "merge_patterns"
+        ],
+        "time": [
+          "stretch",
+          "compress",
+          "shift",
+          "quantize",
+          "apply_swing"
+        ],
+        "structure": [
+          "repeat",
+          "truncate",
+          "expand",
+          "reorder",
+          "interpolate"
+        ],
+        "motif": [
+          "fragment",
+          "augment",
+          "diminish",
+          "sequence",
+          "canon",
+          "mobius_transform"
+        ],
+        "arrangement": [
+          "reassign_voice",
+          "register_shift",
+          "thin_texture",
+          "thicken_texture",
+          "redistribute_roles"
+        ],
+        "performance": [
+          "apply_dynamics",
+          "humanize",
+          "accentuate",
+          "phrase_shape"
+        ],
+        "composition": [
+          "TransformationChain",
+          "apply_chain"
+        ]
+      },
+      "operations": [
+        "transpose",
+        "invert",
+        "retrograde",
+        "octave_shift",
+        "quantize_to_scale",
+        "reharmonize",
+        "chord_inversion",
+        "extend_chord",
+        "simplify_harmony",
+        "rotate",
+        "densify",
+        "sparsify",
+        "syncopate",
+        "subdivide",
+        "merge_patterns",
+        "stretch",
+        "compress",
+        "shift",
+        "quantize",
+        "apply_swing",
+        "repeat",
+        "truncate",
+        "expand",
+        "reorder",
+        "interpolate",
+        "fragment",
+        "augment",
+        "diminish",
+        "sequence",
+        "canon",
+        "mobius_transform",
+        "reassign_voice",
+        "register_shift",
+        "thin_texture",
+        "thicken_texture",
+        "redistribute_roles",
+        "apply_dynamics",
+        "humanize",
+        "accentuate",
+        "phrase_shape",
+        "TransformationChain",
+        "apply_chain"
+      ]
+    },
+    "composition_pipeline": {
+      "highLevelStages": [
+        "Intent Definition",
+        "Structural Planning",
+        "Material Generation",
+        "Harmonic & Rhythmic Development",
+        "Arrangement",
+        "Performance Mapping",
+        "Rendering",
+        "Evaluation",
+        "Revision Loop"
+      ],
+      "evaluationAreas": [
+        "Structural",
+        "Harmonic",
+        "Rhythmic",
+        "Arrangement",
+        "Expressive"
+      ]
+    }
+  },
+  "intent_snapshot": {
+    "title": "Midnight Circuit",
+    "mood": "nocturnal, tensile, melodic",
+    "target_duration_sec": 102.9,
+    "bpm": 112,
+    "global_key": {
+      "root": "C",
+      "scale_type": "minor",
+      "name": "C natural minor"
+    },
+    "style_tags": [
+      "electronic",
+      "cinematic",
+      "melodic",
+      "synthwave-adjacent"
+    ],
+    "energy_curve": [
+      0.24,
+      0.46,
+      0.84,
+      0.4,
+      0.88,
+      0.3
+    ]
+  },
+  "section_plan": [
+    {
+      "id": "intro",
+      "name": "Intro",
+      "bars": 8,
+      "energy": 0.24,
+      "density": 0.3,
+      "active_roles": [
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-intro-volume",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              60
+            ],
+            [
+              7.75,
+              67
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-intro-space",
+          "targetNodeId": "song-support-reverb",
+          "targetParam": "wet",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.52
+            ],
+            [
+              7.75,
+              0.78
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lift",
+      "name": "Lift",
+      "bars": 8,
+      "energy": 0.46,
+      "density": 0.48,
+      "active_roles": [
+        "bass",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-lift-motion",
+          "targetNodeId": "song-support-sampler",
+          "targetParam": "playbackRate",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.92
+            ],
+            [
+              7.75,
+              1.06
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-lift-bass",
+          "targetNodeId": "song-bass-eq",
+          "targetParam": "low",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              2
+            ],
+            [
+              7.75,
+              5
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "arrival",
+      "name": "Arrival",
+      "bars": 8,
+      "energy": 0.84,
+      "density": 0.82,
+      "active_roles": [
+        "bass",
+        "lead",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-arrival-delay",
+          "targetNodeId": "song-lead-delay",
+          "targetParam": "wet",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.24
+            ],
+            [
+              7.75,
+              0.58
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-arrival-shift",
+          "targetNodeId": "song-support-sampler",
+          "targetParam": "pitchShift",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              -2
+            ],
+            [
+              7.75,
+              3
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-arrival-air",
+          "targetNodeId": "song-drum-eq",
+          "targetParam": "high",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              2
+            ],
+            [
+              7.75,
+              5
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "break",
+      "name": "Break",
+      "bars": 8,
+      "energy": 0.4,
+      "density": 0.38,
+      "active_roles": [
+        "lead",
+        "support"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-break-pan",
+          "targetNodeId": "song-mixer",
+          "targetParam": "pan",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              -0.18
+            ],
+            [
+              7.75,
+              0.14
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-break-feedback",
+          "targetNodeId": "song-lead-delay",
+          "targetParam": "feedback",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.24
+            ],
+            [
+              7.75,
+              0.46
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "return",
+      "name": "Return",
+      "bars": 8,
+      "energy": 0.88,
+      "density": 0.88,
+      "active_roles": [
+        "bass",
+        "lead",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-return-volume",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              68
+            ],
+            [
+              7.75,
+              74
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-return-delay",
+          "targetNodeId": "song-lead-delay",
+          "targetParam": "wet",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.5
+            ],
+            [
+              7.75,
+              0.34
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-return-motion",
+          "targetNodeId": "song-support-sampler",
+          "targetParam": "playbackRate",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              1.08
+            ],
+            [
+              7.75,
+              0.98
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outro",
+      "name": "Outro",
+      "bars": 8,
+      "energy": 0.3,
+      "density": 0.34,
+      "active_roles": [
+        "bass",
+        "support",
+        "drums"
+      ],
+      "automation_lanes": [
+        {
+          "id": "song-scene-outro-space",
+          "targetNodeId": "song-support-reverb",
+          "targetParam": "wet",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              0.68
+            ],
+            [
+              7.75,
+              0.92
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-outro-fade",
+          "targetNodeId": "song-mixer",
+          "targetParam": "volume",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              74
+            ],
+            [
+              7.75,
+              58
+            ]
+          ]
+        },
+        {
+          "id": "song-scene-outro-darken",
+          "targetNodeId": "song-bass-eq",
+          "targetParam": "high",
+          "mode": "ramp",
+          "points": [
+            [
+              0,
+              -2
+            ],
+            [
+              7.75,
+              -8
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "transform_log": [
+    {
+      "version": 1,
+      "id": "flagship-bass-quantize",
+      "operation": "quantize_to_scale",
+      "category": "pitch",
+      "target_role": "bass",
+      "applies_to_sections": [
+        "lift",
+        "arrival",
+        "return",
+        "outro"
+      ],
+      "description": "Force the bass line into the C natural minor collection before runtime playback.",
+      "changed_count": 0,
+      "summary_before": [
+        "C2",
+        "G2",
+        "C3",
+        "G#1",
+        "D#2",
+        "G#2",
+        "F2",
+        "D3"
+      ],
+      "summary_after": [
+        "C2",
+        "G2",
+        "C3",
+        "G#1",
+        "D#2",
+        "G#2",
+        "F2",
+        "D3"
+      ]
+    },
+    {
+      "version": 1,
+      "id": "flagship-lead-quantize",
+      "operation": "quantize_to_scale",
+      "category": "pitch",
+      "target_role": "lead",
+      "applies_to_sections": [
+        "arrival",
+        "break",
+        "return"
+      ],
+      "description": "Keep the hook line aligned with the declared key instead of relying on runtime quantization alone.",
+      "changed_count": 0,
+      "summary_before": [
+        "G4",
+        "G#4",
+        "C5",
+        "D5",
+        "D#4",
+        "F4",
+        "D4",
+        "A#4"
+      ],
+      "summary_after": [
+        "G4",
+        "G#4",
+        "C5",
+        "D5",
+        "D#4",
+        "F4",
+        "D4",
+        "A#4"
+      ]
+    },
+    {
+      "version": 1,
+      "id": "flagship-support-quantize",
+      "operation": "quantize_to_scale",
+      "category": "pitch",
+      "target_role": "support",
+      "applies_to_sections": [
+        "intro",
+        "lift",
+        "arrival",
+        "break",
+        "return",
+        "outro"
+      ],
+      "description": "Hold the support bed on tonic material so the texture reinforces form rather than adding harmonic drift.",
+      "changed_count": 0,
+      "summary_before": [
+        "C4"
+      ],
+      "summary_after": [
+        "C4"
+      ]
+    },
+    {
+      "version": 1,
+      "id": "flagship-groove-swing",
+      "operation": "apply_swing",
+      "category": "time",
+      "target_role": "drums",
+      "applies_to_sections": [
+        "intro",
+        "lift",
+        "arrival",
+        "return",
+        "outro"
+      ],
+      "description": "Apply a consistent swung pulse to the drum grid in the sections that carry the full groove.",
+      "changed_count": 0,
+      "summary_before": {
+        "swingRatio": 0.14
+      },
+      "summary_after": {
+        "swingRatio": 0.14
+      }
+    }
+  ],
+  "theory_validation": {
+    "version": 1,
+    "issues": [],
+    "errorCount": 0,
+    "warningCount": 0,
+    "hasErrors": false
+  },
+  "runtime_validation": {
+    "version": 1,
+    "issues": [],
+    "errorCount": 0,
+    "warningCount": 0,
+    "hasErrors": false
+  },
+  "evaluation": {
+    "version": 1,
+    "durationSec": 102.85714285714286,
+    "totalBars": 48,
+    "metrics": {
+      "key_consistency": {
+        "score": 1,
+        "detail": "Tracks out-of-key material against the declared C minor plan."
+      },
+      "section_balance": {
+        "score": 1,
+        "detail": "Measures how evenly section bar lengths distribute the overall form."
+      },
+      "density_curve_fit": {
+        "score": 1,
+        "detail": "Compares section densities against the intent-level density curve target."
+      },
+      "role_clarity": {
+        "score": 0.75,
+        "detail": "Estimates whether section role assignments stay legible and purposeful."
+      },
+      "arrangement_coverage": {
+        "score": 1,
+        "detail": "Checks required bass/lead/support/drum coverage against the plan targets."
+      },
+      "automation_richness": {
+        "score": 1,
+        "detail": "Measures scene automation density against the minimum expressive target."
+      }
+    },
+    "composition_pipeline_alignment": {
+      "stages": [
+        "Intent Definition",
+        "Structural Planning",
+        "Material Generation",
+        "Harmonic & Rhythmic Development",
+        "Arrangement",
+        "Performance Mapping",
+        "Rendering",
+        "Evaluation",
+        "Revision Loop"
+      ]
+    }
+  },
+  "revision_notes": [
+    "The flagship plan now treats C natural minor as a strict compile-time rule rather than a runtime convenience.",
+    "Previous non-diatonic A and E natural tones in the bass and lead material were corrected to G# and D# equivalents before compilation.",
+    "The six-section form and roughly 103-second duration were preserved to keep the v17 featured-song shape stable while adding theory grounding."
+  ]
+}

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npm run clean && next dev",
     "clean": "lsof -t -i:3000 | xargs kill -9 2>/dev/null || true && rm -rf .next/dev/lock",
+    "compile:ai-songs": "node scripts/compile-ai-song-assets.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
@@ -27,6 +28,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.7",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.3"
   }
 }

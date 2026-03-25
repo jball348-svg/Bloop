@@ -1,0 +1,318 @@
+version: 1
+id: ai-song-scaffold
+description: Canonical fixed-id scaffold for AI-authored songs in Bloop.
+scaffold_id: ai-song-v1
+output:
+  patch_file: ai-song-scaffold.bloop
+  blueprint_file: scaffold.blueprint.json
+  report_file: scaffold.grounding-report.json
+
+intent:
+  title: AI Song Scaffold
+  mood: focused, spacious, synthetic
+  target_duration_sec: 34.3
+  bpm: 112
+  global_key:
+    root: C
+    scale_type: minor
+    name: C natural minor
+  style_tags:
+    - electronic
+    - cinematic
+    - scaffold
+  energy_curve:
+    - 0.22
+    - 0.44
+    - 0.78
+    - 0.28
+
+structure:
+  meter:
+    numerator: 4
+    denominator: 4
+  sections:
+    - id: intro
+      name: Intro
+      bars: 4
+      energy: 0.22
+      density: 0.24
+      active_roles:
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-intro-mixer
+          targetNodeId: song-mixer
+          targetParam: volume
+          mode: ramp
+          points:
+            - [0, 60]
+            - [3.75, 66]
+    - id: lift
+      name: Lift
+      bars: 4
+      energy: 0.44
+      density: 0.42
+      active_roles:
+        - bass
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-lift-support
+          targetNodeId: song-support-sampler
+          targetParam: playbackRate
+          mode: ramp
+          points:
+            - [0, 0.9]
+            - [3.75, 1.02]
+    - id: arrival
+      name: Arrival
+      bars: 4
+      energy: 0.78
+      density: 0.78
+      active_roles:
+        - bass
+        - lead
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-arrival-delay
+          targetNodeId: song-lead-delay
+          targetParam: wet
+          mode: ramp
+          points:
+            - [0, 0.26]
+            - [3.75, 0.52]
+    - id: outro
+      name: Outro
+      bars: 4
+      energy: 0.28
+      density: 0.32
+      active_roles:
+        - bass
+        - support
+        - drums
+      automation_lanes:
+        - id: song-scene-outro-fade
+          targetNodeId: song-mixer
+          targetParam: volume
+          mode: ramp
+          points:
+            - [0, 68]
+            - [3.75, 58]
+
+harmony:
+  section_harmonic_centers:
+    intro: tonic
+    lift: pedal
+    arrival: dominant
+    outro: tonic
+  allowed_exception_pitches: []
+
+rhythm:
+  subdivision: 16
+  swing_policy:
+    mode: constant
+    ratio: 0.1
+  drum_layers:
+    - id: kick
+      label: Kick
+      role: pulse
+      length: 16
+      sample_path: /ai-song-kit/kick.wav
+      steps: [3, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 2, 0, 1, 0]
+    - id: snare
+      label: Snare
+      role: accent
+      length: 16
+      sample_path: /ai-song-kit/snare.wav
+      steps: [0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1, 0]
+    - id: hat
+      label: Hat
+      role: subdivision
+      length: 12
+      sample_path: /ai-song-kit/hat.wav
+      steps: [2, 0, 2, 1, 2, 0, 2, 0, 2, 1, 2, 0, 2, 0, 2, 1]
+    - id: clap
+      label: Clap
+      role: fill
+      length: 8
+      sample_path: /ai-song-kit/clap.wav
+      steps: [0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 2, 0]
+
+arrangement:
+  roles:
+    bass:
+      pattern_node_id: song-bass-pattern
+      voice_node_id: song-bass-gen
+      register_range:
+        low: C2
+        high: G#2
+      timbre_intent: Rounded FM bass with low-end weight and a restrained top edge.
+      loop_bars: 4
+      notes:
+        - [C2, 0, 8, 0.88]
+        - [G2, 8, 8, 0.8]
+        - [G#2, 16, 8, 0.84]
+        - [G2, 24, 8, 0.78]
+        - [F2, 32, 8, 0.82]
+        - [G2, 40, 8, 0.78]
+        - [C2, 48, 8, 0.86]
+        - [G2, 56, 8, 0.8]
+    lead:
+      pattern_node_id: song-lead-pattern
+      voice_node_id: song-lead-gen
+      register_range:
+        low: D4
+        high: D5
+      timbre_intent: Narrow AM lead with a glassy transient and short phrases.
+      loop_bars: 4
+      notes:
+        - [G4, 0, 4, 0.76]
+        - [G#4, 4, 4, 0.72]
+        - [C5, 8, 4, 0.8]
+        - [D5, 12, 4, 0.78]
+        - [C5, 16, 4, 0.74]
+        - [G#4, 20, 4, 0.72]
+        - [G4, 24, 4, 0.7]
+        - [D#4, 28, 4, 0.68]
+        - [G4, 32, 4, 0.74]
+        - [G#4, 36, 4, 0.72]
+        - [C5, 40, 4, 0.8]
+        - [G4, 44, 4, 0.7]
+        - [D#4, 48, 4, 0.68]
+        - [D4, 52, 4, 0.66]
+        - [D#4, 56, 4, 0.68]
+        - [G4, 60, 4, 0.74]
+    support:
+      pattern_node_id: song-support-pattern
+      voice_node_id: song-support-sampler
+      register_range:
+        low: C4
+        high: C4
+      timbre_intent: Soft looped texture bed that widens scenes without becoming harmonic clutter.
+      loop_bars: 4
+      notes:
+        - [C4, 0, 16, 0.68]
+        - [C4, 16, 16, 0.64]
+        - [C4, 32, 16, 0.7]
+        - [C4, 48, 16, 0.66]
+    drums:
+      rhythm_node_id: song-drums
+      timbre_intent: Tight electronic drum stack with a swung hat lane and short transient support.
+
+sound_design:
+  bass:
+    generator:
+      label: Bass Engine
+      generatorMode: fm
+      waveShape: sine
+      mix: 76
+      harmonicity: 1.45
+      modulationIndex: 7.5
+    eq:
+      eqLow: 3
+      eqMid: -2
+      eqHigh: -4
+      eqLowFrequency: 220
+      eqHighFrequency: 2600
+  lead:
+    quantizer:
+      rootNote: C
+      scaleType: minor
+      bypass: false
+    generator:
+      label: Lead Engine
+      generatorMode: am
+      waveShape: triangle
+      mix: 70
+      harmonicity: 2.2
+    delay:
+      label: Lead Delay
+      subType: delay
+      wet: 0.28
+      delayTime: 0.36
+      feedback: 0.34
+  support:
+    sampler:
+      label: Texture Bed
+      samplePath: /ai-song-kit/support-texture.wav
+      sampleName: support-texture.wav
+      loop: true
+      playbackRate: 0.92
+      pitchShift: -2
+      mix: 58
+    reverb:
+      label: Texture Reverb
+      subType: reverb
+      wet: 0.62
+      roomSize: 0.82
+  drums:
+    drumNode:
+      mix: 76
+    eq:
+      eqLow: 2
+      eqMid: -1
+      eqHigh: 2
+      eqLowFrequency: 240
+      eqHighFrequency: 4800
+  mixer:
+    volume: 70
+    pan: 0
+  speaker:
+    volume: 68
+
+transforms:
+  - id: scaffold-bass-quantize
+    category: pitch
+    operation: quantize_to_scale
+    target_role: bass
+    applies_to_sections: [lift, arrival, outro]
+    description: Keep the bass role locked to the global C natural minor collection.
+    parameters:
+      root: C
+      scale_type: minor
+  - id: scaffold-lead-quantize
+    category: pitch
+    operation: quantize_to_scale
+    target_role: lead
+    applies_to_sections: [arrival]
+    description: Constrain the lead role to the same minor palette used by the section plan.
+    parameters:
+      root: C
+      scale_type: minor
+  - id: scaffold-support-quantize
+    category: pitch
+    operation: quantize_to_scale
+    target_role: support
+    applies_to_sections: [intro, lift, arrival, outro]
+    description: Anchor the support bed to the tonic center so it stays structurally neutral.
+    parameters:
+      root: C
+      scale_type: minor
+  - id: scaffold-groove-swing
+    category: time
+    operation: apply_swing
+    target_role: drums
+    applies_to_sections: [intro, lift, arrival, outro]
+    description: Apply a light swung feel to the drum grid for movement without breaking alignment.
+    parameters:
+      ratio: 0.1
+
+evaluation_targets:
+  duration_window_sec: [33, 36]
+  minimum_role_coverage:
+    bass: 3
+    lead: 1
+    support: 4
+    drums: 4
+  minimum_automation_lanes: 3
+  section_contrast_min: 0.12
+  density_curve_target:
+    - 0.24
+    - 0.42
+    - 0.78
+    - 0.32
+
+revision_notes:
+  - The scaffold remains intentionally simple and role-focused so later AI songs mutate a stable patch instead of inventing graph topology.
+  - The pitch material is now strictly C natural minor so the scaffold itself passes the same grounding rules as the flagship song.

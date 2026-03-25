@@ -17,6 +17,7 @@ The primary audience is **non-musicians and non-technical users**. Every design 
 ```bash
 npm install          # Install all dependencies
 npm run dev          # Start dev server at http://localhost:3000
+npm run compile:ai-songs   # Rebuild grounded AI-song assets and reports
 npm run build        # Production build — must pass before closing any ticket
 npm run lint         # ESLint — must pass before closing any ticket
 ```
@@ -44,6 +45,13 @@ Plans live at:
 - `.agent/plans/v8-io-connectivity.md`
 - `.agent/plans/v9-polish-onboarding.md`
 - `.agent/plans/v10-campaign-mode.md`
+- `.agent/plans/v11-uat-hardening-experience-reset.md`
+- `.agent/plans/v12-modulation-sonic-expansion.md`
+- `.agent/plans/v13-pattern-composition.md`
+- `.agent/plans/v14-mixer-arrangement.md`
+- `.agent/plans/v15-automation-showcase.md`
+- `.agent/plans/v16-math-cable-system.md`
+- `.agent/plans/v17-ai-authored-song-pipeline.md`
 
 ---
 
@@ -81,36 +89,43 @@ Always update `TICKETS.md` in the same commit as the work that closes a ticket. 
 ```
 bloop/
 ├── app/
-│   ├── page.tsx              # Main canvas. React Flow provider, drag/drop, snapping, overlap resolution, undo/redo shortcuts.
-│   └── layout.tsx            # Root layout, fonts, metadata.
+│   ├── page.tsx              # Main canvas, menus, campaign split layout, drag/drop, snapping, undo/redo.
+│   ├── layout.tsx            # Root layout, fonts, metadata.
+│   └── globals.css           # Theme variables and shared chrome styling.
 ├── components/
-│   ├── SignalMenu.tsx         # Top edge menu — Generator, Effect, Drum, Unison, Detune, Visualiser
-│   ├── ControllerMenu.tsx     # Left edge menu — Arp, Keys, ADSR, Chord
-│   ├── GlobalMenu.tsx         # Right edge menu — Tempo, Amplifier (singletons)
-│   ├── SystemMenu.tsx         # Bottom edge menu — New/Clear, Undo/Redo buttons
-│   ├── ControllerNode.tsx     # Arpeggiator — fires note events, no audio node
-│   ├── KeysNode.tsx           # QWERTY keyboard controller — black/white theme, no audio node
-│   ├── AdsrNode.tsx           # ADSR envelope controller — pass-through, no audio node
-│   ├── ChordNode.tsx          # Note-to-chord transformer — no audio node
-│   ├── GeneratorNode.tsx      # Oscillator — PolySynth or Noise
-│   ├── DrumNode.tsx           # Drum machine — Hits and Grid modes
-│   ├── EffectNode.tsx         # FX chain — Reverb, Delay, Distortion, Phaser, BitCrusher
-│   ├── UnisonNode.tsx         # Chorus-based unison/width processor
-│   ├── DetuneNode.tsx         # PitchShift processor
-│   ├── VisualiserNode.tsx     # Real-time waveform/spectrum display
-│   ├── TempoNode.tsx          # Global BPM broadcaster — singleton, no cables
-│   ├── SpeakerNode.tsx        # Global output volume — singleton, labelled 'Amplifier', no cables
-│   ├── PackedNode.tsx         # Macro-node UI for packed groups (v4, done)
-│   └── EngineControl.tsx      # Tone.js audio unlock overlay
+│   ├── *Node.tsx             # Individual node UIs including Pattern, Mixer, Arranger, Sampler, Audio In, and MathInputHandle-enabled receivers
+│   ├── SignalMenu.tsx        # Top edge menu — sound and signal nodes
+│   ├── ControllerMenu.tsx    # Left edge menu — controller and composition nodes
+│   ├── GlobalMenu.tsx        # Right edge menu — tempo, arranger, mixer, amplifier, I/O, and recorder
+│   ├── SystemMenu.tsx        # Bottom edge menu — save/load, presets, appearance, intro, campaign, signal-flow, undo/redo
+│   ├── OnboardingModal.tsx   # Replayable onboarding overlay
+│   ├── CampaignPanel.tsx     # Campaign mode UI
+│   ├── ThemeController.tsx   # Light/dark/system theme application
+│   ├── SignalFlowOverlay.tsx # Animated cable pulses
+│   └── EngineControl.tsx     # Tone.js audio unlock overlay
 ├── store/
-│   └── useStore.ts            # THE BRAIN. All audio node lifecycle, routing, undo/redo, and state.
+│   ├── useStore.ts            # THE BRAIN. Audio lifecycle, routing, persistence, validation, playback, and math receiver logic.
+│   ├── usePreferencesStore.ts # Theme/onboarding/unlock preferences
+│   ├── presets.ts             # Curated preset catalog, including asset-backed showcase presets
+│   ├── campaign.ts            # Campaign state
+│   └── campaignLevels.ts      # Campaign content
+├── data/
+│   └── ai-song/               # MusicalPlanV1 sources, generated blueprints, and grounding reports
+├── public/
+│   ├── ai-song-kit/           # Shipped sample kit for the AI-song pipeline
+│   ├── onboarding/            # Onboarding/tutorial assets
+│   └── patches/               # Compiled `.bloop` patch assets
+├── scripts/
+│   └── compile-ai-song-assets.mjs  # Grounded AI-song compiler
 ├── .agent/
 │   ├── PLANS.md               # ExecPlan format spec — read before writing any plan
-│   └── plans/                 # One ExecPlan per version milestone
+│   ├── plans/                 # One ExecPlan per version milestone
+│   └── composer/              # Musical-brain schemas and composer overlay docs
+├── AI_SONG_AUTHORING.md       # Grounded AI-song authoring contract
 ├── STYLE_GUIDE.md             # Node colour registry and UI patterns — read before styling anything
 ├── TICKETS.md                 # Current ticket status and work order — check this before starting.
-├── ROADMAP.md                 # Full v4-v10 roadmap overview
-├── PROJECT_OVERVIEW.md        # Full technical deep-dive — read before any significant change.
+├── ROADMAP.md                 # Version summary through v17 and next frontier
+├── PROJECT_OVERVIEW.md        # Technical deep-dive for the current shipped app
 └── AGENTS.md                  # This file.
 ```
 
@@ -140,9 +155,10 @@ This is the most important section. Get this wrong and you will break everything
 | Controller | Arp, Keys | No — fires note events only | Yes — to ADSR, Chord, or Generator |
 | Envelope | ADSR | No — pass-through for note events | Yes — between Controller and Generator/Drum |
 | Chord | Chord Node | No — transforms note events | Yes — between Controller and Generator |
-| Generator | Oscillator, Noise | Yes — PolySynth or Tone.Noise | Yes — to signal processors |
-| Drum | Drum Machine | Yes — MembraneSynth/NoiseSynth/MetalSynth rack | Yes — to signal processors |
-| Signal Processor | Effect, Unison, Detune, Visualiser | Yes | Yes — chains in signal path |
+| Generator | Oscillator, FM/AM synth, Noise | Yes — PolySynth or Tone.Noise | Yes — to signal processors |
+| Drum | Drum Machine, Advanced Drums | Yes | Yes — to signal processors |
+| Signal Processor | Effect, EQ, Unison, Detune, Visualiser, Sampler, Audio In | Yes | Yes — chains in signal path |
+| Structure | Pattern, Mixer, Arranger, Quantizer, Step Sequencer | Mixed — some schedule events, some own audio helpers | Yes / contextual |
 | Singleton (Global) | Tempo, Amplifier | Yes (Transport / Volume) | **No cables** |
 
 ### Signal Flow
@@ -152,6 +168,11 @@ Controller/Keys ──► (ADSR) ──► (Chord) ──► Generator ──►
 
 Drum ──────────────────────────────────────────────────► (same signal chain)
 ```
+
+Additional shipped domains:
+
+- `modulation` — existing V12 lime/green modulation routing
+- `math` — receiver-side violet target surface with normalized dispatch, but no shipped sender node
 
 ### Audio Node Lifecycle
 1. **Create**: `initAudioNode()` — called when a node is dropped on the canvas
@@ -235,6 +256,8 @@ All nodes use: `bg-slate-800`, coloured `border-2`, `rounded-2xl`, `p-3`. See `S
 - ❌ Do not assign a colour already in the STYLE_GUIDE.md "In Use" table to a new node
 - ❌ Do not use cyan as a node accent colour — it is reserved for canvas-level indicators
 - ❌ Do not call `changeNodeSubType` to switch between oscillator waveforms of the same class — use `node.set()` on PolySynth; only call `changeNodeSubType` when switching between fundamentally different Tone.js classes (e.g. PolySynth ↔ Noise)
+- ❌ Do not describe receiver-side math handles as a complete shipped math-cable system while sender nodes are still absent
+- ❌ Do not claim `.bloop` files persist overlay-only musical intent or revision memory; they persist the patch graph plus metadata only
 
 ---
 
@@ -247,4 +270,5 @@ All nodes use: `bg-slate-800`, coloured `border-2`, `rounded-2xl`, `p-3`. See `S
 5. Read `STYLE_GUIDE.md` if the change involves any new or modified node UI
 6. Identify all affected files — changes often ripple between `page.tsx`, `useStore.ts`, menu components, and node components
 7. Check for dependencies — some tickets must be completed before others
-8. When done: update `TICKETS.md`, close the GitHub issue, update the ExecPlan Progress section, and update `STYLE_GUIDE.md` if a new colour was assigned
+8. If the change touches the AI-song pipeline, also read `AI_SONG_AUTHORING.md` and the relevant files under `.agent/composer/`
+9. When done: update `TICKETS.md`, close the GitHub issue, update the ExecPlan Progress section, and update `STYLE_GUIDE.md` if a new colour was assigned

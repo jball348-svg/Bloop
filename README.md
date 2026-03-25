@@ -2,7 +2,7 @@
 
 Bloop is a visual modular audio sandbox for non-musicians and curious tinkerers. You drag colourful nodes onto a canvas, connect them with cables or snap them into place, and build playable synth patches without needing to know traditional audio-routing jargon first.
 
-The current repo reflects the v15 state of the product: FM/AM Synthesis, Parametric EQs, LFOs, Piano Rolls, Arranger timelines, Automation Lanes, custom presets, and Master Bus Mixing.
+The current repo reflects the shipped v17 state of the product: FM/AM synthesis, EQ, LFO modulation, piano-roll patterns, arranger timelines, automation lanes, asset-backed presets, campaign/theming systems, and a grounded AI-song pipeline that compiles showcase songs into real `.bloop` assets.
 
 ---
 
@@ -31,10 +31,20 @@ The current repo reflects the v15 state of the product: FM/AM Synthesis, Paramet
 | **Drum** | Legacy drum machine kept for backwards-compatible patches. |
 | **Advanced Drums** | Sample-capable multi-track drum machine with step sequencing and swing. |
 | **Effect** | Reverb, delay, distortion, phaser, and bitcrusher processor node. |
+| **EQ** | Sweepable EQ3 insert with low/mid/high gain and crossover control. |
 | **Unison** | Chorus-based width / detune-style voice thickening. |
 | **Detune** | Pitch-shift processor with wet mix control. |
-| **Quantizer** | Theory helper that snaps note events into a selected key and scale. |
+| **LFO** | Tempo-synced modulation source for shipped modulation targets. |
 | **Visualiser** | Waveform, spectrum, VU meter, and dual-input XY/Lissajous visualisation. |
+
+### Composition / Structure Nodes
+
+| Node | Description |
+|---|---|
+| **Pattern** | Piano-roll clip editor with scrollable C2-C6 range and up to 16 bars per loop. |
+| **Quantizer** | Theory helper that snaps note events into a selected key and scale. |
+| **Mixer** | Multi-channel bus mixer with per-source balancing and automation targets. |
+| **Arranger** | Scene scheduler with pattern/rhythm activation and automation lanes. |
 
 ### Global Nodes
 
@@ -49,6 +59,8 @@ The current repo reflects the v15 state of the product: FM/AM Synthesis, Paramet
 - Directional control routing and audio routing.
 - Spatial snapping, adjacency detection, locking, and packed macro nodes.
 - Save and load `.bloop` patch files.
+- Asset-backed presets for shipped showcase songs and scaffold patches.
+- Build-time AI song assets compiled from musical plans into `.bloop` patches.
 - Undo and redo with 50-step history.
 - Signal Flow overlay for animated cable pulses.
 - In-app onboarding with replayable animated tutorial clips and intro audio.
@@ -61,7 +73,7 @@ The current repo reflects the v15 state of the product: FM/AM Synthesis, Paramet
 
 - **MIDI input** through Web MIDI API.
 - **Live audio input** through browser microphone / interface permissions.
-- **Session recording** from the System menu with downloadable browser-native audio export.
+- **Session recording** from the Global menu with downloadable browser-native audio export.
 
 ---
 
@@ -69,10 +81,10 @@ The current repo reflects the v15 state of the product: FM/AM Synthesis, Paramet
 
 | Menu | Position | Contents |
 |---|---|---|
-| **Signals** | Top centre | Generator, Sampler, Audio In, Drum, Advanced Drums, Effect, Unison, Detune, Quantizer, Visualiser |
-| **Controllers** | Left centre | Keys, MIDI In, Arpeggiator, Chord, Pulse, Step Sequencer, ADSR, Mood Pad |
-| **Global** | Right centre | Tempo, Amplifier |
-| **System** | Bottom centre | New, Save, Load, Presets, Appearance, Intro, Campaign, Signal Flow, Record, Undo, Redo |
+| **Signals** | Top centre | Generator, Sampler, Drum, Advanced Drums, Effect, EQ, Unison, Detune, Visualiser |
+| **Controllers** | Left centre | Keys, Arpeggiator, Chord, Quantizer, ADSR, Step Sequencer, Pattern, LFO, Mood Pad |
+| **Global** | Right centre | Tempo, Arranger, Mixer, Amplifier, MIDI In, Audio In, Record |
+| **System** | Bottom centre | New, Save, Load, Presets, Appearance, Intro, Campaign, Signal Flow, Undo, Redo |
 
 ---
 
@@ -84,7 +96,10 @@ The current repo reflects the v15 state of the product: FM/AM Synthesis, Paramet
   - Ambient
   - Complex Patches
   - Feature Showcases
-  - Campaign Rewards
+  - Tutorial Rewards
+- Feature Showcases now include:
+  - `AI Song Scaffold`
+  - `AI Showcase Song`
 - Campaign mode is optional and does not restrict sandbox use.
 - Completing campaign levels unlocks:
   - extra accent skins for the Appearance panel
@@ -94,10 +109,11 @@ The current repo reflects the v15 state of the product: FM/AM Synthesis, Paramet
 
 ## Important Current Behaviour
 
-- `.bloop` patch files save the graph and master volume only.
+- `.bloop` patch files serialize `nodes`, `edges`, `masterVolume`, and optional metadata; theme, campaign, and overlay-only authoring intent live elsewhere.
 - Theme, onboarding progress, unlocked skins, unlocked presets, and campaign progress are stored separately in local storage.
 - MIDI support depends on browser support for the Web MIDI API. Chromium-based browsers are the safest choice.
 - Recording currently exports browser-native audio (`.webm`) rather than WAV.
+- Many nodes now expose violet math-input receiver selectors, but there is still no shipped math sender node; receiver-side math is a partial foundation, not a complete authoring workflow.
 - Audio still requires a user gesture to start. You must click the engine-start overlay before testing sound.
 
 ---
@@ -127,7 +143,7 @@ bloop/
 │   └── globals.css               # Theme variables and shared chrome styling
 ├── components/
 │   ├── *Node.tsx                 # Individual node UIs
-│   ├── SystemMenu.tsx            # Save/load, presets, appearance, campaign, recording
+│   ├── SystemMenu.tsx            # Save/load, presets, appearance, intro, campaign, undo/redo
 │   ├── OnboardingModal.tsx       # First-run / replayable onboarding overlay
 │   ├── CampaignPanel.tsx         # Left-side campaign UI
 │   ├── ThemeController.tsx       # Applies light/dark/system mode
@@ -142,9 +158,17 @@ bloop/
 │   ├── nodePalette.ts            # Accent palette and reward skins
 │   ├── campaignTypes.ts          # Campaign types
 │   └── campaignVerifier.ts       # Pure level verification helpers
+├── data/
+│   └── ai-song/                  # Musical plans, generated blueprints, and grounding reports
 ├── public/
-│   └── onboarding/               # Animated onboarding tutorial assets
+│   ├── ai-song-kit/              # Shipped sample kit for the AI-song pipeline
+│   ├── onboarding/               # Animated onboarding tutorial assets
+│   └── patches/                  # Compiled `.bloop` showcase assets
+├── scripts/
+│   └── compile-ai-song-assets.mjs # Grounded AI-song compiler
 ├── .agent/plans/                 # Versioned ExecPlans
+├── .agent/composer/              # Musical-brain schemas and composer overlay docs
+├── AI_SONG_AUTHORING.md          # AI-song authoring contract
 ├── AGENTS.md                     # Project briefing for coding agents
 ├── STYLE_GUIDE.md                # Node colour and UI design system
 ├── TICKETS.md                    # Ticket history / status
@@ -166,6 +190,7 @@ Open [http://localhost:3000](http://localhost:3000), click **START AUDIO ENGINE*
 Useful commands:
 
 ```bash
+npm run compile:ai-songs
 npm run build
 npm run lint
 ```
@@ -183,3 +208,5 @@ npm run lint
 - Undo, redo, save/load, and graph rebuilds all flow through the store lifecycle.
 
 If you are changing behaviour rather than just using the app, read [AGENTS.md](./AGENTS.md), [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md), and [STYLE_GUIDE.md](./STYLE_GUIDE.md) first.
+
+For the scaffold-first grounded AI song pipeline, read [AI_SONG_AUTHORING.md](./AI_SONG_AUTHORING.md).

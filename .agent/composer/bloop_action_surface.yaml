@@ -24,8 +24,9 @@ runtime_truths:
 
   patch_persistence:
     description: >
-      .bloop files save the graph and master volume only; broader composer memory
-      must live in the overlay layer.
+      .bloop files serialize nodes, edges, and masterVolume. They preserve Bloop
+      execution state stored in node/edge data, but they do not preserve broader
+      overlay intent, evaluation, or revision memory.
     confidence: high
 
   math_control:
@@ -46,7 +47,10 @@ runtime_truths:
       Some targets are context-dependent. Pattern note targets depend on the
       currently selected note in local UI state. Arranger scene targets depend on
       the currently selected scene in local UI state. Step Sequencer contextual
-      targets depend on persisted selectedStep in node.data.
+      targets depend on persisted selectedStep in node.data. Mixer per-channel
+      targets only exist after routed sources create mixerChannels, and some math
+      targets appear or disappear with generatorMode, effect subType, lfoSync,
+      or pulseSync.
     confidence: high
 
 action_status_legend:
@@ -143,11 +147,11 @@ action_groups:
         - reusable_runtime
 
     create_node:
-      status: conceptual
+      status: direct
       scope: graph
       description: >
-        Composer-level intent to add a node of a supported type. This file does not
-        assert a public API; execution may be via UI, store action, or user-assisted step.
+        Add a supported Bloop node through the same addNode(...) path already used
+        by the shipped menus and launcher.
       inputs:
         - node_type
         - optional_position
@@ -156,14 +160,16 @@ action_groups:
         - node_id
       constraints:
         - "Only supported Bloop node types."
+        - "Singleton rules still apply for tempo, speaker, mixer, arranger, audioin, and midiin."
       notes:
-        - "Treat as a planning primitive unless repo-grounded execution path is confirmed."
+        - "The stable runtime path is addNode(...) in store/useStore.ts."
 
     connect_nodes:
-      status: conceptual
+      status: direct
       scope: graph
       description: >
-        Connect compatible handles between nodes using supported edge domains.
+        Create an explicit shipped connection through the onConnect(...) /
+        isValidConnection(...) path used by React Flow and the store.
       inputs:
         - from_node_id
         - from_handle_id
@@ -175,22 +181,24 @@ action_groups:
       allowed_edge_kinds:
         - audio
         - control
-        - tempo
         - modulation
-        - math
       constraints:
-        - "Do not assume math source nodes exist in shipped UI."
+        - "Only shipped handle domains with a real sender path should be treated as direct."
+        - "Tempo edges are legacy and sanitized away by the runtime."
       notes:
-        - "math edges are valid semantically, but sender UI is not shipped today."
+        - "math edge semantics exist in the store, but no shipped node exposes a visible math-out sender handle today."
+        - "Auto-wired adjacency edges are a separate runtime convenience; this action refers to explicit manual edges."
 
     disconnect_nodes:
-      status: conceptual
+      status: direct
       scope: graph
-      description: Remove an existing connection.
+      description: Remove an existing explicit edge through the onEdgesChange(...) remove path.
       inputs:
         - edge_id
       outputs:
         - success_flag
+      notes:
+        - "Auto-wired adjacency edges are managed by the runtime and should not be treated as user-addressable direct edges."
 
   parameter_control:
     set_math_input_target:
@@ -316,7 +324,9 @@ action_groups:
     configure_step_sequencer_global:
       status: direct
       scope: node
-      description: Configure Step Sequencer transport mode/rate/interval and selectedStep.
+      description: >
+        Configure Step Sequencer transport mode/rate/interval and the persisted
+        selectedStep selector stored in node.data.
       inputs:
         - node_id
         - optional_sequenceSync
@@ -326,24 +336,41 @@ action_groups:
       outputs:
         - updated_step_sequencer_state
       notes:
-        - "selectedStep is persisted in node.data and is safer than Pattern/Arranger local selection."
+        - "selectedStep is persisted in node.data and drives which contextual math step targets appear."
 
     set_step_sequencer_step:
       status: direct
       scope: node
-      description: Set enabled/note/mix for currently addressed selectedStep.
+      description: >
+        Mutate a known Step Sequencer step by step index through updateSequencerStep(...).
       inputs:
         - node_id
-        - selected_step
+        - step_index
         - optional_enabled
         - optional_note
         - optional_mix
       outputs:
         - updated_step_state
-      expansion:
-        - configure_step_sequencer_global
       notes:
-        - "This is safer than Pattern note targeting because selectedStep is persisted."
+        - "selectedStep is a persisted selector for contextual math, not a prerequisite for direct step mutation."
+
+    upsert_pattern_note_by_id:
+      status: direct
+      scope: node
+      description: >
+        Update a persisted Pattern note by note ID through upsertPatternNote(...).
+      inputs:
+        - node_id
+        - note_id
+        - optional_note
+        - optional_start_step
+        - optional_length_steps
+        - optional_velocity
+      outputs:
+        - updated_pattern_note
+      notes:
+        - "Pattern note IDs live in node.data.patternNotes and are serialized into .bloop patches."
+        - "This is separate from contextual selected-note math targeting."
 
     target_pattern_selected_note:
       status: contextual
@@ -361,6 +388,26 @@ action_groups:
       risks:
         - "Selected note identity is local component state, not persisted in node.data."
         - "Unsafe to assume autonomous access without UI context."
+
+    upsert_arranger_scene_by_id:
+      status: direct
+      scope: node
+      description: >
+        Update a persisted Arranger scene by scene ID through upsertArrangerScene(...).
+      inputs:
+        - node_id
+        - scene_id
+        - optional_name
+        - optional_start_bar
+        - optional_length_bars
+        - optional_pattern_node_ids
+        - optional_rhythm_node_ids
+        - optional_automation_lanes
+      outputs:
+        - updated_arranger_scene
+      notes:
+        - "Arranger scene IDs live in node.data.arrangerScenes and are serialized into .bloop patches."
+        - "This is separate from contextual selected-scene math targeting."
 
     target_arranger_selected_scene:
       status: contextual
@@ -385,7 +432,8 @@ action_groups:
       status: contextual
       scope: node
       description: >
-        Address mixer channel targets only after channels exist.
+        Address mixer channel targets only after routed sources have created
+        mixerChannels for that mixer node.
       inputs:
         - node_id
         - channel_id
@@ -394,7 +442,7 @@ action_groups:
       outputs:
         - mixer_mutation_applied
       risks:
-        - "Channel-specific targets do not exist until channels exist."
+        - "Channel-specific targets do not exist until channels exist in node.data.mixerChannels."
 
   sound_design:
     choose_supported_sound_source:
@@ -456,7 +504,8 @@ action_groups:
       outputs:
         - bloop_patch_file
       notes:
-        - "Patch persistence does not include full composer memory."
+        - "The saved patch serializes nodes, edges, and masterVolume."
+        - "Patch persistence does not include overlay-only intent, evaluation, revision history, or manual intervention logs."
 
     load_patch:
       status: direct
@@ -527,7 +576,7 @@ action_groups:
         - establish_key
         - establish_tempo
         - create_groove
-        - target_arranger_selected_scene
+        - upsert_arranger_scene_by_id
 
     increase_tension:
       status: conceptual
@@ -553,9 +602,11 @@ action_groups:
 
 unsupported_assumptions:
   - "Do not assume a shipped visible math sender node exists."
-  - "Do not assume Pattern selected note can be addressed without UI-local selection."
-  - "Do not assume Arranger selected scene can be addressed without UI-local selection."
+  - "Do not assume Pattern selected-note math targeting can be addressed without UI-local selection."
+  - "Do not assume Arranger selected-scene math targeting can be addressed without UI-local selection."
   - "Do not assume mixer per-channel targets exist before channels exist."
+  - "Do not assume tempo edges are a live routing surface."
+  - "Do not assume math edges can be created from shipped UI today."
   - "Do not assume .bloop persistence stores composer intent, motifs, form, or revision history."
   - "Do not assume every node parameter has a writable math target."
   - "Do not invent undocumented store mutations."
@@ -577,6 +628,7 @@ agent_behavior_rules:
   - "Prefer simple patches over sprawling graphs."
   - "Prefer Quantizer/Arpeggiator/Step Sequencer for structured musical control."
   - "Prefer persisted state over UI-local state."
+  - "Prefer persisted note and scene IDs over selected-note or selected-scene math routes when both are available."
   - "Treat Pattern and Arranger contextual targets as fragile."
   - "Use math routing only for deterministic, bounded, repeat-safe targets."
   - "Separate composer memory from .bloop persistence."

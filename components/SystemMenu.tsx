@@ -3,8 +3,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useCampaignStore } from '@/store/campaign';
 import { type ThemeMode, usePreferencesStore } from '@/store/usePreferencesStore';
-import { getPresetGroups } from '@/store/presets';
-import { useStore } from '@/store/useStore';
+import { getPresetGroups, getPresetPatchAsset, type Preset } from '@/store/presets';
+import { type PatchValidationReport, useStore } from '@/store/useStore';
 
 type ActivePanel = 'presets' | 'appearance' | null;
 
@@ -34,6 +34,36 @@ const accentButtonStyle = {
     color: '#0f172a',
 };
 
+type LoadNotice = {
+    tone: 'success' | 'warning' | 'error';
+    title: string;
+    lines: string[];
+};
+
+const buildLoadNotice = (label: string, report: PatchValidationReport): LoadNotice => {
+    if (report.hasErrors) {
+        return {
+            tone: 'error',
+            title: `${label} loaded with ${report.errorCount} error${report.errorCount === 1 ? '' : 's'}`,
+            lines: report.issues.slice(0, 4).map((issue) => issue.message),
+        };
+    }
+
+    if (report.warningCount > 0) {
+        return {
+            tone: 'warning',
+            title: `${label} loaded with ${report.warningCount} warning${report.warningCount === 1 ? '' : 's'}`,
+            lines: report.issues.slice(0, 4).map((issue) => issue.message),
+        };
+    }
+
+    return {
+        tone: 'success',
+        title: `${label} loaded cleanly`,
+        lines: ['Patch normalized without warnings.'],
+    };
+};
+
 const SystemMenu = () => {
     const {
         nodes,
@@ -56,8 +86,30 @@ const SystemMenu = () => {
     const enterCampaign = useCampaignStore((state) => state.enterCampaign);
     const exitCampaign = useCampaignStore((state) => state.exitCampaign);
     const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+    const [loadNotice, setLoadNotice] = useState<LoadNotice | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const presetGroups = useMemo(() => getPresetGroups(unlockedPresetIds), [unlockedPresetIds]);
+
+    const applyPatchLoad = (label: string, asset: Parameters<typeof loadCanvas>[0]) => {
+        const report = loadCanvas(asset);
+        setLoadNotice(buildLoadNotice(label, report));
+        return report;
+    };
+
+    const handlePresetLoad = async (preset: Preset) => {
+        try {
+            const asset = await getPresetPatchAsset(preset);
+            applyPatchLoad(preset.name, asset);
+            setActivePanel(null);
+        } catch (error) {
+            console.error('Failed to load preset:', error);
+            setLoadNotice({
+                tone: 'error',
+                title: `Could not load ${preset.name}`,
+                lines: ['Preset asset fetch failed. Check the shipped patch path and try again.'],
+            });
+        }
+    };
 
     const handleSave = () => {
         const data = {
@@ -88,10 +140,14 @@ const SystemMenu = () => {
             try {
                 const content = readerEvent.target?.result as string;
                 const data = JSON.parse(content);
-                loadCanvas(data);
+                applyPatchLoad(file.name, data);
             } catch (error) {
                 console.error('Failed to load patch:', error);
-                alert('Invalid .bloop file');
+                setLoadNotice({
+                    tone: 'error',
+                    title: `Could not load ${file.name}`,
+                    lines: ['Invalid .bloop file.'],
+                });
             }
         };
         reader.readAsText(file);
@@ -102,6 +158,57 @@ const SystemMenu = () => {
 
     return (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 select-none">
+            {loadNotice && (
+                <div
+                    className="w-[28rem] rounded-[1.5rem] border px-4 py-3 shadow-2xl"
+                    style={{
+                        ...panelShellStyle,
+                        borderColor:
+                            loadNotice.tone === 'error'
+                                ? 'rgba(248, 113, 113, 0.45)'
+                                : loadNotice.tone === 'warning'
+                                    ? 'rgba(251, 191, 36, 0.45)'
+                                    : 'rgba(34, 211, 238, 0.35)',
+                    }}
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <div
+                                className="text-[10px] font-black uppercase tracking-[0.18em]"
+                                style={{
+                                    color:
+                                        loadNotice.tone === 'error'
+                                            ? '#fecaca'
+                                            : loadNotice.tone === 'warning'
+                                                ? '#fde68a'
+                                                : '#67e8f9',
+                                }}
+                            >
+                                {loadNotice.title}
+                            </div>
+                            <div className="mt-2 space-y-1">
+                                {loadNotice.lines.map((line) => (
+                                    <div
+                                        key={line}
+                                        className="text-[11px] leading-5"
+                                        style={{ color: 'var(--text-muted)' }}
+                                    >
+                                        {line}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setLoadNotice(null)}
+                            className="rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em]"
+                            style={subtleButtonStyle}
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {activePanel === 'presets' && (
                 <div className="mb-2 max-h-[60vh] w-[28rem] overflow-y-auto rounded-[1.75rem] border p-3 shadow-2xl" style={panelShellStyle}>
                     <div className="mb-3 px-2 text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: 'var(--text-muted)' }}>
@@ -120,8 +227,7 @@ const SystemMenu = () => {
                                             disabled={!preset.unlocked}
                                             onClick={() => {
                                                 if (!preset.unlocked) return;
-                                                loadCanvas(preset);
-                                                setActivePanel(null);
+                                                void handlePresetLoad(preset);
                                             }}
                                             className="w-full rounded-2xl border px-3 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-55"
                                             style={{

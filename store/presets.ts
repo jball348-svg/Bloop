@@ -4,12 +4,11 @@ import {
     AUDIO_OUTPUT_HANDLE_ID,
     CONTROL_INPUT_HANDLE_ID,
     CONTROL_OUTPUT_HANDLE_ID,
-    MODULATION_OUTPUT_HANDLE_ID,
-    createModulationHandleId,
     createDefaultAdvancedDrumTracks,
     createDefaultStepSequence,
     type AppEdge,
     type AppNode,
+    type PatchAssetV1,
 } from './useStore';
 
 export type PresetCategory =
@@ -20,16 +19,45 @@ export type PresetCategory =
     | 'Feature Showcases'
     | 'Tutorial Rewards';
 
+export type PresetSource =
+    | { type: 'inline' }
+    | { type: 'asset'; path: string };
+
 export interface Preset {
     id: string;
     name: string;
     category: PresetCategory;
     description: string;
     rewardLocked?: boolean;
-    nodes: AppNode[];
-    edges: AppEdge[];
+    source?: PresetSource;
+    nodes?: AppNode[];
+    edges?: AppEdge[];
     masterVolume?: number;
 }
+
+export const getPresetPatchAsset = async (preset: Preset): Promise<PatchAssetV1> => {
+    if (preset.source?.type === 'asset') {
+        const response = await fetch(preset.source.path);
+        if (!response.ok) {
+            throw new Error(`Failed to load preset asset: ${preset.source.path}`);
+        }
+
+        return response.json() as Promise<PatchAssetV1>;
+    }
+
+    return {
+        version: 1,
+        nodes: preset.nodes ?? [],
+        edges: preset.edges ?? [],
+        masterVolume: preset.masterVolume,
+        metadata: {
+            title: preset.name,
+            description: preset.description,
+            presetId: preset.id,
+            authoringMode: 'inline',
+        },
+    };
+};
 
 export const PRESET_CATEGORY_ORDER: PresetCategory[] = [
     'Getting Started',
@@ -105,20 +133,6 @@ const audioEdge = (
     sourceHandle: AUDIO_OUTPUT_HANDLE_ID,
     targetHandle,
     data: { kind: 'audio' },
-});
-
-const modulationEdge = (
-    id: string,
-    source: string,
-    target: string,
-    paramKey: Parameters<typeof createModulationHandleId>[0]
-): AppEdge => ({
-    id,
-    source,
-    target,
-    sourceHandle: MODULATION_OUTPUT_HANDLE_ID,
-    targetHandle: createModulationHandleId(paramKey),
-    data: { kind: 'modulation', targetParam: paramKey },
 });
 
 const createFourOnFloorPattern = () => ({
@@ -453,187 +467,18 @@ export const PRESETS: Preset[] = [
         ],
     },
     {
-        id: 'showcase-song',
-        name: 'Showcase Song',
+        id: 'ai-song-scaffold',
+        name: 'AI Song Scaffold',
         category: 'Feature Showcases',
-        description: 'A full multi-section song preset using Pattern, Arranger, Mixer, EQ, LFO, and automation.',
-        masterVolume: 70,
-        nodes: [
-            node('showcase-tempo', 'tempo', 70, 60, { bpm: 116 }),
-            node('showcase-bass-pattern', 'pattern', 96, 120, {
-                patternLoopBars: 2,
-                patternStepsPerBar: 16,
-                patternNotes: [
-                    { id: 'bass-note-1', note: 'C4', startStep: 0, lengthSteps: 8, velocity: 0.82 },
-                    { id: 'bass-note-2', note: 'G4', startStep: 8, lengthSteps: 8, velocity: 0.78 },
-                    { id: 'bass-note-3', note: 'A4', startStep: 16, lengthSteps: 8, velocity: 0.8 },
-                    { id: 'bass-note-4', note: 'G4', startStep: 24, lengthSteps: 8, velocity: 0.74 },
-                ],
-            }),
-            node('showcase-bass-adsr', 'adsr', 444, 140, {
-                attack: 0.02,
-                decay: 0.22,
-                sustain: 0.62,
-                release: 0.35,
-            }),
-            node('showcase-bass-gen', 'generator', 734, 142, {
-                label: 'FM Bass',
-                generatorMode: 'fm',
-                waveShape: 'sine',
-                mix: 76,
-                harmonicity: 1.4,
-                modulationIndex: 8,
-            }),
-            node('showcase-lead-pattern', 'pattern', 96, 440, {
-                patternLoopBars: 2,
-                patternStepsPerBar: 16,
-                patternNotes: [
-                    { id: 'lead-note-1', note: 'E4', startStep: 0, lengthSteps: 4, velocity: 0.74 },
-                    { id: 'lead-note-2', note: 'G4', startStep: 4, lengthSteps: 4, velocity: 0.68 },
-                    { id: 'lead-note-3', note: 'A4', startStep: 8, lengthSteps: 4, velocity: 0.76 },
-                    { id: 'lead-note-4', note: 'C5', startStep: 12, lengthSteps: 4, velocity: 0.82 },
-                    { id: 'lead-note-5', note: 'A4', startStep: 16, lengthSteps: 4, velocity: 0.72 },
-                    { id: 'lead-note-6', note: 'G4', startStep: 20, lengthSteps: 4, velocity: 0.7 },
-                    { id: 'lead-note-7', note: 'E4', startStep: 24, lengthSteps: 4, velocity: 0.68 },
-                    { id: 'lead-note-8', note: 'D4', startStep: 28, lengthSteps: 4, velocity: 0.66 },
-                ],
-            }),
-            node('showcase-lead-quant', 'quantizer', 448, 470, {
-                rootNote: 'C',
-                scaleType: 'minor',
-                bypass: false,
-            }),
-            node('showcase-lead-gen', 'generator', 736, 470, {
-                label: 'AM Lead',
-                generatorMode: 'am',
-                waveShape: 'triangle',
-                mix: 72,
-                harmonicity: 2.2,
-            }),
-            node('showcase-lead-eq', 'eq', 1018, 470, {
-                eqLow: -2,
-                eqMid: 1,
-                eqHigh: 3,
-                eqLowFrequency: 260,
-                eqHighFrequency: 3100,
-            }),
-            node('showcase-delay', 'effect', 1294, 470, {
-                label: 'Delay',
-                subType: 'delay',
-                wet: 0.28,
-                delayTime: 0.38,
-                feedback: 0.34,
-            }),
-            node('showcase-lfo', 'lfo', 1290, 210, {
-                lfoWaveform: 'triangle',
-                lfoSync: true,
-                lfoRate: '8n',
-                lfoDepth: 0.24,
-            }),
-            node('showcase-drums', 'advanceddrum', 108, 764, {
-                swing: 0.12,
-                mix: 78,
-                advancedDrumTracks: createDefaultAdvancedDrumTracks(),
-            }),
-            node('showcase-drum-eq', 'eq', 596, 770, {
-                eqLow: 2,
-                eqMid: -1,
-                eqHigh: 2,
-                eqLowFrequency: 210,
-                eqHighFrequency: 4600,
-            }),
-            node('showcase-mixer', 'mixer', 1600, 402, {
-                volume: 72,
-                pan: 0,
-            }),
-            node('showcase-arranger', 'arranger', 96, 1060, {
-                arrangerScenes: [
-                    {
-                        id: 'showcase-scene-1',
-                        name: 'Intro',
-                        startBar: 0,
-                        lengthBars: 4,
-                        patternNodeIds: ['showcase-bass-pattern'],
-                        rhythmNodeIds: ['showcase-drums'],
-                        automationLanes: [
-                            {
-                                id: 'showcase-scene-1-mix',
-                                targetNodeId: 'showcase-mixer',
-                                targetParam: 'volume',
-                                mode: 'ramp',
-                                points: [
-                                    { id: 'showcase-scene-1-mix-a', barOffset: 0, value: 68 },
-                                    { id: 'showcase-scene-1-mix-b', barOffset: 3.5, value: 72 },
-                                ],
-                            },
-                        ],
-                    },
-                    {
-                        id: 'showcase-scene-2',
-                        name: 'Lift',
-                        startBar: 4,
-                        lengthBars: 4,
-                        patternNodeIds: ['showcase-bass-pattern', 'showcase-lead-pattern'],
-                        rhythmNodeIds: ['showcase-drums'],
-                        automationLanes: [
-                            {
-                                id: 'showcase-scene-2-delay',
-                                targetNodeId: 'showcase-delay',
-                                targetParam: 'wet',
-                                mode: 'ramp',
-                                points: [
-                                    { id: 'showcase-scene-2-delay-a', barOffset: 0, value: 0.24 },
-                                    { id: 'showcase-scene-2-delay-b', barOffset: 3.5, value: 0.56 },
-                                ],
-                            },
-                            {
-                                id: 'showcase-scene-2-eq',
-                                targetNodeId: 'showcase-lead-eq',
-                                targetParam: 'high',
-                                mode: 'step',
-                                points: [
-                                    { id: 'showcase-scene-2-eq-a', barOffset: 0, value: 2 },
-                                    { id: 'showcase-scene-2-eq-b', barOffset: 2, value: 5 },
-                                ],
-                            },
-                        ],
-                    },
-                    {
-                        id: 'showcase-scene-3',
-                        name: 'Break',
-                        startBar: 8,
-                        lengthBars: 4,
-                        patternNodeIds: ['showcase-lead-pattern'],
-                        rhythmNodeIds: [],
-                        automationLanes: [
-                            {
-                                id: 'showcase-scene-3-pan',
-                                targetNodeId: 'showcase-mixer',
-                                targetParam: 'pan',
-                                mode: 'ramp',
-                                points: [
-                                    { id: 'showcase-scene-3-pan-a', barOffset: 0, value: -0.22 },
-                                    { id: 'showcase-scene-3-pan-b', barOffset: 3.5, value: 0.18 },
-                                ],
-                            },
-                        ],
-                    },
-                ],
-            }),
-        ],
-        edges: [
-            controlEdge('showcase-c1', 'showcase-bass-pattern', 'showcase-bass-adsr'),
-            controlEdge('showcase-c2', 'showcase-bass-adsr', 'showcase-bass-gen'),
-            controlEdge('showcase-c3', 'showcase-lead-pattern', 'showcase-lead-quant'),
-            controlEdge('showcase-c4', 'showcase-lead-quant', 'showcase-lead-gen'),
-            audioEdge('showcase-a1', 'showcase-bass-gen', 'showcase-mixer'),
-            audioEdge('showcase-a2', 'showcase-lead-gen', 'showcase-lead-eq'),
-            audioEdge('showcase-a3', 'showcase-lead-eq', 'showcase-delay'),
-            audioEdge('showcase-a4', 'showcase-delay', 'showcase-mixer'),
-            audioEdge('showcase-a5', 'showcase-drums', 'showcase-drum-eq'),
-            audioEdge('showcase-a6', 'showcase-drum-eq', 'showcase-mixer'),
-            modulationEdge('showcase-m1', 'showcase-lfo', 'showcase-delay', 'delayTime'),
-        ],
+        description: 'Stable fixed-id scaffold for AI-authored songs: bass, lead, texture, drums, mixer, arranger, and automation-ready targets.',
+        source: { type: 'asset', path: '/patches/ai-song-scaffold.bloop' },
+    },
+    {
+        id: 'showcase-song',
+        name: 'AI Showcase Song',
+        category: 'Feature Showcases',
+        description: 'Featured AI-authored flagship song loaded from the same compiled patch asset you can open as a .bloop file.',
+        source: { type: 'asset', path: '/patches/ai-flagship-song.bloop' },
     },
     {
         id: 'cave-echo',

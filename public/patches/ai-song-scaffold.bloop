@@ -1,0 +1,850 @@
+{
+  "version": 1,
+  "metadata": {
+    "title": "AI Song Scaffold",
+    "description": "Canonical fixed-id scaffold for AI-authored songs in Bloop.",
+    "scaffoldId": "ai-song-v1",
+    "blueprintId": "ai-song-scaffold",
+    "authoringMode": "scaffold",
+    "generatedAt": "2026-03-25T11:08:35.101Z",
+    "planId": "ai-song-scaffold",
+    "globalKey": "C minor",
+    "brainRefs": [
+      "10_music_ontology",
+      "11_time_schema",
+      "12_pitch_harmony_schema",
+      "13_rhythm_schema",
+      "21_transform_ops",
+      "30_composition_pipeline"
+    ],
+    "validationPass": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "groundedSong": {
+      "version": 1,
+      "plan_id": "ai-song-scaffold",
+      "global_key": "C minor",
+      "brain_refs": [
+        "10_music_ontology",
+        "11_time_schema",
+        "12_pitch_harmony_schema",
+        "13_rhythm_schema",
+        "21_transform_ops",
+        "30_composition_pipeline"
+      ],
+      "validation_pass": true,
+      "error_count": 0,
+      "warning_count": 0
+    }
+  },
+  "nodes": [
+    {
+      "id": "song-tempo",
+      "type": "tempo",
+      "position": {
+        "x": 72,
+        "y": 52
+      },
+      "data": {
+        "label": "Tempo",
+        "bpm": 112
+      }
+    },
+    {
+      "id": "song-bass-pattern",
+      "type": "pattern",
+      "position": {
+        "x": 92,
+        "y": 138
+      },
+      "data": {
+        "label": "Pattern",
+        "patternLoopBars": 4,
+        "patternStepsPerBar": 16,
+        "patternNotes": [
+          {
+            "id": "song-bass-note-1",
+            "note": "C2",
+            "startStep": 0,
+            "lengthSteps": 8,
+            "velocity": 0.88
+          },
+          {
+            "id": "song-bass-note-2",
+            "note": "G2",
+            "startStep": 8,
+            "lengthSteps": 8,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-bass-note-3",
+            "note": "G#2",
+            "startStep": 16,
+            "lengthSteps": 8,
+            "velocity": 0.84
+          },
+          {
+            "id": "song-bass-note-4",
+            "note": "G2",
+            "startStep": 24,
+            "lengthSteps": 8,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-5",
+            "note": "F2",
+            "startStep": 32,
+            "lengthSteps": 8,
+            "velocity": 0.82
+          },
+          {
+            "id": "song-bass-note-6",
+            "note": "G2",
+            "startStep": 40,
+            "lengthSteps": 8,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-bass-note-7",
+            "note": "C2",
+            "startStep": 48,
+            "lengthSteps": 8,
+            "velocity": 0.86
+          },
+          {
+            "id": "song-bass-note-8",
+            "note": "G2",
+            "startStep": 56,
+            "lengthSteps": 8,
+            "velocity": 0.8
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-bass-adsr",
+      "type": "adsr",
+      "position": {
+        "x": 430,
+        "y": 154
+      },
+      "data": {
+        "label": "ADSR",
+        "attack": 0.01,
+        "decay": 0.24,
+        "sustain": 0.68,
+        "release": 0.32
+      }
+    },
+    {
+      "id": "song-bass-gen",
+      "type": "generator",
+      "position": {
+        "x": 734,
+        "y": 154
+      },
+      "data": {
+        "label": "Bass Engine",
+        "generatorMode": "fm",
+        "waveShape": "sine",
+        "mix": 76,
+        "harmonicity": 1.45,
+        "modulationIndex": 7.5
+      }
+    },
+    {
+      "id": "song-bass-eq",
+      "type": "eq",
+      "position": {
+        "x": 1016,
+        "y": 154
+      },
+      "data": {
+        "label": "EQ",
+        "eqLow": 3,
+        "eqMid": -2,
+        "eqHigh": -4,
+        "eqLowFrequency": 220,
+        "eqHighFrequency": 2600
+      }
+    },
+    {
+      "id": "song-lead-pattern",
+      "type": "pattern",
+      "position": {
+        "x": 92,
+        "y": 450
+      },
+      "data": {
+        "label": "Pattern",
+        "patternLoopBars": 4,
+        "patternStepsPerBar": 16,
+        "patternNotes": [
+          {
+            "id": "song-lead-note-1",
+            "note": "G4",
+            "startStep": 0,
+            "lengthSteps": 4,
+            "velocity": 0.76
+          },
+          {
+            "id": "song-lead-note-2",
+            "note": "G#4",
+            "startStep": 4,
+            "lengthSteps": 4,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-3",
+            "note": "C5",
+            "startStep": 8,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-4",
+            "note": "D5",
+            "startStep": 12,
+            "lengthSteps": 4,
+            "velocity": 0.78
+          },
+          {
+            "id": "song-lead-note-5",
+            "note": "C5",
+            "startStep": 16,
+            "lengthSteps": 4,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-lead-note-6",
+            "note": "G#4",
+            "startStep": 20,
+            "lengthSteps": 4,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-7",
+            "note": "G4",
+            "startStep": 24,
+            "lengthSteps": 4,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-8",
+            "note": "D#4",
+            "startStep": 28,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-lead-note-9",
+            "note": "G4",
+            "startStep": 32,
+            "lengthSteps": 4,
+            "velocity": 0.74
+          },
+          {
+            "id": "song-lead-note-10",
+            "note": "G#4",
+            "startStep": 36,
+            "lengthSteps": 4,
+            "velocity": 0.72
+          },
+          {
+            "id": "song-lead-note-11",
+            "note": "C5",
+            "startStep": 40,
+            "lengthSteps": 4,
+            "velocity": 0.8
+          },
+          {
+            "id": "song-lead-note-12",
+            "note": "G4",
+            "startStep": 44,
+            "lengthSteps": 4,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-lead-note-13",
+            "note": "D#4",
+            "startStep": 48,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-lead-note-14",
+            "note": "D4",
+            "startStep": 52,
+            "lengthSteps": 4,
+            "velocity": 0.66
+          },
+          {
+            "id": "song-lead-note-15",
+            "note": "D#4",
+            "startStep": 56,
+            "lengthSteps": 4,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-lead-note-16",
+            "note": "G4",
+            "startStep": 60,
+            "lengthSteps": 4,
+            "velocity": 0.74
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-lead-quant",
+      "type": "quantizer",
+      "position": {
+        "x": 432,
+        "y": 466
+      },
+      "data": {
+        "label": "Quantizer",
+        "rootNote": "C",
+        "scaleType": "minor",
+        "bypass": false
+      }
+    },
+    {
+      "id": "song-lead-gen",
+      "type": "generator",
+      "position": {
+        "x": 734,
+        "y": 466
+      },
+      "data": {
+        "label": "Lead Engine",
+        "generatorMode": "am",
+        "waveShape": "triangle",
+        "mix": 70,
+        "harmonicity": 2.2
+      }
+    },
+    {
+      "id": "song-lead-delay",
+      "type": "effect",
+      "position": {
+        "x": 1016,
+        "y": 466
+      },
+      "data": {
+        "label": "Lead Delay",
+        "subType": "delay",
+        "wet": 0.28,
+        "delayTime": 0.36,
+        "feedback": 0.34
+      }
+    },
+    {
+      "id": "song-support-pattern",
+      "type": "pattern",
+      "position": {
+        "x": 92,
+        "y": 762
+      },
+      "data": {
+        "label": "Pattern",
+        "patternLoopBars": 4,
+        "patternStepsPerBar": 16,
+        "patternNotes": [
+          {
+            "id": "song-support-note-1",
+            "note": "C4",
+            "startStep": 0,
+            "lengthSteps": 16,
+            "velocity": 0.68
+          },
+          {
+            "id": "song-support-note-2",
+            "note": "C4",
+            "startStep": 16,
+            "lengthSteps": 16,
+            "velocity": 0.64
+          },
+          {
+            "id": "song-support-note-3",
+            "note": "C4",
+            "startStep": 32,
+            "lengthSteps": 16,
+            "velocity": 0.7
+          },
+          {
+            "id": "song-support-note-4",
+            "note": "C4",
+            "startStep": 48,
+            "lengthSteps": 16,
+            "velocity": 0.66
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-support-sampler",
+      "type": "sampler",
+      "position": {
+        "x": 432,
+        "y": 742
+      },
+      "data": {
+        "label": "Texture Bed",
+        "hasSample": true,
+        "sampleName": "support-texture.wav",
+        "sampleDataUrl": "/ai-song-kit/support-texture.wav",
+        "sampleWaveform": [],
+        "loop": true,
+        "playbackRate": 0.92,
+        "reverse": false,
+        "pitchShift": -2,
+        "mix": 58
+      }
+    },
+    {
+      "id": "song-support-reverb",
+      "type": "effect",
+      "position": {
+        "x": 794,
+        "y": 754
+      },
+      "data": {
+        "label": "Texture Reverb",
+        "subType": "reverb",
+        "wet": 0.62,
+        "roomSize": 0.82
+      }
+    },
+    {
+      "id": "song-drums",
+      "type": "advanceddrum",
+      "position": {
+        "x": 90,
+        "y": 1060
+      },
+      "data": {
+        "label": "Advanced Drums",
+        "mix": 76,
+        "swing": 0.1,
+        "advancedDrumTracks": [
+          {
+            "label": "Kick",
+            "steps": [
+              3,
+              0,
+              0,
+              0,
+              2,
+              0,
+              0,
+              0,
+              3,
+              0,
+              0,
+              0,
+              2,
+              0,
+              1,
+              0
+            ],
+            "length": 16,
+            "sampleName": "kick.wav",
+            "sampleDataUrl": "/ai-song-kit/kick.wav"
+          },
+          {
+            "label": "Snare",
+            "steps": [
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              3,
+              0,
+              1,
+              0
+            ],
+            "length": 16,
+            "sampleName": "snare.wav",
+            "sampleDataUrl": "/ai-song-kit/snare.wav"
+          },
+          {
+            "label": "Hat",
+            "steps": [
+              2,
+              0,
+              2,
+              1,
+              2,
+              0,
+              2,
+              0,
+              2,
+              1,
+              2,
+              0,
+              2,
+              0,
+              2,
+              1
+            ],
+            "length": 12,
+            "sampleName": "hat.wav",
+            "sampleDataUrl": "/ai-song-kit/hat.wav"
+          },
+          {
+            "label": "Clap",
+            "steps": [
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              2,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              2,
+              0
+            ],
+            "length": 8,
+            "sampleName": "clap.wav",
+            "sampleDataUrl": "/ai-song-kit/clap.wav"
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-drum-eq",
+      "type": "eq",
+      "position": {
+        "x": 472,
+        "y": 1060
+      },
+      "data": {
+        "label": "EQ",
+        "eqLow": 2,
+        "eqMid": -1,
+        "eqHigh": 2,
+        "eqLowFrequency": 240,
+        "eqHighFrequency": 4800
+      }
+    },
+    {
+      "id": "song-mixer",
+      "type": "mixer",
+      "position": {
+        "x": 1344,
+        "y": 508
+      },
+      "data": {
+        "label": "Mixer",
+        "volume": 70,
+        "pan": 0
+      }
+    },
+    {
+      "id": "song-arranger",
+      "type": "arranger",
+      "position": {
+        "x": 1344,
+        "y": 868
+      },
+      "data": {
+        "label": "Arranger",
+        "arrangerScenes": [
+          {
+            "id": "song-scene-intro",
+            "name": "Intro",
+            "startBar": 0,
+            "lengthBars": 4,
+            "patternNodeIds": [
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-intro-mixer",
+                "targetNodeId": "song-mixer",
+                "targetParam": "volume",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-intro-mixer-point-1",
+                    "barOffset": 0,
+                    "value": 60
+                  },
+                  {
+                    "id": "song-scene-intro-mixer-point-2",
+                    "barOffset": 3.75,
+                    "value": 66
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-lift",
+            "name": "Lift",
+            "startBar": 4,
+            "lengthBars": 4,
+            "patternNodeIds": [
+              "song-bass-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-lift-support",
+                "targetNodeId": "song-support-sampler",
+                "targetParam": "playbackRate",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-lift-support-point-1",
+                    "barOffset": 0,
+                    "value": 0.9
+                  },
+                  {
+                    "id": "song-scene-lift-support-point-2",
+                    "barOffset": 3.75,
+                    "value": 1.02
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-arrival",
+            "name": "Arrival",
+            "startBar": 8,
+            "lengthBars": 4,
+            "patternNodeIds": [
+              "song-bass-pattern",
+              "song-lead-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-arrival-delay",
+                "targetNodeId": "song-lead-delay",
+                "targetParam": "wet",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-arrival-delay-point-1",
+                    "barOffset": 0,
+                    "value": 0.26
+                  },
+                  {
+                    "id": "song-scene-arrival-delay-point-2",
+                    "barOffset": 3.75,
+                    "value": 0.52
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "song-scene-outro",
+            "name": "Outro",
+            "startBar": 12,
+            "lengthBars": 4,
+            "patternNodeIds": [
+              "song-bass-pattern",
+              "song-support-pattern"
+            ],
+            "rhythmNodeIds": [
+              "song-drums"
+            ],
+            "automationLanes": [
+              {
+                "id": "song-scene-outro-fade",
+                "targetNodeId": "song-mixer",
+                "targetParam": "volume",
+                "mode": "ramp",
+                "points": [
+                  {
+                    "id": "song-scene-outro-fade-point-1",
+                    "barOffset": 0,
+                    "value": 68
+                  },
+                  {
+                    "id": "song-scene-outro-fade-point-2",
+                    "barOffset": 3.75,
+                    "value": 58
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "song-speaker",
+      "type": "speaker",
+      "position": {
+        "x": 1638,
+        "y": 512
+      },
+      "data": {
+        "label": "Amplifier",
+        "volume": 68
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "song-edge-bass-pattern-adsr",
+      "source": "song-bass-pattern",
+      "target": "song-bass-adsr",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-bass-adsr-gen",
+      "source": "song-bass-adsr",
+      "target": "song-bass-gen",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-lead-pattern-quant",
+      "source": "song-lead-pattern",
+      "target": "song-lead-quant",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-lead-quant-gen",
+      "source": "song-lead-quant",
+      "target": "song-lead-gen",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-support-pattern-sampler",
+      "source": "song-support-pattern",
+      "target": "song-support-sampler",
+      "sourceHandle": "control-out",
+      "targetHandle": "control-in",
+      "data": {
+        "kind": "control"
+      }
+    },
+    {
+      "id": "song-edge-bass-gen-eq",
+      "source": "song-bass-gen",
+      "target": "song-bass-eq",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-bass-eq-mixer",
+      "source": "song-bass-eq",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-lead-gen-delay",
+      "source": "song-lead-gen",
+      "target": "song-lead-delay",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-lead-delay-mixer",
+      "source": "song-lead-delay",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-support-sampler-reverb",
+      "source": "song-support-sampler",
+      "target": "song-support-reverb",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-support-reverb-mixer",
+      "source": "song-support-reverb",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-drums-eq",
+      "source": "song-drums",
+      "target": "song-drum-eq",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    },
+    {
+      "id": "song-edge-drum-eq-mixer",
+      "source": "song-drum-eq",
+      "target": "song-mixer",
+      "sourceHandle": "audio-out",
+      "targetHandle": "audio-in",
+      "data": {
+        "kind": "audio"
+      }
+    }
+  ],
+  "masterVolume": 68
+}

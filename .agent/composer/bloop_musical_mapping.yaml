@@ -28,6 +28,25 @@ mapping_status_legend:
     meaning: >
       Agent can plan it, but a human may need to execute or confirm a key step.
 
+runtime_constraints:
+  transport_and_time:
+    - "Bloop exposes one global BPM through the Tempo node and Tone.Transport."
+    - "There is no native tempo-map, rubato, or humanization engine in the shipped runtime."
+  note_editing:
+    - "Pattern notes live in persisted node.data.patternNotes and can be mutated directly when note IDs are known."
+    - "Pattern selected-note math remains contextual because selected note is local component state."
+    - "The shipped Pattern piano-roll lane and pattern math note options are limited to C4..C5."
+    - "Step Sequencer steps are directly addressable by step index; selectedStep is the persisted selector used by contextual math targets."
+  arrangement_and_automation:
+    - "Arranger scenes live in persisted node.data.arrangerScenes and can be mutated directly when scene IDs are known."
+    - "Arranger selected-scene math remains contextual because selected scene is local component state."
+    - "Arranger automation lanes target the automatable runtime registry, not arbitrary musical abstractions."
+  graph_and_mixing:
+    - "Node creation and explicit audio/control/modulation connections have direct shipped store paths."
+    - "Mixer channel targets appear only after sources are routed into the mixer."
+  math_system:
+    - "V16 math is receiver-first; no shipped node exposes a visible math-out sender."
+
 musical_domains:
 
   tonal_foundation:
@@ -196,10 +215,11 @@ musical_domains:
       primary_actions:
         - set_step_sequencer_step
         - set_arpeggiator_rate
-        - target_pattern_selected_note
+        - upsert_pattern_note_by_id
       strategy_notes:
         - "Increase density gradually."
         - "Use higher subdivision layers before rewriting the whole groove."
+        - "Prefer direct Pattern note-ID mutation when note refs are known; use selected-note math only as a contextual fallback."
       fallbacks:
         - "Shorten scene perceived emptiness by introducing faster repeated figures."
       success_signals:
@@ -242,18 +262,21 @@ musical_domains:
         - Arpeggiator
       primary_actions:
         - establish_key
-        - target_pattern_selected_note
+        - upsert_pattern_note_by_id
       strategy_notes:
         - "Favor short contour, limited pitch set, and repeatable rhythm."
         - "A hook in Bloop is often easier to manage as a pattern than as freeform editing."
+        - "Use direct note-ID mutation when the target note refs are known; do not assume selected-note math is the only route."
       fallbacks:
         - "Use arpeggiated contour plus timbral identity if detailed pattern editing is fragile."
+        - "Use Step Sequencer or Arpeggiator for material outside the shipped Pattern pitch lane."
       success_signals:
         - "Phrase is recognizable on repetition."
       failure_modes:
         - "Too many notes, no memorable contour."
       limitations:
-        - "Pattern note targeting is contextual and UI-fragile."
+        - "Pattern selected-note math is contextual and UI-fragile."
+        - "Pattern pitch editing in the shipped UI is limited to the C4..C5 lane."
 
     create_bassline:
       status: strong
@@ -283,7 +306,7 @@ musical_domains:
         - "Pitch choice destabilizes key unintentionally."
 
     create_counterline:
-      status: fragile
+      status: workable
       goal: >
         Add secondary melodic motion against a lead or harmony line.
       preferred_bloop_constructs:
@@ -292,11 +315,12 @@ musical_domains:
         - Sampler
         - Arpeggiator
       primary_actions:
-        - target_pattern_selected_note
+        - upsert_pattern_note_by_id
         - set_arpeggiator_rate
       strategy_notes:
         - "Use simpler rhythm than the lead."
         - "Avoid full registral overlap."
+        - "Prefer direct note-ID mutation when the counterline already exists in Pattern data."
       fallbacks:
         - "Replace true counterline with sparse echo response."
         - "Use timbral answer rather than note-dense answer."
@@ -305,7 +329,7 @@ musical_domains:
       failure_modes:
         - "Both lines feel like leads."
       limitations:
-        - "Detailed note editing may be contextual."
+        - "Selected-note math remains contextual if direct Pattern note refs are unavailable."
 
   arrangement_and_texture:
 
@@ -433,9 +457,10 @@ musical_domains:
         - increase_tension
         - set_arpeggiator_rate
         - set_parameter_by_math_route
-        - target_arranger_selected_scene
+        - upsert_arranger_scene_by_id
       strategy_notes:
         - "Increase one or two dimensions at a time: density, brightness, rate, pressure."
+        - "Treat perceived acceleration as density/rate/timbre motion first; Bloop does not expose a native tempo map."
       fallbacks:
         - "Use rhythmic increase if harmonic change is awkward."
       success_signals:
@@ -443,7 +468,7 @@ musical_domains:
       failure_modes:
         - "Build is just louder, not more directed."
       limitations:
-        - "Arranger scene targeting is contextual."
+        - "Selected-scene math is contextual, but persisted Arranger scene mutation by scene ID is direct."
 
     create_drop_or_arrival:
       status: workable
@@ -484,17 +509,18 @@ musical_domains:
         - "Breakdown feels like accidental dropout."
 
     schedule_sections:
-      status: fragile
+      status: workable
       goal: >
         Place sections across the timeline using Arranger.
       preferred_bloop_constructs:
         - Arranger
       primary_actions:
-        - target_arranger_selected_scene
+        - upsert_arranger_scene_by_id
       strategy_notes:
         - "Use section length and scene boundaries to support formal clarity."
       limitations:
-        - "Scene editing currently depends on selected scene UI context."
+        - "Scene scheduling is direct when scene IDs are known; selected-scene math remains contextual."
+        - "Section timing is bar-based against a single global BPM, not a tempo-map abstraction."
       fallbacks:
         - "Represent section plan in overlay memory even if execution is partly manual."
 
@@ -577,6 +603,8 @@ musical_domains:
         - delay
       primary_actions:
         - control_effect_subtype_dependent_target
+      strategy_notes:
+        - "Subtype-specific math targets are contextual to the active effect subtype, but subtype inspection and mutation are real runtime paths."
       success_signals:
         - "More depth without masking core identity."
       failure_modes:
@@ -623,7 +651,7 @@ musical_domains:
         - "Either identical loop fatigue or total identity loss."
 
     create_call_and_response:
-      status: fragile
+      status: workable
       goal: >
         Alternate statement and answer between layers or phrases.
       preferred_bloop_constructs:
@@ -633,10 +661,12 @@ musical_domains:
         - Arranger
       strategy_notes:
         - "Response should usually be shorter, sparser, or registrally distinct."
+        - "Prefer scene exposure, layer alternation, or direct Pattern note-ID edits before relying on selected-note math."
       fallbacks:
         - "Use mute/unmute alternation between sources rather than dense note editing."
       limitations:
-        - "Fine phrase editing may require contextual pattern note access."
+        - "Fine note edits are easiest when persisted Pattern note IDs are already known."
+        - "Selected-note math remains a contextual fallback, not the default route."
 
     intensify_over_time:
       status: strong
@@ -655,6 +685,7 @@ musical_domains:
         - harmonic_instability
       strategy_notes:
         - "Escalation is clearer when dimensions accumulate in layers."
+        - "Use scene scheduling and automation lanes for section-level motion, but do not imply a native tempo-curve system."
       failure_modes:
         - "Everything peaks too early."
 

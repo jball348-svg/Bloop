@@ -5,6 +5,7 @@ import * as Tone from 'tone';
 import { Handle, Position } from 'reactflow';
 import {
     CONTROL_OUTPUT_HANDLE_ID,
+    PIANO_ROLL_NOTE_OPTIONS,
     PATTERN_STEPS_PER_BAR,
     type PatternNote,
     getMathTargetOptionsForNode,
@@ -16,17 +17,6 @@ import { useNodeAccentStyle } from '@/store/usePreferencesStore';
 import LockButton from './LockButton';
 import MathInputHandle, { useMathInputSelection } from './MathInputHandle';
 import PackedNode from './PackedNode';
-
-const PIANO_ROLL_NOTES = [
-    'C5',
-    'B4',
-    'A4',
-    'G4',
-    'F4',
-    'E4',
-    'D4',
-    'C4',
-];
 
 const createNoteAtCell = (note: string, step: number): PatternNote => ({
     id: crypto.randomUUID(),
@@ -52,7 +42,7 @@ export default function PatternNode({ id }: { id: string }) {
     const accentStyle = useNodeAccentStyle('pattern');
 
     const notes: PatternNote[] = nodeData?.patternNotes ?? [];
-    const loopBars = Math.max(1, Math.min(8, nodeData?.patternLoopBars ?? 2));
+    const loopBars = Math.max(1, Math.min(16, nodeData?.patternLoopBars ?? 2));
     const stepsPerBar = nodeData?.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR;
     const totalSteps = loopBars * stepsPerBar;
     const currentStep = nodeData?.currentStep ?? -1;
@@ -135,7 +125,7 @@ export default function PatternNode({ id }: { id: string }) {
                             }
                             className="nodrag mt-1 w-full bg-transparent text-[11px] font-bold text-blue-200 outline-none"
                         >
-                            {Array.from({ length: 8 }, (_, index) => index + 1).map((bars) => (
+                            {Array.from({ length: 16 }, (_, index) => index + 1).map((bars) => (
                                 <option key={bars} value={bars} className="bg-slate-900 text-blue-200">
                                     {bars} bar{bars === 1 ? '' : 's'}
                                 </option>
@@ -154,17 +144,17 @@ export default function PatternNode({ id }: { id: string }) {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[20rem] overflow-auto">
                         <div className="min-w-[28rem]">
                             <div
                                 className="grid gap-px"
                                 style={{ gridTemplateColumns: `3.25rem repeat(${totalSteps}, minmax(1rem, 1fr))` }}
                             >
-                                <div />
+                                <div className="sticky left-0 top-0 z-20 bg-slate-900/95" />
                                 {stepNumbers.map((step) => (
                                     <div
                                         key={`${id}-header-${step}`}
-                                        className={`flex h-5 items-center justify-center text-[8px] font-black ${
+                                        className={`sticky top-0 z-10 flex h-5 items-center justify-center bg-slate-900/95 text-[8px] font-black ${
                                             step % stepsPerBar === 0 ? 'text-blue-200' : 'text-slate-500'
                                         }`}
                                     >
@@ -172,7 +162,7 @@ export default function PatternNode({ id }: { id: string }) {
                                     </div>
                                 ))}
 
-                                {PIANO_ROLL_NOTES.map((pitch) => (
+                                {PIANO_ROLL_NOTE_OPTIONS.map((pitch) => (
                                     <div key={`${id}-${pitch}-row`} className="contents">
                                         <div
                                             className="sticky left-0 z-10 flex h-6 items-center justify-end bg-slate-900/90 pr-2 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400"
@@ -255,7 +245,7 @@ export default function PatternNode({ id }: { id: string }) {
                                     }
                                     className="nodrag rounded-lg border border-blue-500/20 bg-slate-900/60 px-2 py-2 text-[11px] font-bold text-blue-200 outline-none"
                                 >
-                                    {PIANO_ROLL_NOTES.map((pitch) => (
+                                    {PIANO_ROLL_NOTE_OPTIONS.map((pitch) => (
                                         <option key={pitch} value={pitch} className="bg-slate-900 text-blue-200">
                                             {pitch}
                                         </option>

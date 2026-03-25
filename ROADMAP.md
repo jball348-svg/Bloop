@@ -1,49 +1,98 @@
 # Bloop Project Roadmap
 
-Bloop is a visual modular audio sandbox designed to make sound design and routing intuitive and playful. This roadmap outlines our journey from a basic audio canvas to a fully capable modular sequencer and arranger.
+Bloop is a visual modular audio sandbox built to make synthesis, routing, and song structure approachable for non-musicians. This roadmap now reflects the shipped state through v17 and the most relevant next-step frontiers.
 
 ---
 
-## The Journey So Far (v1 - v15)
+## Shipped Through v17
 
-From its inception, Bloop has grown from a simple proof-of-concept into a robust, browser-based modular synthesizer. Over the first **15 major iterations**, we have successfully established:
+### Foundations (v1-v5)
 
-* **The Core Engine:** Seamless integration between React Flow (for the visual canvas) and Tone.js (for the audio graph).
-* **The Node Ecosystem:** A comprehensive suite of Controller nodes (Sequencers, Arp, MIDI In), Signal nodes (Oscillators, Samplers, Effects), and Global nodes.
-* **User Experience & Persistence:** Drag-and-drop routing, undo/redo history, and `.bloop` patch saving/loading.
-* **Onboarding & Gamification:** A replayable tutorial, theming system, and a beginner-friendly campaign mode that unlocks custom skins and presets.
-* **External I/O:** Live audio input (microphone/USB interface), Web MIDI support, and browser-native `.webm` session recording.
-* **Arrangement & Automation:** Piano rolls, automation lanes, mixer nodes, and full song timeline triggering abilities.
+- Visual node canvas with React Flow + Tone.js integration
+- Core generator, drum, controller, and global singleton nodes
+- Undo/redo, snapping, locking, packing, and signal-flow visualization
+
+### Musical and Sonic Expansion (v6-v12)
+
+- Quantizer and theory helpers
+- Mood Pad and more beginner-friendly control surfaces
+- Sampler, Advanced Drums, MIDI In, Audio In, and session recording
+- Onboarding, themes, expanded presets, campaign mode
+- FM/AM generator modes, EQ, and LFO modulation
+
+### Song Building (v13-v15)
+
+- Pattern / piano-roll authoring
+- Mixer and Arranger systems
+- Scene automation lanes
+- Performance refactors and showcase preset pipeline
+
+### Math Receiver Foundation (v16 workstream, partially shipped)
+
+The repo now includes receiver-side math foundations:
+
+- many nodes expose violet math-input receiver selectors
+- the store can persist receiver targets and apply normalized values
+- contextual targets exist for selected Pattern notes, selected Arranger scenes, mixer channels, and Step Sequencer selected steps
+
+Important constraint:
+
+- there is still **no shipped sender node**, so math routing remains a partial foundation rather than a finished user-facing composition system
+
+### AI-Authored Song Pipeline (v17 shipped)
+
+v17 focused on making one convincing AI-authored song load and play inside the real app, without pretending the runtime itself is a generalized AI composer.
+
+Shipped outcomes:
+
+- asset-backed AI song scaffold preset
+- asset-backed flagship AI showcase song preset
+- normalized/validated `.bloop` load path for presets and files
+- broader song-writing surfaces: Pattern C2-C6, up to 16 bars, Step Sequencer C2-C6, Arranger up to 32 bars, scene duplication, richer sampler automation
+- build-time grounded compiler using `.agent/composer/*` as theory truth and the repo as execution truth
 
 ---
 
-## V12-V15: The Showcase (Completed)
+## Current Product Direction
 
-**The Ultimate v15 Milestone:** To create a fully built, automated "Song" written entirely within Bloop, shipped as a master preset to demonstrate the platform's full capabilities. This was completed successfully.
+The product now supports two complementary creative modes:
 
-### v12: Sonic Expansion & Shaping
-*Focus: Expanding the sound-generation capabilities beyond basic waveforms and providing finer control over frequencies.*
+- **Sandbox patching** for immediate visual sound design
+- **Structured song playback** through patterns, arranger scenes, automation, and compiled showcase assets
 
-* **New Generator Modes (FM & AM Synthesis):** Expand the `Generator` node (or create a new `Advanced Synth` node) to include Frequency Modulation and Amplitude Modulation, allowing for bells, metallic tones, and complex modern bass patches.
-* **Parametric EQ Node:** A dedicated Equalizer node (3-band or 5-band) to carve out frequencies, allowing kicks and basslines to sit together without muddying the mix.
-* **LFO (Low Frequency Oscillator) Node:** A control node that can be routed to parameters (like filter cutoff, pitch, or volume) to create movement and evolving sounds over time.
+This means Bloop is no longer only a modular patch toy. It is now a constrained browser composition environment with a demonstrable song pipeline.
 
-### v13: Composition & "Writing"
-*Focus: Upgrading the note-input workflow from basic step-sequencing to a dedicated composition interface.*
+---
 
-* **Piano Roll / Pattern Node:** A new sequencer node inspired by FL Studio's piano roll. Double-clicking this node opens a grid where users can "drop" and stretch notes over a multi-bar loop. 
-* **Polyphonic Output for Patterns:** Ensure the Pattern Node can output chords and overlapping notes to drive polyphonic generators seamlessly.
-* **Gate / Trigger Refining:** Ensure ADSR envelopes handle the precise note-on/note-off data coming from the new Pattern node to allow for staccato plucks and sustained pads.
+## Current Constraints
 
-### v14: Mixing & Arrangement
-*Focus: Giving users the ability to organize complex patches and structure them into a timeline.*
+- Math routing is receiver-ready but not sender-complete
+- Recording exports browser-native audio rather than WAV stems
+- AI song authoring is build-time and scaffold-first, not a prompt box inside the app
+- Musical-brain abstractions live at build time and in docs, not as native runtime objects
 
-* **Global Mixer Node:** A centralized hub to replace the simple `Amplifier`. It will feature multiple input channels with individual volume sliders, panning, mute, and solo buttons to balance the elements of a full track.
-* **Timeline / Arranger Node:** A new macro-control node that triggers specific events or starts/stops specific Pattern Nodes based on a global bar counter. Instead of a traditional DAW timeline, think of it as a "Scene" or "Event" trigger module that moves the patch from an Intro -> Verse -> Chorus.
+---
 
-### v15: Automation & The Masterpiece
-*Focus: Tying it all together, optimizing performance, and building the final deliverable.*
+## Likely Next Frontier
 
-* **Automation Routing:** The ability to map the Timeline/Arranger node to dial parameters (e.g., automatically sweeping a filter open during a build-up, or turning up the Reverb wetness on bar 16).
-* **Graph Optimization:** A full song will require a massive node graph. v15 will include under-the-hood optimization for React Flow and Tone.js to ensure the browser doesn't choke on complex, multi-layered patches.
-* **The "Demo Song" Preset:** The final deliverable. A meticulously crafted, multi-genre track built entirely inside Bloop using the Arranger, Piano Rolls, Synths, EQs, and the Mixer. This patch will be the default showcase of what the engine can do.
+The repo is positioned for a post-v17 hardening and expansion phase rather than a total redesign. The most plausible next areas are:
+
+1. **UAT hardening**
+   - verify the flagship song and save/load flows in real browser usage
+   - tighten validation, onboarding clarity, and error handling
+2. **Math system completion**
+   - add honest sender surfaces or formalize the current receiver-only state
+   - avoid implying a complete cable authoring workflow before it exists
+3. **AI composition tooling**
+   - deepen plan-time musical reasoning, revision loops, and tooling around the existing compiler
+   - keep runtime claims conservative
+
+---
+
+## Reference Docs
+
+- [`README.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/README.md)
+- [`PROJECT_OVERVIEW.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/PROJECT_OVERVIEW.md)
+- [`AI_SONG_AUTHORING.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/AI_SONG_AUTHORING.md)
+- [`.agent/plans/v16-math-cable-system.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/.agent/plans/v16-math-cable-system.md)
+- [`.agent/plans/v17-ai-authored-song-pipeline.md`](/Users/johnfairfax-ball/Documents/GitHub/Bloop/.agent/plans/v17-ai-authored-song-pipeline.md)

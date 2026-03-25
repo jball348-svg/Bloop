@@ -39,6 +39,11 @@ export const MODULATION_SIGNAL_COLOR = '#bef264';
 export const DRUM_PARTS = ['kick', 'snare', 'hatClosed', 'hatOpen'] as const;
 export const DRUM_STEP_COUNT = 16;
 export const PATTERN_STEPS_PER_BAR = 16;
+const SONG_NOTE_OCTAVES = [2, 3, 4, 5, 6] as const;
+export const SONG_NOTE_OPTIONS = SONG_NOTE_OCTAVES.flatMap((octave) =>
+    ROOT_NOTES.map((note) => `${note}${octave}`)
+);
+export const PIANO_ROLL_NOTE_OPTIONS = [...SONG_NOTE_OPTIONS].reverse();
 export const TRANSPORT_RATE_OPTIONS = [
     { value: '1n', label: '1/1' },
     { value: '2n', label: '1/2' },
@@ -143,6 +148,8 @@ export type PatternClip = {
 };
 export type AutomatableParamKey =
     | 'mix'
+    | 'playbackRate'
+    | 'pitchShift'
     | 'wet'
     | 'roomSize'
     | 'delayTime'
@@ -374,6 +381,57 @@ export type AppNode = Node & {
         visualiserMode?: 'waveform' | 'spectrum' | 'vu' | 'lissajous';
     };
     type: AudioNodeType;
+};
+
+export type PatchAssetMetadata = {
+    title?: string;
+    description?: string;
+    presetId?: string;
+    scaffoldId?: string;
+    blueprintId?: string;
+    planId?: string;
+    authoringMode?: 'inline' | 'scaffold' | 'compiled' | 'handmade';
+    generatedAt?: string;
+    globalKey?: string;
+    brainRefs?: string[];
+    validationPass?: boolean;
+    errorCount?: number;
+    warningCount?: number;
+    groundedSong?: {
+        version: number;
+        plan_id: string;
+        global_key: string;
+        brain_refs: string[];
+        validation_pass: boolean;
+        error_count: number;
+        warning_count: number;
+    };
+};
+
+export type PatchAssetV1 = {
+    version: 1;
+    nodes?: AppNode[];
+    edges?: AppEdge[];
+    masterVolume?: number;
+    metadata?: PatchAssetMetadata;
+};
+
+export type PatchValidationSeverity = 'warning' | 'error';
+
+export type PatchValidationIssue = {
+    severity: PatchValidationSeverity;
+    code: string;
+    message: string;
+    nodeId?: string;
+    edgeId?: string;
+    sceneId?: string;
+};
+
+export type PatchValidationReport = {
+    issues: PatchValidationIssue[];
+    errorCount: number;
+    warningCount: number;
+    hasErrors: boolean;
 };
 
 type NoteDispatch = {
@@ -1376,13 +1434,9 @@ const GENERATOR_WAVE_OPTIONS: WaveShape[] = ['sine', 'square', 'triangle', 'sawt
 const GENERATOR_MODE_OPTIONS: GeneratorMode[] = ['wave', 'fm', 'am', 'noise'];
 const EFFECT_SUBTYPE_OPTIONS = ['reverb', 'delay', 'distortion', 'phaser', 'bitcrusher'] as const;
 const LFO_WAVE_OPTIONS: ModulationWaveShape[] = ['sine', 'triangle', 'square', 'sawtooth'];
-const SEQUENCER_NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
-    ROOT_NOTES.map((note) => `${note}${octave}`)
-);
-const PULSE_NOTE_OPTIONS = [3, 4, 5].flatMap((octave) =>
-    ROOT_NOTES.map((note) => `${note}${octave}`)
-);
-const PATTERN_NOTE_OPTIONS = ['C5', 'B4', 'A4', 'G4', 'F4', 'E4', 'D4', 'C4'] as const;
+const SEQUENCER_NOTE_OPTIONS = SONG_NOTE_OPTIONS;
+const PULSE_NOTE_OPTIONS = SONG_NOTE_OPTIONS;
+const PATTERN_NOTE_OPTIONS = PIANO_ROLL_NOTE_OPTIONS;
 const VISUALISER_MODE_OPTIONS = ['waveform', 'spectrum', 'vu', 'lissajous'] as const;
 const ADVANCED_DRUM_TRACK_LENGTHS = [4, 8, 12, 16] as const;
 const DEFAULT_ARP_RATE_MS = 200;
@@ -1766,6 +1820,8 @@ export const AUTOMATABLE_PARAM_REGISTRY: Partial<Record<AudioNodeType, Automatab
     ],
     sampler: [
         { key: 'mix', label: 'Mix', min: 0, max: 100, step: 1, defaultValue: 80 },
+        { key: 'playbackRate', label: 'Speed', min: 0.25, max: 2, step: 0.01, defaultValue: 1 },
+        { key: 'pitchShift', label: 'Pitch Shift', min: -12, max: 12, step: 1, defaultValue: 0 },
     ],
     drum: [
         { key: 'mix', label: 'Mix', min: 0, max: 100, step: 1, defaultValue: 80 },
@@ -1819,6 +1875,10 @@ export const getNodeAutomatableValue = (
     switch (paramKey) {
         case 'mix':
             return nodeData.mix ?? 80;
+        case 'playbackRate':
+            return nodeData.playbackRate ?? 1;
+        case 'pitchShift':
+            return nodeData.pitchShift ?? 0;
         case 'wet':
             return nodeData.wet ?? 0.5;
         case 'roomSize':
@@ -2187,6 +2247,730 @@ const getEdgePresentation = (kind: ConnectionKind) => {
     };
 };
 
+const clamp01 = (value: number, fallback = 0) =>
+    Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+
+const clampSignedUnit = (value: number, fallback = 0) =>
+    Number.isFinite(value) ? Math.max(-1, Math.min(1, value)) : fallback;
+
+const coerceNumber = (value: unknown, fallback: number) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+const dedupeIds = (ids: string[] = []) =>
+    Array.from(new Set(ids.filter((entry) => typeof entry === 'string' && entry.length > 0)));
+
+const getNearestAdvancedDrumTrackLength = (length: unknown) =>
+    ADVANCED_DRUM_TRACK_LENGTHS.reduce((closest, candidate) => {
+        const target = typeof length === 'number' && Number.isFinite(length) ? length : 16;
+        return Math.abs(candidate - target) < Math.abs(closest - target) ? candidate : closest;
+    }, ADVANCED_DRUM_TRACK_LENGTHS[ADVANCED_DRUM_TRACK_LENGTHS.length - 1]);
+
+const createDefaultArrangerScene = (): ArrangerScene => ({
+    id: crypto.randomUUID(),
+    name: 'Intro',
+    startBar: 0,
+    lengthBars: 4,
+    patternNodeIds: [],
+    rhythmNodeIds: [],
+    automationLanes: [],
+});
+
+const normalizeAutomationPoint = (
+    point: Partial<AutomationPoint> | undefined,
+    fallbackId: string,
+    sceneLengthBars: number
+): AutomationPoint => ({
+    id: point?.id ?? fallbackId,
+    barOffset: Math.max(0, Math.min(sceneLengthBars, Math.round(coerceNumber(point?.barOffset, 0) * 100) / 100)),
+    value: coerceNumber(point?.value, 0),
+    durationBars:
+        typeof point?.durationBars === 'number' && Number.isFinite(point.durationBars)
+            ? Math.max(0, point.durationBars)
+            : undefined,
+});
+
+const normalizeArrangerScene = (
+    scene: Partial<ArrangerScene> | undefined,
+    fallbackName: string
+): ArrangerScene => {
+    const lengthBars = Math.max(1, Math.min(32, Math.round(coerceNumber(scene?.lengthBars, 4))));
+
+    return {
+        id: scene?.id ?? crypto.randomUUID(),
+        name: scene?.name?.trim() || fallbackName,
+        startBar: Math.max(0, Math.round(coerceNumber(scene?.startBar, 0))),
+        lengthBars,
+        patternNodeIds: dedupeIds(scene?.patternNodeIds),
+        rhythmNodeIds: dedupeIds(scene?.rhythmNodeIds),
+        automationLanes: (scene?.automationLanes ?? []).map((lane: AutomationLane, laneIndex: number) => ({
+            id: lane.id ?? `lane-${laneIndex + 1}`,
+            targetNodeId: lane.targetNodeId ?? '',
+            targetParam: lane.targetParam ?? 'mix',
+            mode: lane.mode === 'step' ? 'step' : 'ramp',
+            points: (lane.points ?? []).map((point: AutomationPoint, pointIndex: number) =>
+                normalizeAutomationPoint(point, `point-${laneIndex + 1}-${pointIndex + 1}`, lengthBars)
+            ),
+        })),
+    };
+};
+
+const normalizePatternClipData = (
+    nodeData: Partial<AppNode['data']> | undefined
+): PatternClip => {
+    const loopBars = Math.max(1, Math.min(16, Math.round(coerceNumber(nodeData?.patternLoopBars, 2))));
+    const stepsPerBar = Math.max(1, Math.round(coerceNumber(nodeData?.patternStepsPerBar, PATTERN_STEPS_PER_BAR)));
+    const totalSteps = loopBars * stepsPerBar;
+    const fallbackNotes = createDefaultPatternClip().notes;
+    const rawNotes: PatternNote[] = nodeData?.patternNotes?.length ? nodeData.patternNotes : fallbackNotes;
+
+    const notes = rawNotes.map((note: PatternNote, index: number) => {
+        const startStep = Math.max(0, Math.min(totalSteps - 1, Math.round(coerceNumber(note.startStep, index * 4))));
+        return {
+            id: note.id ?? crypto.randomUUID(),
+            note: note.note ?? fallbackNotes[index % fallbackNotes.length]?.note ?? 'C4',
+            startStep,
+            lengthSteps: Math.max(
+                1,
+                Math.min(totalSteps - startStep, Math.round(coerceNumber(note.lengthSteps, 1)))
+            ),
+            velocity: Math.max(0.05, Math.min(1, coerceNumber(note.velocity, 0.75))),
+        };
+    });
+
+    return {
+        notes,
+        loopBars,
+        stepsPerBar,
+    };
+};
+
+const normalizePatchNode = (
+    node: AppNode,
+    masterVolume = DEFAULT_MASTER_VOLUME
+): AppNode => {
+    const normalizedPatternClip = node.type === 'pattern'
+        ? normalizePatternClipData(node.data)
+        : null;
+    const defaultScene = createDefaultArrangerScene();
+
+    const normalizedNode =
+        node.type === 'tempo'
+            ? {
+                ...node,
+                data: {
+                    ...node.data,
+                    label: node.data.label || 'Tempo',
+                    bpm: clampTempoBpm(coerceNumber(node.data.bpm, DEFAULT_TRANSPORT_BPM)),
+                },
+            }
+            : node.type === 'speaker'
+                ? {
+                    ...node,
+                    data: {
+                        ...node.data,
+                        label: node.data.label || 'Master Out',
+                        volume: clampVolumePercent(coerceNumber(node.data.volume, masterVolume)),
+                    },
+                }
+                : node.type === 'controller'
+                    ? {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            label: node.data.label || 'Arpeggiator',
+                            rootNote: node.data.rootNote ?? 'C',
+                            scaleType: node.data.scaleType ?? 'major pentatonic',
+                            arpRate: Math.max(50, Math.round(coerceNumber(node.data.arpRate, DEFAULT_ARP_RATE_MS))),
+                            isPlaying: node.data.isPlaying ?? false,
+                        },
+                    }
+                    : node.type === 'midiin'
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                label: node.data.label || 'MIDI In',
+                                midiSupported:
+                                    node.data.midiSupported ??
+                                    (typeof navigator !== 'undefined' &&
+                                        typeof navigator.requestMIDIAccess === 'function'),
+                            },
+                        }
+                        : node.type === 'audioin'
+                            ? {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    label: node.data.label || 'Audio In',
+                                    audioInStatus:
+                                        node.data.audioInStatus ??
+                                        (typeof navigator !== 'undefined' &&
+                                        typeof navigator.mediaDevices?.getUserMedia === 'function'
+                                            ? 'idle'
+                                            : 'unsupported'),
+                                    inputGain: clampVolumePercent(coerceNumber(node.data.inputGain, 75)),
+                                },
+                            }
+                            : node.type === 'chord'
+                                ? {
+                                    ...node,
+                                    data: {
+                                        ...node.data,
+                                        label: node.data.label || 'Chord',
+                                        subType: node.data.subType ?? DEFAULT_CHORD_QUALITY,
+                                    },
+                                }
+                                : node.type === 'generator'
+                                    ? {
+                                        ...node,
+                                        data: {
+                                            ...node.data,
+                                            label: node.data.label || 'Oscillator',
+                                            waveShape: node.data.waveShape ?? 'sine',
+                                            generatorMode: node.data.generatorMode ?? getGeneratorMode(node.data),
+                                            mix: clampVolumePercent(coerceNumber(node.data.mix, 80)),
+                                            harmonicity: coerceNumber(node.data.harmonicity, 1),
+                                            modulationIndex: coerceNumber(node.data.modulationIndex, 4),
+                                        },
+                                    }
+                                    : node.type === 'sampler'
+                                        ? {
+                                            ...node,
+                                            data: {
+                                                ...node.data,
+                                                label: node.data.label || 'Sampler',
+                                                hasSample: node.data.hasSample ?? Boolean(node.data.sampleDataUrl),
+                                                sampleName: node.data.sampleName ?? '',
+                                                sampleDataUrl: node.data.sampleDataUrl,
+                                                sampleWaveform: node.data.sampleWaveform ?? [],
+                                                loop: node.data.loop ?? false,
+                                                playbackRate: Math.max(0.25, Math.min(2, coerceNumber(node.data.playbackRate, 1))),
+                                                reverse: node.data.reverse ?? false,
+                                                pitchShift: Math.max(-12, Math.min(12, Math.round(coerceNumber(node.data.pitchShift, 0)))),
+                                                mix: clampVolumePercent(coerceNumber(node.data.mix, 80)),
+                                                isPlaying: node.data.isPlaying ?? false,
+                                            },
+                                        }
+                                        : node.type === 'drum'
+                                            ? {
+                                                ...node,
+                                                data: {
+                                                    ...node.data,
+                                                    label: node.data.label || 'Drums',
+                                                    drumMode: node.data.drumMode ?? 'hits',
+                                                    drumPattern: node.data.drumPattern ?? createDefaultDrumPattern(),
+                                                    mix: clampVolumePercent(coerceNumber(node.data.mix, 80)),
+                                                    currentStep: Math.round(coerceNumber(node.data.currentStep, -1)),
+                                                    isPlaying: node.data.isPlaying ?? false,
+                                                },
+                                            }
+                                            : node.type === 'advanceddrum'
+                                                ? {
+                                                    ...node,
+                                                    data: {
+                                                        ...node.data,
+                                                        label: node.data.label || 'Advanced Drums',
+                                                        advancedDrumTracks: (node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks()).map((track: AdvancedDrumTrackData, index: number) => ({
+                                                            label: track.label ?? `Track ${index + 1}`,
+                                                            steps: Array.from({ length: DRUM_STEP_COUNT }, (_, stepIndex) =>
+                                                                Math.max(0, Math.min(3, Math.round(coerceNumber(track.steps?.[stepIndex], 0))))
+                                                            ),
+                                                            length: getNearestAdvancedDrumTrackLength(track.length),
+                                                            sampleName: track.sampleName,
+                                                            sampleDataUrl: track.sampleDataUrl,
+                                                        })),
+                                                        mix: clampVolumePercent(coerceNumber(node.data.mix, 80)),
+                                                        swing: clamp01(coerceNumber(node.data.swing, 0)),
+                                                        currentStep: Math.round(coerceNumber(node.data.currentStep, -1)),
+                                                        isPlaying: node.data.isPlaying ?? false,
+                                                    },
+                                                }
+                                                : node.type === 'pulse'
+                                                    ? {
+                                                        ...node,
+                                                        data: {
+                                                            ...node.data,
+                                                            label: node.data.label || 'Bloop',
+                                                            pulseSync: node.data.pulseSync ?? true,
+                                                            pulseRate: node.data.pulseRate ?? '4n',
+                                                            pulseIntervalMs: Math.max(50, Math.round(coerceNumber(node.data.pulseIntervalMs, 500))),
+                                                            pulseNote: node.data.pulseNote ?? DEFAULT_PULSE_NOTE,
+                                                            isPlaying: node.data.isPlaying ?? false,
+                                                        },
+                                                    }
+                                                    : node.type === 'stepsequencer'
+                                                        ? {
+                                                            ...node,
+                                                            data: {
+                                                                ...node.data,
+                                                                label: node.data.label || 'Sequencer',
+                                                                stepSequence: (node.data.stepSequence ?? createDefaultStepSequence()).map((step: SequencerStep, index: number) => ({
+                                                                    enabled: step.enabled ?? index < 4,
+                                                                    note: step.note ?? createDefaultStepSequence()[index]?.note ?? DEFAULT_PULSE_NOTE,
+                                                                    mix: clampVolumePercent(coerceNumber(step.mix ?? step.gate, 60)),
+                                                                })),
+                                                                selectedStep: Math.max(
+                                                                    0,
+                                                                    Math.min(
+                                                                        (node.data.stepSequence ?? createDefaultStepSequence()).length - 1,
+                                                                        Math.round(coerceNumber(node.data.selectedStep, 0))
+                                                                    )
+                                                                ),
+                                                                currentStep: Math.round(coerceNumber(node.data.currentStep, -1)),
+                                                                sequenceSync: node.data.sequenceSync ?? true,
+                                                                sequenceRate: node.data.sequenceRate ?? '8n',
+                                                                sequenceIntervalMs: Math.max(50, Math.round(coerceNumber(node.data.sequenceIntervalMs, 250))),
+                                                                isPlaying: node.data.isPlaying ?? false,
+                                                            },
+                                                        }
+                                                        : node.type === 'quantizer'
+                                                            ? {
+                                                                ...node,
+                                                                data: {
+                                                                    ...node.data,
+                                                                    label: node.data.label || 'Quantizer',
+                                                                    rootNote: node.data.rootNote ?? 'C',
+                                                                    scaleType: node.data.scaleType ?? 'major',
+                                                                    bypass: node.data.bypass ?? false,
+                                                                },
+                                                            }
+                                                            : node.type === 'moodpad'
+                                                                ? {
+                                                                    ...node,
+                                                                    data: {
+                                                                        ...node.data,
+                                                                        label: node.data.label || 'Mood Pad',
+                                                                        moodX: clamp01(coerceNumber(node.data.moodX, 0.35)),
+                                                                        moodY: clamp01(coerceNumber(node.data.moodY, 0.55)),
+                                                                    },
+                                                                }
+                                                                : node.type === 'effect'
+                                                                    ? {
+                                                                        ...node,
+                                                                        data: {
+                                                                            ...node.data,
+                                                                            label: node.data.label || 'Effect',
+                                                                            subType: node.data.subType ?? 'reverb',
+                                                                            wet: clamp01(coerceNumber(node.data.wet, 0.5)),
+                                                                            roomSize: clamp01(coerceNumber(node.data.roomSize, 0.5)),
+                                                                            delayTime: Math.max(0.05, Math.min(1.2, coerceNumber(node.data.delayTime, 0.45))),
+                                                                            feedback: clamp01(coerceNumber(node.data.feedback, 0.4)),
+                                                                            distortion: clamp01(coerceNumber(node.data.distortion, 0.5)),
+                                                                            frequency: Math.max(0.1, Math.min(20, coerceNumber(node.data.frequency, 4))),
+                                                                            octaves: Math.max(1, Math.round(coerceNumber(node.data.octaves, 5))),
+                                                                            bits: Math.max(1, Math.round(coerceNumber(node.data.bits, 4))),
+                                                                        },
+                                                                    }
+                                                                    : node.type === 'eq'
+                                                                        ? {
+                                                                            ...node,
+                                                                            data: {
+                                                                                ...node.data,
+                                                                                label: node.data.label || 'EQ',
+                                                                                eqLow: Math.max(-24, Math.min(24, coerceNumber(node.data.eqLow, 0))),
+                                                                                eqMid: Math.max(-24, Math.min(24, coerceNumber(node.data.eqMid, 0))),
+                                                                                eqHigh: Math.max(-24, Math.min(24, coerceNumber(node.data.eqHigh, 0))),
+                                                                                eqLowFrequency: Math.max(80, Math.min(1200, coerceNumber(node.data.eqLowFrequency, 320))),
+                                                                                eqHighFrequency: Math.max(1200, Math.min(8000, coerceNumber(node.data.eqHighFrequency, 2800))),
+                                                                            },
+                                                                        }
+                                                                        : node.type === 'lfo'
+                                                                            ? {
+                                                                                ...node,
+                                                                                data: {
+                                                                                    ...node.data,
+                                                                                    label: node.data.label || 'LFO',
+                                                                                    lfoWaveform: node.data.lfoWaveform ?? 'sine',
+                                                                                    lfoDepth: clamp01(coerceNumber(node.data.lfoDepth, 0.35)),
+                                                                                    lfoSync: node.data.lfoSync ?? true,
+                                                                                    lfoRate: node.data.lfoRate ?? '4n',
+                                                                                    lfoHz: Math.max(0.05, Math.min(20, coerceNumber(node.data.lfoHz, 1))),
+                                                                                },
+                                                                            }
+                                                                            : node.type === 'pattern'
+                                                                                ? {
+                                                                                    ...node,
+                                                                                    data: {
+                                                                                        ...node.data,
+                                                                                        label: node.data.label || 'Pattern',
+                                                                                        patternNotes: normalizedPatternClip?.notes ?? createDefaultPatternClip().notes,
+                                                                                        patternLoopBars: normalizedPatternClip?.loopBars ?? 2,
+                                                                                        patternStepsPerBar: normalizedPatternClip?.stepsPerBar ?? PATTERN_STEPS_PER_BAR,
+                                                                                        currentStep: Math.round(coerceNumber(node.data.currentStep, -1)),
+                                                                                        isPlaying: node.data.isPlaying ?? false,
+                                                                                    },
+                                                                                }
+                                                                                : node.type === 'unison'
+                                                                                    ? {
+                                                                                        ...node,
+                                                                                        data: {
+                                                                                            ...node.data,
+                                                                                            label: node.data.label || 'Unison',
+                                                                                            wet: clamp01(coerceNumber(node.data.wet, 0.5)),
+                                                                                            depth: clamp01(coerceNumber(node.data.depth, 0.7)),
+                                                                                            frequency: Math.max(0.1, Math.min(10, coerceNumber(node.data.frequency, 3.35))),
+                                                                                        },
+                                                                                    }
+                                                                                    : node.type === 'detune'
+                                                                                        ? {
+                                                                                            ...node,
+                                                                                            data: {
+                                                                                                ...node.data,
+                                                                                                label: node.data.label || 'Detune',
+                                                                                                wet: clamp01(coerceNumber(node.data.wet, 1)),
+                                                                                                pitch: Math.max(-12, Math.min(12, coerceNumber(node.data.pitch, 0))),
+                                                                                            },
+                                                                                        }
+                                                                                        : node.type === 'mixer'
+                                                                                            ? {
+                                                                                                ...node,
+                                                                                                data: {
+                                                                                                    ...node.data,
+                                                                                                    label: node.data.label || 'Mixer',
+                                                                                                    volume: clampVolumePercent(coerceNumber(node.data.volume, 70)),
+                                                                                                    pan: clampSignedUnit(coerceNumber(node.data.pan, 0)),
+                                                                                                    mixerChannels: (node.data.mixerChannels ?? []).map((channel: MixerChannelState) => ({
+                                                                                                        sourceId: channel.sourceId,
+                                                                                                        volume: clampVolumePercent(coerceNumber(channel.volume, 70)),
+                                                                                                        pan: clampSignedUnit(coerceNumber(channel.pan, 0)),
+                                                                                                        muted: channel.muted ?? false,
+                                                                                                        solo: channel.solo ?? false,
+                                                                                                    })),
+                                                                                                },
+                                                                                            }
+                                                                                            : node.type === 'arranger'
+                                                                                                ? {
+                                                                                                    ...node,
+                                                                                                    data: {
+                                                                                                        ...node.data,
+                                                                                                        label: node.data.label || 'Arranger',
+                                                                                                        arrangerScenes: (node.data.arrangerScenes?.length
+                                                                                                            ? node.data.arrangerScenes
+                                                                                                            : [defaultScene]
+                                                                                                        ).map((scene: ArrangerScene, index: number) =>
+                                                                                                            normalizeArrangerScene(scene, `Scene ${index + 1}`)
+                                                                                                        ),
+                                                                                                        currentStep: Math.round(coerceNumber(node.data.currentStep, -1)),
+                                                                                                        isPlaying: node.data.isPlaying ?? false,
+                                                                                                    },
+                                                                                                }
+                                                                                                : node.type === 'visualiser'
+                                                                                                    ? {
+                                                                                                        ...node,
+                                                                                                        data: {
+                                                                                                            ...node.data,
+                                                                                                            label: node.data.label || 'Visualiser',
+                                                                                                            visualiserMode: node.data.visualiserMode ?? 'waveform',
+                                                                                                        },
+                                                                                                    }
+                                                                                                    : node;
+
+    return {
+        ...normalizedNode,
+        data: {
+            ...normalizedNode.data,
+            mathInputTarget: normalizedNode.data.mathInputTarget ?? MATH_NONE_TARGET,
+        },
+    };
+};
+
+const normalizePatchEdges = (edges: AppEdge[] = [], nodes: AppNode[]) =>
+    stripLegacyTempoEdges(
+        edges.map((edge) => {
+            const kind =
+                edge.data?.kind ||
+                (edge.sourceHandle === MATH_OUTPUT_HANDLE_ID
+                    ? 'math'
+                    : edge.sourceHandle === MODULATION_OUTPUT_HANDLE_ID
+                        ? 'modulation'
+                        : edge.sourceHandle === AUDIO_OUTPUT_HANDLE_ID
+                            ? 'audio'
+                            : 'control');
+
+            return {
+                ...edge,
+                ...getEdgePresentation(kind),
+                data: {
+                    ...edge.data,
+                    kind,
+                    targetParam:
+                        kind === 'modulation'
+                            ? edge.data?.targetParam ?? getModulationParamFromHandle(edge.targetHandle) ?? undefined
+                            : edge.data?.targetParam,
+                    mathTarget:
+                        kind === 'math'
+                            ? edge.data?.mathTarget ??
+                                nodes.find((node) => node.id === edge.target)?.data.mathInputTarget ??
+                                MATH_NONE_TARGET
+                            : edge.data?.mathTarget,
+                },
+            };
+        })
+    );
+
+export const normalizePatchAsset = (
+    data: PatchAssetV1 | { nodes?: AppNode[]; edges?: AppEdge[]; masterVolume?: number; metadata?: PatchAssetMetadata }
+): PatchAssetV1 => {
+    const nodes = (data.nodes ?? []).map((node) =>
+        normalizePatchNode(node, clampVolumePercent(coerceNumber(data.masterVolume, DEFAULT_MASTER_VOLUME)))
+    );
+
+    return {
+        version: 1,
+        nodes,
+        edges: normalizePatchEdges(data.edges ?? [], nodes),
+        masterVolume: clampVolumePercent(coerceNumber(data.masterVolume, DEFAULT_MASTER_VOLUME)),
+        metadata: data.metadata,
+    };
+};
+
+export const getArrangerValidationIssues = (
+    arrangerNode: AppNode,
+    allNodes: AppNode[]
+): PatchValidationIssue[] => {
+    if (arrangerNode.type !== 'arranger') {
+        return [];
+    }
+
+    const issues: PatchValidationIssue[] = [];
+    const scenes = (arrangerNode.data.arrangerScenes ?? [])
+        .slice()
+        .sort((left: ArrangerScene, right: ArrangerScene) => left.startBar - right.startBar);
+    const nodesById = new Map(allNodes.map((node: AppNode) => [node.id, node]));
+
+    if (scenes.length === 0) {
+        issues.push({
+            severity: 'warning',
+            code: 'arranger-empty',
+            message: 'Arranger has no scenes.',
+            nodeId: arrangerNode.id,
+        });
+        return issues;
+    }
+
+    scenes.forEach((scene: ArrangerScene, index: number) => {
+        const previousScene = scenes[index - 1];
+
+        if (scene.patternNodeIds.length === 0 && scene.rhythmNodeIds.length === 0) {
+            issues.push({
+                severity: 'warning',
+                code: 'arranger-empty-scene',
+                message: `${scene.name} does not trigger any pattern or rhythm nodes.`,
+                nodeId: arrangerNode.id,
+                sceneId: scene.id,
+            });
+        }
+
+        if (previousScene) {
+            const previousEnd = previousScene.startBar + previousScene.lengthBars;
+            if (scene.startBar > previousEnd) {
+                issues.push({
+                    severity: 'warning',
+                    code: 'arranger-gap',
+                    message: `${scene.name} starts after a gap in the timeline.`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+            }
+            if (scene.startBar < previousEnd) {
+                issues.push({
+                    severity: 'warning',
+                    code: 'arranger-overlap',
+                    message: `${scene.name} overlaps the previous scene.`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+            }
+        }
+
+        scene.patternNodeIds.forEach((patternNodeId: string) => {
+            const patternNode = nodesById.get(patternNodeId);
+            if (!patternNode || patternNode.type !== 'pattern') {
+                issues.push({
+                    severity: 'error',
+                    code: 'arranger-missing-pattern',
+                    message: `${scene.name} references a missing pattern node (${patternNodeId}).`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+            }
+        });
+
+        scene.rhythmNodeIds.forEach((rhythmNodeId: string) => {
+            const rhythmNode = nodesById.get(rhythmNodeId);
+            if (!rhythmNode || (rhythmNode.type !== 'stepsequencer' && rhythmNode.type !== 'advanceddrum')) {
+                issues.push({
+                    severity: 'error',
+                    code: 'arranger-missing-rhythm',
+                    message: `${scene.name} references a missing rhythm node (${rhythmNodeId}).`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+            }
+        });
+
+        scene.automationLanes.forEach((lane: AutomationLane) => {
+            const targetNode = nodesById.get(lane.targetNodeId);
+            if (!targetNode) {
+                issues.push({
+                    severity: 'error',
+                    code: 'arranger-missing-automation-target',
+                    message: `${scene.name} targets a missing automation node (${lane.targetNodeId}).`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+                return;
+            }
+
+            if (!getAutomatableParamDefinition(targetNode.type, lane.targetParam)) {
+                issues.push({
+                    severity: 'error',
+                    code: 'arranger-invalid-automation-param',
+                    message: `${scene.name} targets ${lane.targetParam} on ${targetNode.data.label}, which is not automatable.`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+            }
+
+            if (lane.points.length === 0) {
+                issues.push({
+                    severity: 'warning',
+                    code: 'arranger-empty-automation-lane',
+                    message: `${scene.name} has an automation lane with no points.`,
+                    nodeId: arrangerNode.id,
+                    sceneId: scene.id,
+                });
+            }
+
+            lane.points.forEach((point: AutomationPoint) => {
+                if (point.barOffset < 0 || point.barOffset > scene.lengthBars) {
+                    issues.push({
+                        severity: 'warning',
+                        code: 'arranger-automation-point-range',
+                        message: `${scene.name} has an automation point outside the scene length.`,
+                        nodeId: arrangerNode.id,
+                        sceneId: scene.id,
+                    });
+                }
+            });
+        });
+    });
+
+    return issues;
+};
+
+export const validatePatchAsset = (
+    data: PatchAssetV1 | { nodes?: AppNode[]; edges?: AppEdge[]; masterVolume?: number; metadata?: PatchAssetMetadata }
+): PatchValidationReport => {
+    const asset = normalizePatchAsset(data);
+    const nodes = asset.nodes ?? [];
+    const edges = asset.edges ?? [];
+    const issues: PatchValidationIssue[] = [];
+    const nodesById = new Map<string, AppNode>();
+    const singletonCounts = new Map<AudioNodeType, number>();
+
+    nodes.forEach((node: AppNode) => {
+        if (nodesById.has(node.id)) {
+            issues.push({
+                severity: 'error',
+                code: 'duplicate-node-id',
+                message: `Duplicate node id detected: ${node.id}.`,
+                nodeId: node.id,
+            });
+        }
+        nodesById.set(node.id, node);
+
+        if (
+            node.type === 'tempo' ||
+            node.type === 'speaker' ||
+            node.type === 'mixer' ||
+            node.type === 'arranger' ||
+            node.type === 'audioin' ||
+            node.type === 'midiin'
+        ) {
+            singletonCounts.set(node.type, (singletonCounts.get(node.type) ?? 0) + 1);
+        }
+
+        if (node.type === 'sampler' && node.data.hasSample && !node.data.sampleDataUrl) {
+            issues.push({
+                severity: 'warning',
+                code: 'sampler-missing-sample',
+                message: `${node.data.label} is marked as loaded but has no sample URL.`,
+                nodeId: node.id,
+            });
+        }
+
+        if (node.type === 'advanceddrum') {
+            node.data.advancedDrumTracks?.forEach((track: AdvancedDrumTrackData, trackIndex: number) => {
+                if (track.sampleName && !track.sampleDataUrl) {
+                    issues.push({
+                        severity: 'warning',
+                        code: 'advanceddrum-missing-sample-url',
+                        message: `${node.data.label} track ${trackIndex + 1} names a sample without a URL.`,
+                        nodeId: node.id,
+                    });
+                }
+            });
+        }
+
+        if (node.type === 'arranger') {
+            issues.push(...getArrangerValidationIssues(node, nodes));
+        }
+    });
+
+    singletonCounts.forEach((count, type) => {
+        if (count > 1) {
+            issues.push({
+                severity: 'warning',
+                code: 'duplicate-singleton',
+                message: `Patch contains ${count} ${type} nodes even though the UI treats ${type} as a singleton.`,
+            });
+        }
+    });
+
+    edges.forEach((edge: AppEdge) => {
+        if (!nodesById.has(edge.source) || !nodesById.has(edge.target)) {
+            issues.push({
+                severity: 'error',
+                code: 'dangling-edge',
+                message: `Edge ${edge.id} points at a missing node.`,
+                edgeId: edge.id,
+            });
+        }
+
+        if (edge.data?.kind === 'modulation') {
+            const targetNode = nodesById.get(edge.target);
+            if (!targetNode || !edge.data.targetParam || !getAutomatableParamDefinition(targetNode.type, edge.data.targetParam)) {
+                issues.push({
+                    severity: 'error',
+                    code: 'invalid-modulation-target',
+                    message: `Edge ${edge.id} targets an invalid modulation parameter.`,
+                    edgeId: edge.id,
+                });
+            }
+        }
+
+        if (edge.data?.kind === 'math') {
+            issues.push({
+                severity: 'warning',
+                code: 'math-edge-nonshipped',
+                message: `Edge ${edge.id} uses math routing, which currently relies on non-shipped sender paths.`,
+                edgeId: edge.id,
+            });
+        }
+    });
+
+    const errorCount = issues.filter((issue) => issue.severity === 'error').length;
+    const warningCount = issues.length - errorCount;
+
+    return {
+        issues,
+        errorCount,
+        warningCount,
+        hasErrors: errorCount > 0,
+    };
+};
+
 const collectReachableEdgeIds = (
     sourceId: string,
     kind: ConnectionKind,
@@ -2333,7 +3117,7 @@ type AppState = {
     syncMixerChannels: () => void;
     initializeDefaultNodes: () => void;
     clearCanvas: () => void;
-    loadCanvas: (data: { nodes: AppNode[]; edges: AppEdge[]; masterVolume?: number }) => void;
+    loadCanvas: (data: PatchAssetV1 | { nodes: AppNode[]; edges: AppEdge[]; masterVolume?: number }) => PatchValidationReport;
     recalculateAdjacency: () => void;
     autoWireAdjacentNodes: () => void;
     toggleNodeLock: (id: string) => void;
@@ -2723,7 +3507,7 @@ const applyMathTargetValue = (
     }
 
     if (targetId === 'patternLoopBars') {
-        store.updatePatternData(node.id, { loopBars: mapMathIntRange(safeValue, 1, 8) });
+        store.updatePatternData(node.id, { loopBars: mapMathIntRange(safeValue, 1, 16) });
         return;
     }
 
@@ -2742,7 +3526,7 @@ const applyMathTargetValue = (
         }
         if (fieldName === 'startStep') {
             const totalSteps =
-                Math.max(1, node.data.patternLoopBars ?? 2) *
+                Math.max(1, Math.min(16, node.data.patternLoopBars ?? 2)) *
                 Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR);
             store.upsertPatternNote(node.id, {
                 ...targetNote,
@@ -2752,7 +3536,7 @@ const applyMathTargetValue = (
         }
         if (fieldName === 'lengthSteps') {
             const totalSteps =
-                Math.max(1, node.data.patternLoopBars ?? 2) *
+                Math.max(1, Math.min(16, node.data.patternLoopBars ?? 2)) *
                 Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR);
             store.upsertPatternNote(node.id, {
                 ...targetNote,
@@ -2807,7 +3591,7 @@ const applyMathTargetValue = (
         if (fieldName === 'lengthBars') {
             store.upsertArrangerScene(node.id, {
                 ...scene,
-                lengthBars: mapMathIntRange(safeValue, 1, 16),
+                lengthBars: mapMathIntRange(safeValue, 1, 32),
             });
         }
     }
@@ -2815,7 +3599,7 @@ const applyMathTargetValue = (
 
 const getPatternClipFromNode = (node: AppNode): PatternClip => ({
     notes: node.data.patternNotes ?? createDefaultPatternClip().notes,
-    loopBars: Math.max(1, Math.min(8, node.data.patternLoopBars ?? 2)),
+    loopBars: Math.max(1, Math.min(16, node.data.patternLoopBars ?? 2)),
     stepsPerBar: Math.max(1, node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR),
 });
 
@@ -2927,8 +3711,27 @@ const applyRuntimeAutomatableValue = (
         return;
     }
 
-    if (nodeType === 'sampler' && paramKey === 'mix') {
-        state.samplerChains.get(nodeId)?.player.volume.rampTo(volumePercentToDb(value), rampSeconds);
+    if (nodeType === 'sampler') {
+        const chain = state.samplerChains.get(nodeId);
+        if (!chain) {
+            return;
+        }
+
+        if (paramKey === 'mix') {
+            chain.player.volume.rampTo(volumePercentToDb(value), rampSeconds);
+            return;
+        }
+
+        if (paramKey === 'playbackRate') {
+            chain.player.playbackRate = Math.max(0.25, Math.min(2, value));
+            return;
+        }
+
+        if (paramKey === 'pitchShift') {
+            chain.pitchShift.pitch = Math.max(-12, Math.min(12, value));
+            return;
+        }
+
         return;
     }
 
@@ -4135,6 +4938,10 @@ export const useStore = create<AppState>((set, get) => ({
                 stepSequence[stepIndex] = {
                     ...currentStep,
                     ...step,
+                    mix:
+                        typeof step.mix === 'number' || typeof step.gate === 'number'
+                            ? clampVolumePercent(coerceNumber(step.mix ?? step.gate, getSequencerStepMix(currentStep)))
+                            : currentStep.mix,
                 };
 
                 return {
@@ -4155,11 +4962,12 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         const currentClip = getPatternClipFromNode(currentNode);
-        const nextClip: PatternClip = {
-            notes: clip.notes ?? currentClip.notes,
-            loopBars: clip.loopBars ?? currentClip.loopBars,
-            stepsPerBar: clip.stepsPerBar ?? currentClip.stepsPerBar,
-        };
+        const nextClip = normalizePatternClipData({
+            ...currentNode.data,
+            patternNotes: clip.notes ?? currentClip.notes,
+            patternLoopBars: clip.loopBars ?? currentClip.loopBars,
+            patternStepsPerBar: clip.stepsPerBar ?? currentClip.stepsPerBar,
+        });
 
         set({
             nodes: get().nodes.map((node: AppNode) =>
@@ -4253,9 +5061,10 @@ export const useStore = create<AppState>((set, get) => ({
         }
 
         const existingScenes: ArrangerScene[] = arrangerNode.data.arrangerScenes ?? [];
+        const normalizedScene = normalizeArrangerScene(scene, scene.name || `Scene ${existingScenes.length + 1}`);
         const nextScenes = existingScenes.some((entry: ArrangerScene) => entry.id === scene.id)
-            ? existingScenes.map((entry: ArrangerScene) => (entry.id === scene.id ? scene : entry))
-            : [...existingScenes, scene];
+            ? existingScenes.map((entry: ArrangerScene) => (entry.id === scene.id ? normalizedScene : entry))
+            : [...existingScenes, normalizedScene];
 
         set({
             nodes: get().nodes.map((node: AppNode) =>
@@ -5692,298 +6501,7 @@ export const useStore = create<AppState>((set, get) => ({
             return;
         }
 
-        const nextNode =
-            node.type === 'tempo'
-                ? {
-                    ...node,
-                    data: {
-                        ...node.data,
-                        label: node.data.label || 'Tempo',
-                        bpm: clampTempoBpm(node.data.bpm ?? DEFAULT_TRANSPORT_BPM),
-                    },
-                    }
-                    : node.type === 'speaker'
-                    ? {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            label: node.data.label || 'Master Out',
-                            volume: node.data.volume ?? get().masterVolume,
-                        },
-                        }
-                        : node.type === 'controller'
-                            ? {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    label: node.data.label || 'Arpeggiator',
-                                    rootNote: node.data.rootNote ?? 'C',
-                                    scaleType: node.data.scaleType ?? 'major pentatonic',
-                                    arpRate: node.data.arpRate ?? DEFAULT_ARP_RATE_MS,
-                                    isPlaying: node.data.isPlaying ?? false,
-                                },
-                            }
-                        : node.type === 'midiin'
-                            ? {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    label: node.data.label || 'MIDI In',
-                                    midiSupported:
-                                        node.data.midiSupported ??
-                                        (typeof navigator !== 'undefined' &&
-                                            typeof navigator.requestMIDIAccess === 'function'),
-                                },
-                            }
-                            : node.type === 'audioin'
-                                ? {
-                                    ...node,
-                                    data: {
-                                        ...node.data,
-                                        label: node.data.label || 'Audio In',
-                                        audioInStatus:
-                                            node.data.audioInStatus ??
-                                            (typeof navigator !== 'undefined' &&
-                                            typeof navigator.mediaDevices?.getUserMedia === 'function'
-                                                ? 'idle'
-                                                : 'unsupported'),
-                                        inputGain: node.data.inputGain ?? 75,
-                                    },
-                                }
-                    : node.type === 'chord'
-                        ? {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                label: node.data.label || 'Chord',
-                                subType: node.data.subType ?? DEFAULT_CHORD_QUALITY,
-                            },
-                        }
-                        : node.type === 'generator'
-                            ? {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    label: node.data.label || 'Oscillator',
-                                    waveShape: node.data.waveShape ?? 'sine',
-                                    generatorMode: node.data.generatorMode ?? getGeneratorMode(node.data),
-                                    mix: node.data.mix ?? 80,
-                                    harmonicity: node.data.harmonicity ?? 1,
-                                    modulationIndex: node.data.modulationIndex ?? 4,
-                                },
-                            }
-                            : node.type === 'sampler'
-                                ? {
-                                    ...node,
-                                    data: {
-                                        ...node.data,
-                                        label: node.data.label || 'Sampler',
-                                        hasSample: node.data.hasSample ?? false,
-                                        sampleName: node.data.sampleName ?? '',
-                                        sampleDataUrl: node.data.sampleDataUrl,
-                                        sampleWaveform: node.data.sampleWaveform ?? [],
-                                        loop: node.data.loop ?? false,
-                                        playbackRate: node.data.playbackRate ?? 1,
-                                        reverse: node.data.reverse ?? false,
-                                        pitchShift: node.data.pitchShift ?? 0,
-                                        mix: node.data.mix ?? 80,
-                                        isPlaying: node.data.isPlaying ?? false,
-                                    },
-                                }
-                            : node.type === 'drum'
-                                ? {
-                                    ...node,
-                                    data: {
-                                        ...node.data,
-                                        label: node.data.label || 'Drums',
-                                        drumMode: node.data.drumMode ?? 'hits',
-                                        drumPattern: node.data.drumPattern ?? createDefaultDrumPattern(),
-                                        mix: node.data.mix ?? 80,
-                                        currentStep: node.data.currentStep ?? -1,
-                                        isPlaying: node.data.isPlaying ?? false,
-                                    },
-                                }
-                                : node.type === 'advanceddrum'
-                                    ? {
-                                        ...node,
-                                        data: {
-                                            ...node.data,
-                                            label: node.data.label || 'Advanced Drums',
-                                            advancedDrumTracks: node.data.advancedDrumTracks ?? createDefaultAdvancedDrumTracks(),
-                                            mix: node.data.mix ?? 80,
-                                            swing: node.data.swing ?? 0,
-                                            currentStep: node.data.currentStep ?? -1,
-                                            isPlaying: node.data.isPlaying ?? false,
-                                        },
-                                    }
-                                : node.type === 'pulse'
-                                    ? {
-                                        ...node,
-                                        data: {
-                                            ...node.data,
-                                            label: node.data.label || 'Bloop',
-                                            pulseSync: node.data.pulseSync ?? true,
-                                            pulseRate: node.data.pulseRate ?? '4n',
-                                            pulseIntervalMs: node.data.pulseIntervalMs ?? 500,
-                                            pulseNote: node.data.pulseNote ?? DEFAULT_PULSE_NOTE,
-                                            isPlaying: node.data.isPlaying ?? false,
-                                        },
-                                    }
-                                    : node.type === 'stepsequencer'
-                                        ? {
-                                            ...node,
-                                            data: {
-                                                ...node.data,
-                                                label: node.data.label || 'Sequencer',
-                                                stepSequence: node.data.stepSequence ?? createDefaultStepSequence(),
-                                                selectedStep: node.data.selectedStep ?? 0,
-                                                currentStep: node.data.currentStep ?? -1,
-                                                sequenceSync: node.data.sequenceSync ?? true,
-                                                sequenceRate: node.data.sequenceRate ?? '8n',
-                                                sequenceIntervalMs: node.data.sequenceIntervalMs ?? 250,
-                                                isPlaying: node.data.isPlaying ?? false,
-                                            },
-                                        }
-                                        : node.type === 'quantizer'
-                                            ? {
-                                                ...node,
-                                                data: {
-                                                    ...node.data,
-                                                    label: node.data.label || 'Quantizer',
-                                                    rootNote: node.data.rootNote ?? 'C',
-                                                    scaleType: node.data.scaleType ?? 'major',
-                                                    bypass: node.data.bypass ?? false,
-                                                },
-                                            }
-                                            : node.type === 'moodpad'
-                                                ? {
-                                                    ...node,
-                                                    data: {
-                                                        ...node.data,
-                                                        label: node.data.label || 'Mood Pad',
-                                                        moodX: node.data.moodX ?? 0.35,
-                                                        moodY: node.data.moodY ?? 0.55,
-                                                    },
-                                                }
-                                                : node.type === 'effect'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Effect',
-                                                            subType: node.data.subType ?? 'reverb',
-                                                            wet: node.data.wet ?? 0.5,
-                                                            roomSize: node.data.roomSize ?? 0.5,
-                                                            delayTime: node.data.delayTime ?? 0.45,
-                                                            feedback: node.data.feedback ?? 0.4,
-                                                            distortion: node.data.distortion ?? 0.5,
-                                                            frequency: node.data.frequency ?? 4,
-                                                            octaves: node.data.octaves ?? 5,
-                                                            bits: node.data.bits ?? 4,
-                                                        },
-                                                    }
-                                                : node.type === 'eq'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'EQ',
-                                                            eqLow: node.data.eqLow ?? 0,
-                                                            eqMid: node.data.eqMid ?? 0,
-                                                            eqHigh: node.data.eqHigh ?? 0,
-                                                            eqLowFrequency: node.data.eqLowFrequency ?? 320,
-                                                            eqHighFrequency: node.data.eqHighFrequency ?? 2800,
-                                                        },
-                                                    }
-                                                : node.type === 'lfo'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'LFO',
-                                                            lfoWaveform: node.data.lfoWaveform ?? 'sine',
-                                                            lfoDepth: node.data.lfoDepth ?? 0.35,
-                                                            lfoSync: node.data.lfoSync ?? true,
-                                                            lfoRate: node.data.lfoRate ?? '4n',
-                                                            lfoHz: node.data.lfoHz ?? 1,
-                                                        },
-                                                    }
-                                                : node.type === 'pattern'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Pattern',
-                                                            patternNotes: node.data.patternNotes ?? createDefaultPatternClip().notes,
-                                                            patternLoopBars: node.data.patternLoopBars ?? 2,
-                                                            patternStepsPerBar: node.data.patternStepsPerBar ?? PATTERN_STEPS_PER_BAR,
-                                                            currentStep: node.data.currentStep ?? -1,
-                                                            isPlaying: node.data.isPlaying ?? false,
-                                                        },
-                                                    }
-                                                : node.type === 'unison'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Unison',
-                                                            wet: node.data.wet ?? 0.5,
-                                                            depth: node.data.depth ?? 0.7,
-                                                            frequency: node.data.frequency ?? 3.35,
-                                                        },
-                                                    }
-                                                : node.type === 'detune'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Detune',
-                                                            wet: node.data.wet ?? 1,
-                                                            pitch: node.data.pitch ?? 0,
-                                                        },
-                                                    }
-                                                : node.type === 'mixer'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Mixer',
-                                                            volume: node.data.volume ?? 70,
-                                                            pan: node.data.pan ?? 0,
-                                                            mixerChannels: node.data.mixerChannels ?? [],
-                                                        },
-                                                    }
-                                                : node.type === 'arranger'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Arranger',
-                                                            arrangerScenes: node.data.arrangerScenes ?? [
-                                                                {
-                                                                    id: crypto.randomUUID(),
-                                                                    name: 'Intro',
-                                                                    startBar: 0,
-                                                                    lengthBars: 4,
-                                                                    patternNodeIds: [],
-                                                                    rhythmNodeIds: [],
-                                                                    automationLanes: [],
-                                                                },
-                                                            ],
-                                                            currentStep: node.data.currentStep ?? -1,
-                                                            isPlaying: node.data.isPlaying ?? false,
-                                                        },
-                                                    }
-                                                : node.type === 'visualiser'
-                                                    ? {
-                                                        ...node,
-                                                        data: {
-                                                            ...node.data,
-                                                            label: node.data.label || 'Visualiser',
-                                                            visualiserMode: node.data.visualiserMode ?? 'waveform',
-                                                        },
-                                                    }
-                                : node;
+        const nextNode = normalizePatchNode(node, get().masterVolume);
 
         const persistedNode: AppNode = {
             ...nextNode,
@@ -6554,37 +7072,19 @@ export const useStore = create<AppState>((set, get) => ({
 
     loadCanvas: (data) => {
         get().saveSnapshot();
+        const normalizedAsset = normalizePatchAsset(data);
+        const report = validatePatchAsset(normalizedAsset);
         get().clearCanvas();
 
-        const { nodes, edges, masterVolume } = data;
-
-        const hydratedEdges = (edges || []).map((edge) => {
-            const kind =
-                edge.data?.kind ||
-                (edge.sourceHandle === MATH_OUTPUT_HANDLE_ID
-                    ? 'math'
-                    : edge.sourceHandle === MODULATION_OUTPUT_HANDLE_ID
-                        ? 'modulation'
-                        : edge.sourceHandle === AUDIO_OUTPUT_HANDLE_ID
-                            ? 'audio'
-                            : 'control');
-            return {
-                ...edge,
-                ...getEdgePresentation(kind),
-                data: {
-                    ...edge.data,
-                    kind,
-                    mathTarget:
-                        kind === 'math'
-                            ? edge.data?.mathTarget ?? nodes.find((node) => node.id === edge.target)?.data.mathInputTarget ?? MATH_NONE_TARGET
-                            : edge.data?.mathTarget,
-                },
-            };
-        });
+        const {
+            nodes = [],
+            edges = [],
+            masterVolume,
+        } = normalizedAsset;
 
         set({
-            nodes: nodes || [],
-            edges: hydratedEdges,
+            nodes,
+            edges,
             masterVolume: masterVolume ?? DEFAULT_MASTER_VOLUME,
         });
 
@@ -6642,6 +7142,8 @@ export const useStore = create<AppState>((set, get) => ({
         nodes
             .filter((node: AppNode) => isPatternRuntimeNode(node.type) && node.data.isPlaying)
             .forEach((node: AppNode) => get().toggleNodePlayback(node.id, true));
+
+        return report;
     },
 
     autoWireAdjacentNodes: () => {
