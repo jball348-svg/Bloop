@@ -6,7 +6,7 @@ Reference path from repo root: `.agent/PLANS.md`
 
 ## What is an ExecPlan and why does Bloop use them?
 
-Bloop's roadmap spans seven versions (v4–v10) and dozens of interconnected features across a real-time audio engine, a React Flow canvas, and a Zustand state store. A single ExecPlan is a living specification that allows Codex to work autonomously for hours on a complex milestone — writing the plan first, then implementing milestone by milestone, updating the plan as discoveries are made, so that any interruption can be resumed from only the plan file.
+Bloop's roadmap spans several versions (v1–v17) and dozens of interconnected features across a real-time audio engine, a React Flow canvas, and a Zustand state store. A single ExecPlan is a living specification that allows Codex to work autonomously for hours on a complex milestone — writing the plan first, then implementing milestone by milestone, updating the plan as discoveries are made, so that any interruption can be resumed from only the plan file.
 
 Every plan in `.agent/plans/` covers one roadmap version. Each version contains multiple GitHub issues (the tickets). The plan must be self-contained: a Codex agent starting fresh from only the plan file and the repo working tree must be able to complete the work end to end.
 
