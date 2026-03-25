@@ -1,0 +1,589 @@
+version: 1.0
+file_role: composer_overlay_contract
+purpose: >
+  Defines the practical action surface the composer agent may use when planning
+  music for Bloop without modifying Bloop itself. This file is an overlay-level
+  contract, not a claim that all actions are exposed as a formal public API.
+
+principles:
+  - "Do not modify Bloop instrument code."
+  - "Treat Bloop as the runtime instrument."
+  - "Prefer documented store/runtime behavior over UI assumptions."
+  - "Prefer stable, repeatable actions over fragile contextual ones."
+  - "When an operation depends on local UI selection, mark it contextual."
+  - "Do not assume a shipped math sender node exists."
+  - "Use manual_intervention_points.md when an operation cannot be safely automated."
+
+runtime_truths:
+  repo_scope:
+    description: >
+      Bloop is a visual modular audio sandbox with controller, signal/audio, and
+      global nodes including sequencers, piano rolls, arranger timelines,
+      automation lanes, presets, and recording/export.
+    confidence: high
+
+  patch_persistence:
+    description: >
+      .bloop files save the graph and master volume only; broader composer memory
+      must live in the overlay layer.
+    confidence: high
+
+  math_control:
+    description: >
+      V16 math is receiver-first. Receivers and target selection are real, and
+      direct testing can call receiveMathValue(nodeId, normalizedValue), but no
+      shipped visible math-out sender node exists today.
+    confidence: high
+
+  target_resolution:
+    description: >
+      Writable math targets are resolved through getMathTargetOptionsForNode(...)
+      and mapped by applyMathTargetValue(...) semantics in the store/runtime.
+    confidence: high
+
+  contextual_limits:
+    description: >
+      Some targets are context-dependent. Pattern note targets depend on the
+      currently selected note in local UI state. Arranger scene targets depend on
+      the currently selected scene in local UI state. Step Sequencer contextual
+      targets depend on persisted selectedStep in node.data.
+    confidence: high
+
+action_status_legend:
+  direct:
+    meaning: >
+      Safe for the agent to reason about as a stable capability already grounded
+      in the app/runtime or taxonomy.
+  contextual:
+    meaning: >
+      Real capability, but depends on current UI selection, existing channels, or
+      other local state not guaranteed by the overlay.
+  conceptual:
+    meaning: >
+      Useful composer abstraction that may be executed via a sequence of lower-level
+      Bloop actions rather than one native action.
+  manual_only:
+    meaning: >
+      Requires human intervention or should be treated as outside safe autonomous control.
+  unsupported:
+    meaning: >
+      Should not be assumed available.
+
+action_groups:
+
+  inspection:
+    list_nodes:
+      status: direct
+      scope: graph
+      description: Inspect which nodes exist in the current patch/session.
+      inputs: []
+      outputs:
+        - node_ids
+        - node_types
+        - node_labels
+      notes:
+        - "Use for planning before adding or reusing nodes."
+
+    inspect_node_type:
+      status: direct
+      scope: node
+      description: Determine a node's type and likely musical role.
+      inputs:
+        - node_id
+      outputs:
+        - node_type
+        - known_handles
+        - likely_targets
+      notes:
+        - "Node types are defined in AudioNodeType; real behavior lives in store/useStore.ts."
+
+    inspect_math_targets:
+      status: direct
+      scope: node
+      description: Inspect available math targets for a node.
+      inputs:
+        - node_id
+        - optional_context
+      outputs:
+        - target_descriptors
+      notes:
+        - "Targets come from getMathTargetOptionsForNode(...)."
+        - "Contextual targets may disappear when context is invalid."
+
+    inspect_transport_state:
+      status: direct
+      scope: global
+      description: Inspect transport-related state such as tempo-linked behavior.
+      inputs: []
+      outputs:
+        - bpm
+        - sync_related_node_states
+
+    inspect_contextual_requirements:
+      status: direct
+      scope: node
+      description: Determine whether a desired target depends on UI-local context.
+      inputs:
+        - node_id
+        - desired_target
+      outputs:
+        - requires_selected_note
+        - requires_selected_scene
+        - requires_selected_step
+        - requires_existing_channels
+
+  graph_operations:
+    assume_existing_graph_runtime:
+      status: direct
+      scope: graph
+      description: >
+        Composer may reason over the existing graph as the instrument runtime.
+      inputs: []
+      outputs:
+        - reusable_runtime
+
+    create_node:
+      status: conceptual
+      scope: graph
+      description: >
+        Composer-level intent to add a node of a supported type. This file does not
+        assert a public API; execution may be via UI, store action, or user-assisted step.
+      inputs:
+        - node_type
+        - optional_position
+        - optional_label
+      outputs:
+        - node_id
+      constraints:
+        - "Only supported Bloop node types."
+      notes:
+        - "Treat as a planning primitive unless repo-grounded execution path is confirmed."
+
+    connect_nodes:
+      status: conceptual
+      scope: graph
+      description: >
+        Connect compatible handles between nodes using supported edge domains.
+      inputs:
+        - from_node_id
+        - from_handle_id
+        - to_node_id
+        - to_handle_id
+        - edge_kind
+      outputs:
+        - edge_id
+      allowed_edge_kinds:
+        - audio
+        - control
+        - tempo
+        - modulation
+        - math
+      constraints:
+        - "Do not assume math source nodes exist in shipped UI."
+      notes:
+        - "math edges are valid semantically, but sender UI is not shipped today."
+
+    disconnect_nodes:
+      status: conceptual
+      scope: graph
+      description: Remove an existing connection.
+      inputs:
+        - edge_id
+      outputs:
+        - success_flag
+
+  parameter_control:
+    set_math_input_target:
+      status: direct
+      scope: node
+      description: Set a node's selected math target.
+      inputs:
+        - node_id
+        - target_key
+      outputs:
+        - applied_target
+      notes:
+        - "Taxonomy documents direct testing via setMathInputTarget(nodeId, target)."
+
+    send_normalized_math_value:
+      status: direct
+      scope: node
+      description: Send a normalized value in [0,1] to a node's selected math target.
+      inputs:
+        - node_id
+        - normalized_value
+      outputs:
+        - target_mutation_applied
+      constraints:
+        - "normalized_value must be within [0,1]"
+      notes:
+        - "Dispatched through receiveMathValue(nodeId, normalizedValue)."
+
+    set_parameter_by_math_route:
+      status: direct
+      scope: node
+      description: >
+        Preferred safe parameter mutation route when a desired target is exposed as
+        a math receiver target.
+      inputs:
+        - node_id
+        - target_key
+        - normalized_value
+      outputs:
+        - target_mutation_applied
+      expansion:
+        - set_math_input_target
+        - send_normalized_math_value
+
+    set_parameter_directly:
+      status: conceptual
+      scope: node
+      description: >
+        Composer-level instruction to change a node parameter where a trusted mutation
+        path is known outside this file.
+      inputs:
+        - node_id
+        - parameter_name
+        - value
+      outputs:
+        - success_flag
+      notes:
+        - "Use only when grounded by taxonomy or repo-aware validation."
+        - "Do not invent undocumented mutation paths."
+
+  musical_controls:
+    set_tempo:
+      status: direct
+      scope: global
+      description: Set or plan BPM using the Tempo singleton or its writable target surface.
+      inputs:
+        - bpm
+      outputs:
+        - bpm
+      constraints:
+        - "Tempo must remain within safe supported range if known."
+
+    set_quantizer_root:
+      status: direct
+      scope: node
+      description: Set Quantizer root note when target exists.
+      inputs:
+        - node_id
+        - root_note
+      outputs:
+        - root_note
+
+    set_quantizer_scale:
+      status: direct
+      scope: node
+      description: Set Quantizer scale type when target exists.
+      inputs:
+        - node_id
+        - scale_type
+      outputs:
+        - scale_type
+
+    set_arpeggiator_root:
+      status: direct
+      scope: node
+      description: Set Arpeggiator root note when target exists.
+      inputs:
+        - node_id
+        - root_note
+      outputs:
+        - root_note
+
+    set_arpeggiator_scale:
+      status: direct
+      scope: node
+      description: Set Arpeggiator scale type when target exists.
+      inputs:
+        - node_id
+        - scale_type
+      outputs:
+        - scale_type
+
+    set_arpeggiator_rate:
+      status: direct
+      scope: node
+      description: Set Arpeggiator rate when target exists.
+      inputs:
+        - node_id
+        - rate
+      outputs:
+        - rate
+
+    configure_step_sequencer_global:
+      status: direct
+      scope: node
+      description: Configure Step Sequencer transport mode/rate/interval and selectedStep.
+      inputs:
+        - node_id
+        - optional_sequenceSync
+        - optional_sequenceRate
+        - optional_sequenceIntervalMs
+        - optional_selectedStep
+      outputs:
+        - updated_step_sequencer_state
+      notes:
+        - "selectedStep is persisted in node.data and is safer than Pattern/Arranger local selection."
+
+    set_step_sequencer_step:
+      status: direct
+      scope: node
+      description: Set enabled/note/mix for currently addressed selectedStep.
+      inputs:
+        - node_id
+        - selected_step
+        - optional_enabled
+        - optional_note
+        - optional_mix
+      outputs:
+        - updated_step_state
+      expansion:
+        - configure_step_sequencer_global
+      notes:
+        - "This is safer than Pattern note targeting because selectedStep is persisted."
+
+    target_pattern_selected_note:
+      status: contextual
+      scope: node
+      description: >
+        Address Pattern note fields through contextual math targets for the currently
+        selected note only.
+      inputs:
+        - node_id
+        - selected_note_in_ui
+        - target_key
+        - normalized_value
+      outputs:
+        - pattern_note_mutation_applied
+      risks:
+        - "Selected note identity is local component state, not persisted in node.data."
+        - "Unsafe to assume autonomous access without UI context."
+
+    target_arranger_selected_scene:
+      status: contextual
+      scope: node
+      description: >
+        Address Arranger scene fields through contextual math targets for the currently
+        selected scene only.
+      inputs:
+        - node_id
+        - selected_scene_in_ui
+        - target_key
+        - normalized_value
+      outputs:
+        - arranger_scene_mutation_applied
+      known_targets:
+        - arranger:scene:startBar:{selectedSceneId}
+        - arranger:scene:lengthBars:{selectedSceneId}
+      risks:
+        - "Selected scene identity is local component state, not persisted in node.data."
+
+    set_mixer_channel_target:
+      status: contextual
+      scope: node
+      description: >
+        Address mixer channel targets only after channels exist.
+      inputs:
+        - node_id
+        - channel_id
+        - target_key
+        - normalized_value
+      outputs:
+        - mixer_mutation_applied
+      risks:
+        - "Channel-specific targets do not exist until channels exist."
+
+  sound_design:
+    choose_supported_sound_source:
+      status: direct
+      scope: planning
+      description: >
+        Choose among shipped source-capable nodes such as Generator, Sampler,
+        Audio In, Drum, or Advanced Drums.
+      inputs:
+        - musical_role
+      outputs:
+        - recommended_node_types
+
+    control_generator_mode_dependent_target:
+      status: contextual
+      scope: node
+      description: >
+        Some Generator math targets depend on generatorMode.
+      inputs:
+        - node_id
+        - generator_mode
+        - target_key
+        - normalized_value
+      outputs:
+        - mutation_applied
+
+    control_effect_subtype_dependent_target:
+      status: contextual
+      scope: node
+      description: >
+        Some Effect math targets depend on subType.
+      inputs:
+        - node_id
+        - effect_subtype
+        - target_key
+        - normalized_value
+      outputs:
+        - mutation_applied
+
+    control_sampler_playback_shape:
+      status: direct
+      scope: node
+      description: >
+        Reason about Sampler parameters such as loop, reverse, playbackRate, and
+        pitchShift when writable targets are exposed.
+      inputs:
+        - node_id
+        - target_key
+        - normalized_value
+      outputs:
+        - mutation_applied
+
+  workflow:
+    save_patch:
+      status: direct
+      scope: session
+      description: Save .bloop patch state.
+      inputs: []
+      outputs:
+        - bloop_patch_file
+      notes:
+        - "Patch persistence does not include full composer memory."
+
+    load_patch:
+      status: direct
+      scope: session
+      description: Load a .bloop patch.
+      inputs:
+        - bloop_patch_file
+      outputs:
+        - graph_state
+
+    record_session_audio:
+      status: direct
+      scope: session
+      description: Use Bloop session recording/export workflow.
+      inputs: []
+      outputs:
+        - audio_export
+
+    use_presets:
+      status: direct
+      scope: session
+      description: Reason over built-in presets as starting points or references.
+      inputs:
+        - preset_category
+        - optional_preset_name
+      outputs:
+        - patch_state_reference
+
+  composition_level_actions:
+    establish_key:
+      status: conceptual
+      scope: musical_plan
+      description: >
+        Composer-level action that usually maps to Quantizer and/or Arpeggiator
+        root/scale settings plus compatible note material.
+      expands_to:
+        - set_quantizer_root
+        - set_quantizer_scale
+        - set_arpeggiator_root
+        - set_arpeggiator_scale
+
+    establish_tempo:
+      status: conceptual
+      scope: musical_plan
+      description: Composer-level action mapping to global tempo configuration.
+      expands_to:
+        - set_tempo
+
+    create_groove:
+      status: conceptual
+      scope: musical_plan
+      description: >
+        Build a groove using Step Sequencer, Advanced Drums, Drum, Pulse, or Arpeggiator
+        depending on available patch/runtime context.
+      expands_to:
+        - configure_step_sequencer_global
+        - set_step_sequencer_step
+
+    build_section:
+      status: conceptual
+      scope: musical_plan
+      description: >
+        Compose a section by combining graph choices, note/rhythm sources, scale
+        constraints, and optional arranger scheduling.
+      expands_to:
+        - create_node
+        - connect_nodes
+        - establish_key
+        - establish_tempo
+        - create_groove
+        - target_arranger_selected_scene
+
+    increase_tension:
+      status: conceptual
+      scope: musical_plan
+      description: >
+        Raise perceived tension via denser rhythm, faster rate, brighter or harsher
+        timbre, less stable harmony, automation, or FX changes using whatever Bloop
+        controls are safely available.
+      expands_to:
+        - set_arpeggiator_rate
+        - set_parameter_by_math_route
+        - control_effect_subtype_dependent_target
+
+    reduce_density:
+      status: conceptual
+      scope: musical_plan
+      description: >
+        Lower note/event density by simplifying sequencer steps, scene length usage,
+        or source layering.
+      expands_to:
+        - set_step_sequencer_step
+        - target_arranger_selected_scene
+
+unsupported_assumptions:
+  - "Do not assume a shipped visible math sender node exists."
+  - "Do not assume Pattern selected note can be addressed without UI-local selection."
+  - "Do not assume Arranger selected scene can be addressed without UI-local selection."
+  - "Do not assume mixer per-channel targets exist before channels exist."
+  - "Do not assume .bloop persistence stores composer intent, motifs, form, or revision history."
+  - "Do not assume every node parameter has a writable math target."
+  - "Do not invent undocumented store mutations."
+
+fallback_policy:
+  when_direct_action_exists:
+    - "Use the direct action."
+  when_only_contextual_action_exists:
+    - "Use it only if required context is already present."
+    - "Otherwise log a manual intervention point."
+  when_only_conceptual_action_exists:
+    - "Expand it into lower-level direct/contextual actions."
+  when_no_safe_route_exists:
+    - "Do not bluff."
+    - "Record the limitation."
+    - "Offer a manual step or alternate musical strategy."
+
+agent_behavior_rules:
+  - "Prefer simple patches over sprawling graphs."
+  - "Prefer Quantizer/Arpeggiator/Step Sequencer for structured musical control."
+  - "Prefer persisted state over UI-local state."
+  - "Treat Pattern and Arranger contextual targets as fragile."
+  - "Use math routing only for deterministic, bounded, repeat-safe targets."
+  - "Separate composer memory from .bloop persistence."
+
+cross_refs:
+  - "./bloop_musical_mapping.yaml"
+  - "./composer_playbook.md"
+  - "./manual_intervention_points.md"
+  - "./session_state_schema.yaml"
+  - "./taxonomy.md"

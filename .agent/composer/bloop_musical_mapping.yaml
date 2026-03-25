@@ -1,0 +1,721 @@
+version: 1.0
+file_role: musical_to_instrument_mapping
+purpose: >
+  Maps composer-level musical intentions onto Bloop-capable constructs and
+  action strategies without modifying Bloop itself. This file is the main
+  translation layer between abstract musical reasoning and the practical
+  action surface described in bloop_action_surface.yaml.
+
+principles:
+  - "Map musical goals to the simplest viable Bloop structure."
+  - "Prefer stable, direct actions over contextual or UI-fragile ones."
+  - "Do not assume ideal DAW-like editing primitives exist."
+  - "Use Bloop as the instrument runtime, not as a rewritten composition engine."
+  - "When the perfect mapping is unavailable, choose the closest musically valid fallback."
+  - "Preserve clarity, constraint, and explainability."
+
+mapping_status_legend:
+  strong:
+    meaning: >
+      Good fit between musical intent and existing Bloop constructs.
+  workable:
+    meaning: >
+      Possible with current Bloop constructs, but may require compromises or multiple steps.
+  fragile:
+    meaning: >
+      Possible only through contextual/UI-sensitive routes or unstable assumptions.
+  manual_bias:
+    meaning: >
+      Agent can plan it, but a human may need to execute or confirm a key step.
+
+musical_domains:
+
+  tonal_foundation:
+
+    establish_key_center:
+      status: strong
+      goal: >
+        Make pitch material conform to a tonal center or scale.
+      preferred_bloop_constructs:
+        - Quantizer
+        - Arpeggiator
+        - note_source_pattern
+        - step_sequencer_note_content
+      primary_actions:
+        - set_quantizer_root
+        - set_quantizer_scale
+        - set_arpeggiator_root
+        - set_arpeggiator_scale
+      strategy_notes:
+        - "Prefer Quantizer when multiple note sources should be constrained."
+        - "Prefer Arpeggiator when pitch motion should be derived from held or repeated input."
+        - "If only one melodic source exists, key can be established by note content alone."
+      fallbacks:
+        - "Use constrained note selection in patterns or sequencers without Quantizer."
+        - "Use drone/root repetition if scale logic is unavailable."
+      success_signals:
+        - "Most melodic events fit the intended scale."
+        - "Root or tonic is perceptually reinforced."
+      failure_modes:
+        - "Pitch material drifts chromatically without intent."
+        - "Multiple sources imply conflicting tonal centers."
+
+    establish_harmonic_stability:
+      status: workable
+      goal: >
+        Create a stable harmonic bed or loop with low tension.
+      preferred_bloop_constructs:
+        - Generator
+        - Sampler
+        - Quantizer
+        - Pattern
+        - sustained_note_source
+      primary_actions:
+        - choose_supported_sound_source
+        - establish_key
+        - set_parameter_by_math_route
+      strategy_notes:
+        - "Use sustained intervals, roots, fifths, octaves, and simple triadic material."
+        - "Fewer harmonic changes usually work better than many in Bloop-first composition."
+      fallbacks:
+        - "Use a root drone plus sparse upper motion."
+        - "Use arpeggiated tonic-family material instead of full chord voicings."
+      success_signals:
+        - "Low perceived tension."
+        - "Simple harmonic identity."
+      failure_modes:
+        - "Too many harmonic changes for the texture."
+        - "Patch complexity masks harmonic center."
+
+    increase_harmonic_tension:
+      status: workable
+      goal: >
+        Increase perceived instability or forward pull.
+      preferred_bloop_constructs:
+        - Quantizer
+        - Arpeggiator
+        - Generator
+        - Effect
+        - automation_capable_sources
+      primary_actions:
+        - increase_tension
+        - set_arpeggiator_rate
+        - set_parameter_by_math_route
+      strategy_notes:
+        - "Raise rate, density, brightness, dissonant intervals, or harmonic motion."
+        - "Tension in Bloop can be harmonic, rhythmic, timbral, or all three."
+      fallbacks:
+        - "Use rhythmic intensification if harmonic editing is weak."
+        - "Use filter/FX intensity rise if note editing is fragile."
+      success_signals:
+        - "The next section feels more needed."
+        - "Perceived pressure increases."
+      failure_modes:
+        - "Only volume increases, with no structural tension."
+        - "Texture gets harsher but not more directed."
+
+  rhythmic_foundation:
+
+    establish_pulse:
+      status: strong
+      goal: >
+        Give the listener a clear temporal reference.
+      preferred_bloop_constructs:
+        - StepSequencer
+        - Drum
+        - AdvancedDrums
+        - Pulse
+        - Tempo
+      primary_actions:
+        - set_tempo
+        - configure_step_sequencer_global
+        - set_step_sequencer_step
+      strategy_notes:
+        - "Start with a simple repeating pulse before layering syncopation."
+        - "Kick-like or low-register pulse is the safest anchor."
+      fallbacks:
+        - "Use repeated tonal note source if drum routing is unavailable."
+      success_signals:
+        - "Beat is immediately inferable."
+      failure_modes:
+        - "Too many off-grid accents too early."
+        - "No clear downbeat anchor."
+
+    create_groove:
+      status: strong
+      goal: >
+        Build a repeatable rhythmic feel with role separation.
+      preferred_bloop_constructs:
+        - StepSequencer
+        - AdvancedDrums
+        - Drum
+        - Arpeggiator
+        - Pattern
+      primary_actions:
+        - create_groove
+        - configure_step_sequencer_global
+        - set_step_sequencer_step
+      role_model:
+        pulse:
+          likely_constructs:
+            - kick_like_step_sequence
+            - low_tonal_repetition
+        subdivision:
+          likely_constructs:
+            - hats_like_step_sequence
+            - fast_arp
+        accent:
+          likely_constructs:
+            - snare_like_hits
+            - transient_pitch_events
+        syncopation:
+          likely_constructs:
+            - offbeat_steps
+            - delayed_arp_emphasis
+      strategy_notes:
+        - "Build pulse first, then subdivision, then accent, then syncopation."
+        - "Do not begin with maximum density."
+      fallbacks:
+        - "Use only pulse + subdivision if accent editing is cumbersome."
+      success_signals:
+        - "Distinct rhythmic roles are audible."
+        - "Loop feels intentional rather than random."
+      failure_modes:
+        - "All layers do the same thing."
+        - "Too much density removes groove clarity."
+
+    increase_rhythmic_density:
+      status: strong
+      goal: >
+        Raise event frequency or perceived activity.
+      preferred_bloop_constructs:
+        - StepSequencer
+        - Arpeggiator
+        - Pattern
+        - Arranger
+      primary_actions:
+        - set_step_sequencer_step
+        - set_arpeggiator_rate
+        - target_pattern_selected_note
+      strategy_notes:
+        - "Increase density gradually."
+        - "Use higher subdivision layers before rewriting the whole groove."
+      fallbacks:
+        - "Shorten scene perceived emptiness by introducing faster repeated figures."
+      success_signals:
+        - "Energy rises without full clutter."
+      failure_modes:
+        - "Density increase destroys pulse legibility."
+
+    reduce_rhythmic_density:
+      status: strong
+      goal: >
+        Create more space, restraint, or contrast.
+      preferred_bloop_constructs:
+        - StepSequencer
+        - Arranger
+        - Pattern
+      primary_actions:
+        - reduce_density
+        - set_step_sequencer_step
+      strategy_notes:
+        - "Mute before rewriting."
+        - "Remove decorative layers before anchor layers."
+      fallbacks:
+        - "Lengthen sustained notes to preserve continuity."
+      success_signals:
+        - "Space increases while structure remains legible."
+      failure_modes:
+        - "Everything becomes empty instead of sparse."
+
+  melodic_material:
+
+    create_melodic_hook:
+      status: workable
+      goal: >
+        Create a short identifiable melodic idea that can recur.
+      preferred_bloop_constructs:
+        - Pattern
+        - Generator
+        - Sampler
+        - Quantizer
+        - Arpeggiator
+      primary_actions:
+        - establish_key
+        - target_pattern_selected_note
+      strategy_notes:
+        - "Favor short contour, limited pitch set, and repeatable rhythm."
+        - "A hook in Bloop is often easier to manage as a pattern than as freeform editing."
+      fallbacks:
+        - "Use arpeggiated contour plus timbral identity if detailed pattern editing is fragile."
+      success_signals:
+        - "Phrase is recognizable on repetition."
+      failure_modes:
+        - "Too many notes, no memorable contour."
+      limitations:
+        - "Pattern note targeting is contextual and UI-fragile."
+
+    create_bassline:
+      status: strong
+      goal: >
+        Provide low-register foundation tied to pulse and key.
+      preferred_bloop_constructs:
+        - Generator
+        - Sampler
+        - StepSequencer
+        - Pattern
+        - Quantizer
+      primary_actions:
+        - choose_supported_sound_source
+        - establish_key
+        - configure_step_sequencer_global
+        - set_step_sequencer_step
+      strategy_notes:
+        - "Prefer root, fifth, octave motion before complex melodic bass."
+        - "Lock bass rhythm to pulse or a related subdivision."
+      fallbacks:
+        - "Single repeated root note."
+        - "Root pedal with occasional approach tones."
+      success_signals:
+        - "Low-end feels grounded and intentional."
+      failure_modes:
+        - "Bass competes rhythmically with every other layer."
+        - "Pitch choice destabilizes key unintentionally."
+
+    create_counterline:
+      status: fragile
+      goal: >
+        Add secondary melodic motion against a lead or harmony line.
+      preferred_bloop_constructs:
+        - Pattern
+        - Generator
+        - Sampler
+        - Arpeggiator
+      primary_actions:
+        - target_pattern_selected_note
+        - set_arpeggiator_rate
+      strategy_notes:
+        - "Use simpler rhythm than the lead."
+        - "Avoid full registral overlap."
+      fallbacks:
+        - "Replace true counterline with sparse echo response."
+        - "Use timbral answer rather than note-dense answer."
+      success_signals:
+        - "Secondary line supports rather than crowds the main line."
+      failure_modes:
+        - "Both lines feel like leads."
+      limitations:
+        - "Detailed note editing may be contextual."
+
+  arrangement_and_texture:
+
+    assign_musical_roles:
+      status: strong
+      goal: >
+        Separate the patch into functional layers such as bass, lead, pad, pulse,
+        accent, and texture.
+      preferred_bloop_constructs:
+        - Generator
+        - Sampler
+        - Drum
+        - AdvancedDrums
+        - Effect
+      primary_actions:
+        - choose_supported_sound_source
+        - set_parameter_by_math_route
+      role_guidelines:
+        bass:
+          preferred_register: low
+          preferred_density: low_to_medium
+        lead:
+          preferred_register: mid_to_high
+          preferred_density: medium
+        pad:
+          preferred_register: mid
+          preferred_density: low
+        pulse:
+          preferred_register: low_or_mid
+          preferred_density: regular
+        accent:
+          preferred_register: mid_or_high
+          preferred_density: sparse
+        texture:
+          preferred_register: wide
+          preferred_density: controlled
+      strategy_notes:
+        - "One source per role is usually clearer than one source doing everything."
+      fallbacks:
+        - "Collapse pad into sustained lead support if source count is limited."
+      success_signals:
+        - "Each layer has an audible purpose."
+      failure_modes:
+        - "Too many layers occupy the same register and rhythm."
+
+    thicken_texture:
+      status: workable
+      goal: >
+        Increase sonic fullness or width.
+      preferred_bloop_constructs:
+        - Generator
+        - Effect
+        - Sampler
+        - duplicated_or_parallel_layers
+      primary_actions:
+        - set_parameter_by_math_route
+        - control_effect_subtype_dependent_target
+      strategy_notes:
+        - "Prefer width, sustain, or complementary doubling before raw density."
+      fallbacks:
+        - "Use reverb/delay to imply size."
+      success_signals:
+        - "Texture feels fuller without losing role clarity."
+      failure_modes:
+        - "Everything gets louder but not fuller."
+
+    thin_texture:
+      status: strong
+      goal: >
+        Increase clarity by reducing simultaneous activity or spectral overlap.
+      preferred_bloop_constructs:
+        - Arrangement_by_source_reduction
+        - StepSequencer
+        - Effect
+      primary_actions:
+        - reduce_density
+        - set_parameter_by_math_route
+      strategy_notes:
+        - "Mute decorative layers first."
+        - "Reduce sustain or wetness before deleting all content."
+      success_signals:
+        - "Main material reads more clearly."
+      failure_modes:
+        - "Section loses identity completely."
+
+  section_and_form:
+
+    create_intro:
+      status: strong
+      goal: >
+        Establish identity with lower density and incomplete reveal.
+      preferred_bloop_constructs:
+        - Tempo
+        - Quantizer
+        - one_or_two_sources
+        - Arranger
+        - subtle_Effect
+      typical_profile:
+        density: low
+        tension: low_to_medium
+        role_exposure:
+          - pulse_partial
+          - harmony_partial
+          - lead_tease
+      strategy_notes:
+        - "Do not reveal every layer immediately."
+        - "Use clear tonal or rhythmic identity early."
+      fallbacks:
+        - "Use a drone, sparse groove, or filtered motif fragment."
+      success_signals:
+        - "Piece identity is suggested."
+        - "There is room to grow."
+
+    create_build:
+      status: strong
+      goal: >
+        Prepare a higher-energy section through controlled increase.
+      preferred_bloop_constructs:
+        - Arranger
+        - Arpeggiator
+        - StepSequencer
+        - Effect
+        - automation_like_parameter_changes
+      primary_actions:
+        - increase_tension
+        - set_arpeggiator_rate
+        - set_parameter_by_math_route
+        - target_arranger_selected_scene
+      strategy_notes:
+        - "Increase one or two dimensions at a time: density, brightness, rate, pressure."
+      fallbacks:
+        - "Use rhythmic increase if harmonic change is awkward."
+      success_signals:
+        - "Arrival of next section feels prepared."
+      failure_modes:
+        - "Build is just louder, not more directed."
+      limitations:
+        - "Arranger scene targeting is contextual."
+
+    create_drop_or_arrival:
+      status: workable
+      goal: >
+        Deliver release, impact, or maximal identity.
+      preferred_bloop_constructs:
+        - full_rhythm_stack
+        - bassline
+        - widened_or_brightened_lead
+        - Arranger
+      strategy_notes:
+        - "Contrast matters more than absolute loudness."
+        - "Withhold something before arrival so arrival means something."
+      fallbacks:
+        - "Reintroduce omitted pulse/bass layers."
+        - "Open timbre or widen texture if note editing is constrained."
+      success_signals:
+        - "Perceived payoff."
+      failure_modes:
+        - "No contrast from previous section."
+
+    create_breakdown:
+      status: strong
+      goal: >
+        Strip back density and reframe material.
+      preferred_bloop_constructs:
+        - reduce_density
+        - thin_texture
+        - Effect
+        - sparse_bass_or_pad
+      strategy_notes:
+        - "Keep one identity anchor so the track still belongs to itself."
+      fallbacks:
+        - "Retain only root, motif fragment, or pulse ghost."
+      success_signals:
+        - "Contrast and reset."
+      failure_modes:
+        - "Breakdown feels like accidental dropout."
+
+    schedule_sections:
+      status: fragile
+      goal: >
+        Place sections across the timeline using Arranger.
+      preferred_bloop_constructs:
+        - Arranger
+      primary_actions:
+        - target_arranger_selected_scene
+      strategy_notes:
+        - "Use section length and scene boundaries to support formal clarity."
+      limitations:
+        - "Scene editing currently depends on selected scene UI context."
+      fallbacks:
+        - "Represent section plan in overlay memory even if execution is partly manual."
+
+  timbre_and_sound_design:
+
+    choose_timbre_for_role:
+      status: workable
+      goal: >
+        Pick a sound source and settings appropriate for a musical role.
+      role_to_source_bias:
+        bass:
+          likely_sources:
+            - Generator
+            - Sampler
+          tendencies:
+            - stable_fundamental
+            - moderate_harmonic_content
+        lead:
+          likely_sources:
+            - Generator
+            - Sampler
+          tendencies:
+            - stronger_mid_presence
+            - identifiable_attack
+        pad:
+          likely_sources:
+            - Generator
+            - Sampler
+          tendencies:
+            - longer_envelope
+            - wider_or_wetter_space
+        drums:
+          likely_sources:
+            - Drum
+            - AdvancedDrums
+        texture:
+          likely_sources:
+            - Sampler
+            - Generator
+            - Effect_processed_signal
+      strategy_notes:
+        - "Do not solve arrangement problems only with sound design."
+        - "Choose by role first, then refine by timbre."
+
+    brighten_sound:
+      status: workable
+      goal: >
+        Increase perceived brightness, presence, or edge.
+      preferred_bloop_constructs:
+        - Generator_mode_targets
+        - Effect_subtype_targets
+        - Sampler_playback_shape
+      primary_actions:
+        - control_generator_mode_dependent_target
+        - control_effect_subtype_dependent_target
+        - control_sampler_playback_shape
+      fallbacks:
+        - "Increase upper rhythmic activity if direct timbral brightening is limited."
+
+    darken_sound:
+      status: workable
+      goal: >
+        Reduce edge, brightness, or perceived intensity.
+      preferred_bloop_constructs:
+        - Generator_mode_targets
+        - Effect_subtype_targets
+      primary_actions:
+        - set_parameter_by_math_route
+      fallbacks:
+        - "Reduce density or articulation intensity if timbral route is unclear."
+
+    increase_space:
+      status: strong
+      goal: >
+        Increase perceived environment, depth, or tail.
+      preferred_bloop_constructs:
+        - Effect
+      likely_effect_bias:
+        - reverb
+        - delay
+      primary_actions:
+        - control_effect_subtype_dependent_target
+      success_signals:
+        - "More depth without masking core identity."
+      failure_modes:
+        - "Wash overwhelms rhythm or pitch clarity."
+
+    reduce_space:
+      status: strong
+      goal: >
+        Tighten presentation and increase immediacy.
+      preferred_bloop_constructs:
+        - Effect
+      primary_actions:
+        - set_parameter_by_math_route
+      success_signals:
+        - "More direct and present sound."
+      failure_modes:
+        - "Everything becomes dry and flat without intention."
+
+  development_and_variation:
+
+    repeat_with_variation:
+      status: workable
+      goal: >
+        Preserve identity while avoiding exact repetition.
+      preferred_bloop_constructs:
+        - Pattern
+        - StepSequencer
+        - Arpeggiator
+        - sound_parameter_changes
+      strategy_notes:
+        - "Vary one domain at a time: rhythm, register, timbre, density, or accent."
+        - "Do not rewrite all features at once."
+      common_variations:
+        - add_or_remove_steps
+        - change_rate
+        - change_register
+        - change_effect_intensity
+        - shift_role_exposure
+      fallbacks:
+        - "Use timbral variation when note editing is fragile."
+      success_signals:
+        - "Recognizable but not static."
+      failure_modes:
+        - "Either identical loop fatigue or total identity loss."
+
+    create_call_and_response:
+      status: fragile
+      goal: >
+        Alternate statement and answer between layers or phrases.
+      preferred_bloop_constructs:
+        - Pattern
+        - Generator
+        - Sampler
+        - Arranger
+      strategy_notes:
+        - "Response should usually be shorter, sparser, or registrally distinct."
+      fallbacks:
+        - "Use mute/unmute alternation between sources rather than dense note editing."
+      limitations:
+        - "Fine phrase editing may require contextual pattern note access."
+
+    intensify_over_time:
+      status: strong
+      goal: >
+        Produce a directional sense of escalation.
+      preferred_bloop_constructs:
+        - Arpeggiator
+        - StepSequencer
+        - Effect
+        - Arranger
+      primary_dimensions:
+        - density
+        - rate
+        - brightness
+        - width
+        - harmonic_instability
+      strategy_notes:
+        - "Escalation is clearer when dimensions accumulate in layers."
+      failure_modes:
+        - "Everything peaks too early."
+
+  evaluation_mappings:
+
+    detect_overcrowding:
+      symptom: >
+        Too many simultaneous layers or overlapping roles obscure musical identity.
+      likely_causes:
+        - excessive_density
+        - redundant_register_usage
+        - too_many_active_layers
+        - excessive_space_effects
+      likely_remedies:
+        - thin_texture
+        - reduce_density
+        - simplify_bass
+        - reduce_space
+
+    detect_flat_section:
+      symptom: >
+        Section lacks movement, contrast, or directional pull.
+      likely_causes:
+        - unchanging_rate
+        - static_timbre
+        - no_density_motion
+        - overly_stable_harmony
+      likely_remedies:
+        - increase_tension
+        - brighten_sound
+        - increase_rhythmic_density
+        - repeat_with_variation
+
+    detect_loss_of_identity:
+      symptom: >
+        Variation has removed the recognizable features of the piece.
+      likely_causes:
+        - too_many_dimensions_changed
+        - role_reassignment_without_anchor
+        - motif_removed_everywhere
+      likely_remedies:
+        - restore_hook_fragment
+        - restore_bass_anchor
+        - keep_one_recurring_rhythm_or_timbre
+
+decision_heuristics:
+  - "If note-level editing is fragile, prefer rhythm, rate, timbre, and layering changes."
+  - "If arranger manipulation is fragile, preserve the section plan in overlay memory and treat execution as partial/manual."
+  - "If harmonic sophistication is hard to express, prefer clearer tonal gravity over fake complexity."
+  - "Use fewer, clearer layers before adding decorative detail."
+  - "When in doubt, strengthen pulse, bass, and one identity layer."
+  - "A musical compromise is better than a fake capability."
+
+cross_refs:
+  - "./bloop_action_surface.yaml"
+  - "./composer_playbook.md"
+  - "./manual_intervention_points.md"
+  - "./session_state_schema.yaml"
+  - "./10_music_ontology.yaml"
+  - "./11_time_schema.yaml"
+  - "./12_pitch_harmony_schema.yaml"
+  - "./13_rhythm_schema.yaml"
+  - "./21_transform_ops.yaml"
+  - "./30_composition_pipeline.md"

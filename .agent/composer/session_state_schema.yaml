@@ -1,0 +1,358 @@
+version: 1.0
+file_role: composer_session_memory
+purpose: >
+  Defines the persistent state of the composer overlay. This is the agent’s
+  working memory across turns and iterations. It stores intent, structure,
+  decisions, created Bloop elements, unresolved constraints, and revision history.
+
+design_principles:
+  - "Separate composer memory from .bloop patch persistence."
+  - "Everything important must be explicitly stored."
+  - "State must be inspectable and editable."
+  - "No hidden assumptions."
+  - "Track both plan and execution."
+  - "Track uncertainty and limitations explicitly."
+
+# =========================================================
+# ROOT SESSION OBJECT
+# =========================================================
+
+session:
+
+  session_id: string
+  created_at: datetime
+  last_updated: datetime
+
+  status:
+    phase: string
+    # allowed: intent | planning | composing | revising | blocked | complete
+    is_blocked: boolean
+    block_count: int
+
+# =========================================================
+# INTENT
+# =========================================================
+
+intent:
+
+  description: string
+
+  musical_goals:
+    mood: string
+    energy_profile: string
+    duration_target: float
+    tempo_range: list[float]
+    style_bias: string
+
+  constraints:
+    must_have: list[string]
+    should_have: list[string]
+    avoid: list[string]
+
+  references:
+    tracks: list[string]
+    concepts: list[string]
+
+  confidence: float  # 0–1 how well intent is understood
+
+
+# =========================================================
+# STRUCTURE PLAN (ABSTRACT)
+# =========================================================
+
+structure_plan:
+
+  sections:
+    - id: string
+      name: string
+      order_index: int
+      bars: int
+      energy_target: float
+      density_target: float
+      role_focus: list[string]   # e.g. ["groove", "bass", "lead"]
+      notes: string
+
+  transitions:
+    - from_section: string
+      to_section: string
+      type: string              # e.g. "build", "drop", "break"
+      intent: string
+
+  global_shape:
+    energy_curve: string        # e.g. "low_to_high"
+    density_curve: string
+    tension_curve: string
+
+
+# =========================================================
+# MUSICAL MATERIAL
+# =========================================================
+
+musical_material:
+
+  key_center:
+    root: string
+    scale: string
+    confidence: float
+
+  tempo:
+    bpm: float
+    confidence: float
+
+  motifs:
+    - id: string
+      description: string
+      role: string             # lead, bass, etc.
+      status: string           # draft | active | discarded
+
+  rhythm_patterns:
+    - id: string
+      description: string
+      density: float
+      syncopation: float
+      role: string
+
+  harmonic_plan:
+    description: string
+    stability: float
+    tension_profile: string
+
+
+# =========================================================
+# ARRANGEMENT STATE
+# =========================================================
+
+arrangement:
+
+  roles:
+
+    bass:
+      assigned_node: string
+      status: string           # planned | active | missing
+
+    lead:
+      assigned_node: string
+      status: string
+
+    support:
+      assigned_node: string
+      status: string
+
+    drums:
+      assigned_node: string
+      status: string
+
+    texture:
+      assigned_node: string
+      status: string
+
+  register_balance:
+    low: float
+    mid: float
+    high: float
+
+  density:
+    current: float
+    target: float
+
+
+# =========================================================
+# BLOOP EXECUTION STATE
+# =========================================================
+
+bloop_state:
+
+  nodes:
+    - node_id: string
+      node_type: string
+      role: string
+      created_by_agent: boolean
+
+  connections:
+    - from_node: string
+      to_node: string
+      type: string
+
+  parameter_changes:
+    - node_id: string
+      target: string
+      value: float
+      method: string           # math | direct | unknown
+
+  patterns:
+    - id: string
+      node_id: string
+      status: string           # planned | partial | applied
+
+  arranger:
+    scenes:
+      - id: string
+        name: string
+        planned_bars: int
+        applied: boolean
+
+
+# =========================================================
+# ACTION LOG
+# =========================================================
+
+action_log:
+
+  - step_id: int
+    timestamp: datetime
+    action_type: string
+    description: string
+    target: string
+    outcome: string           # success | partial | failed
+    notes: string
+
+
+# =========================================================
+# TRANSFORMATION HISTORY
+# =========================================================
+
+transformations:
+
+  - id: string
+    type: string              # e.g. transpose, densify
+    target: string
+    reason: string
+    result_summary: string
+
+
+# =========================================================
+# EVALUATION STATE
+# =========================================================
+
+evaluation:
+
+  scores:
+    structural_coherence: float
+    tonal_clarity: float
+    rhythmic_quality: float
+    arrangement_balance: float
+    expressiveness: float
+
+  issues:
+    - type: string
+      severity: string        # low | medium | high
+      description: string
+      affected_section: string
+
+  strengths:
+    - description: string
+
+  last_evaluated_at: datetime
+
+
+# =========================================================
+# BLOCKS & LIMITATIONS
+# =========================================================
+
+blocks:
+
+  active_blocks:
+    - id: string
+      type: string            # ui_selection | missing_node | routing | unknown
+      severity: string        # hard | soft
+      description: string
+      affected_target: string
+      required_action: string
+      resume_condition: string
+
+  resolved_blocks:
+    - id: string
+      resolution: string
+      resolved_at: datetime
+
+
+# =========================================================
+# MANUAL INTERVENTIONS
+# =========================================================
+
+manual_interventions:
+
+  pending:
+    - id: string
+      description: string
+      minimal_action: string
+      related_block_id: string
+
+  completed:
+    - id: string
+      description: string
+      completed_at: datetime
+
+
+# =========================================================
+# NEXT ACTION PLANNER
+# =========================================================
+
+next_actions:
+
+  immediate:
+    - description: string
+      priority: int
+      depends_on: list[string]
+
+  short_term:
+    - description: string
+
+  long_term:
+    - description: string
+
+
+# =========================================================
+# REVISION STATE
+# =========================================================
+
+revision:
+
+  iteration_count: int
+
+  last_change:
+    description: string
+    reason: string
+
+  revision_strategy:
+    type: string              # simplify | intensify | restructure | refine
+
+  rollback_points:
+    - id: string
+      description: string
+
+
+# =========================================================
+# CONFIDENCE & UNCERTAINTY
+# =========================================================
+
+confidence:
+
+  overall: float
+
+  areas:
+    structure: float
+    harmony: float
+    rhythm: float
+    arrangement: float
+    execution: float
+
+uncertainty:
+
+  known_gaps:
+    - description: string
+
+  assumptions:
+    - description: string
+
+
+# =========================================================
+# SESSION SUMMARY
+# =========================================================
+
+summary:
+
+  current_state: string
+  key_strength: string
+  biggest_issue: string
+  next_focus: string
