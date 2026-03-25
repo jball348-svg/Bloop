@@ -1,0 +1,386 @@
+version: 1.0
+
+# =========================================================
+# PITCH & HARMONY SCHEMA
+# Defines pitch systems, tuning, harmony, and relationships
+# =========================================================
+
+pitch_systems:
+
+  # -------------------------------------------------------
+  # REPRESENTATIONS
+  # -------------------------------------------------------
+
+  pitch_representations:
+
+    frequency:
+      description: Absolute pitch in Hz
+      unit: float
+
+    midi:
+      description: Discrete pitch index (0–127 standard)
+      unit: int
+
+    pitch_class:
+      description: Pitch modulo octave
+      unit: int   # 0–11 (extendable)
+
+    scale_degree:
+      description: Position within scale relative to root
+      unit: int   # e.g. 1, b3, #4 (encoded symbolically)
+
+    ratio:
+      description: Frequency ratio relative to root
+      unit: float
+
+
+  # -------------------------------------------------------
+  # TUNING SYSTEMS
+  # -------------------------------------------------------
+
+  tuning_systems:
+
+    equal_temperament:
+      description: Equal division of octave
+      parameters:
+        divisions: int        # e.g. 12
+
+    just_intonation:
+      description: Ratio-based tuning
+      parameters:
+        ratios: list[float]
+
+    custom_scala:
+      description: External scale definition
+      parameters:
+        file_ref: string
+
+  invariants:
+    - "divisions > 0"
+    - "ratios.length > 0"
+
+
+# =========================================================
+# SCALE SYSTEM
+# =========================================================
+
+scales:
+
+  Scale:
+    description: Ordered set of pitch classes
+    fields:
+      root: Pitch
+      intervals: list[int]        # semitone or step-based
+      tuning_system: string
+      name: string
+
+  ScaleContext:
+    description: Active scale at a given time
+    fields:
+      scale: Scale
+      time_range: TimeRange
+
+  operations:
+    transpose_scale:
+      input:
+        scale: Scale
+        interval: int
+      output:
+        scale: Scale
+
+    mode_shift:
+      input:
+        scale: Scale
+        degree: int
+      output:
+        scale: Scale
+
+
+# =========================================================
+# INTERVAL SYSTEM
+# =========================================================
+
+intervals:
+
+  Interval:
+    description: Distance between two pitches
+    fields:
+      semitones: int
+      ratio: float
+      quality: string        # "perfect", "major", etc.
+      direction: string      # "ascending", "descending"
+
+  operations:
+    invert_interval:
+      input:
+        interval: Interval
+      output:
+        interval: Interval
+
+    compound_interval:
+      input:
+        interval: Interval
+        octaves: int
+      output:
+        interval: Interval
+
+
+# =========================================================
+# CHORD SYSTEM
+# =========================================================
+
+chords:
+
+  Chord:
+    description: Set of pitches forming harmony
+    fields:
+      root: Pitch
+      intervals: list[int]
+      pitches: list[Pitch]
+      quality: string           # "major", "minor", etc.
+      extensions: list[int]     # e.g. 7, 9, 11
+      inversion: int            # 0 = root position
+      voicing: string           # "closed", "open"
+      function: string          # "tonic", "dominant"
+      tension: float            # 0–1 heuristic
+
+  ChordProgression:
+    description: Sequence of chords over time
+    fields:
+      chords: list[Chord]
+      harmonic_rhythm: float    # rate of change
+      key_center: Scale
+
+  operations:
+    invert_chord:
+      input:
+        chord: Chord
+      output:
+        chord: Chord
+
+    extend_chord:
+      input:
+        chord: Chord
+        extension: int
+      output:
+        chord: Chord
+
+    reharmonize:
+      input:
+        progression: ChordProgression
+        strategy: string
+      output:
+        progression: ChordProgression
+
+
+# =========================================================
+# HARMONIC FUNCTION
+# =========================================================
+
+harmonic_function:
+
+  functions:
+    - tonic
+    - subdominant
+    - dominant
+    - passing
+    - pedal
+    - ambiguous
+
+  transitions:
+    description: Allowed or typical movement between functions
+    rules:
+      tonic:
+        can_move_to: [subdominant, dominant, tonic]
+      subdominant:
+        can_move_to: [dominant, tonic]
+      dominant:
+        can_move_to: [tonic]
+      ambiguous:
+        can_move_to: ["*"]
+
+
+# =========================================================
+# VOICE LEADING
+# =========================================================
+
+voice_leading:
+
+  VoiceLeadingRule:
+    description: Constraint on pitch movement between voices
+    fields:
+      rule_type: string
+      severity: string         # "hard", "soft"
+
+  rules:
+
+    - name: minimize_motion
+      description: Prefer small intervals between successive notes
+
+    - name: avoid_parallel_fifths
+      description: Prevent parallel perfect fifths between voices
+
+    - name: resolve_leading_tone
+      description: Leading tone resolves to tonic
+
+    - name: avoid_voice_crossing
+      description: Maintain relative pitch order of voices
+
+    - name: maintain_common_tones
+      description: Preserve shared notes across chords
+
+
+# =========================================================
+# HARMONIC TENSION MODEL
+# =========================================================
+
+tension_model:
+
+  factors:
+
+    interval_dissonance:
+      description: Roughness based on interval type
+      weight: float
+
+    chord_complexity:
+      description: Number of extensions / alterations
+      weight: float
+
+    harmonic_distance:
+      description: Distance from key center
+      weight: float
+
+    voice_leading_motion:
+      description: Amount of movement between chords
+      weight: float
+
+  output:
+    tension_score: float        # normalized 0–1
+
+
+# =========================================================
+# MODULATION & KEY SYSTEM
+# =========================================================
+
+modulation:
+
+  Key:
+    description: Tonal center
+    fields:
+      root: Pitch
+      scale: Scale
+
+  ModulationEvent:
+    description: Change of key
+    fields:
+      from_key: Key
+      to_key: Key
+      pivot_chord: Chord
+      time: TimePoint
+
+  strategies:
+    - pivot_chord
+    - direct
+    - chromatic_mediant
+    - modal_shift
+
+
+# =========================================================
+# PITCH TRANSFORMATIONS
+# =========================================================
+
+transformations:
+
+  transpose:
+    description: Shift pitches by interval
+    input:
+      interval: int
+    effect:
+      pitch_shifted: true
+
+  invert:
+    description: Mirror pitches around axis
+    input:
+      axis: Pitch
+    effect:
+      pitch_reflected: true
+
+  retrograde:
+    description: Reverse pitch sequence
+    input: {}
+    effect:
+      order_reversed: true
+
+  octave_shift:
+    description: Move pitches by octaves
+    input:
+      octaves: int
+    effect:
+      register_changed: true
+
+  quantize_to_scale:
+    description: Snap pitches to scale
+    input:
+      scale: Scale
+    effect:
+      pitch_adjusted: true
+
+
+# =========================================================
+# CONSTRAINTS
+# =========================================================
+
+constraints:
+
+  - name: pitch_valid
+    rule: "Pitch.frequency > 0 OR Pitch.midi != null"
+
+  - name: chord_has_pitches
+    rule: "Chord.pitches.length > 0"
+
+  - name: scale_has_intervals
+    rule: "Scale.intervals.length > 0"
+
+  - name: tension_range
+    rule: "0 <= Chord.tension <= 1"
+
+  - name: valid_interval
+    rule: "Interval.semitones != 0 OR ratio != 1.0"
+
+
+# =========================================================
+# EXAMPLES
+# =========================================================
+
+examples:
+
+  c_major_scale:
+    root:
+      name: C4
+      midi: 60
+    intervals: [0, 2, 4, 5, 7, 9, 11]
+    tuning_system: equal_temperament
+
+  ii_v_i_progression:
+    chords:
+      - root: D
+        quality: minor
+        function: subdominant
+      - root: G
+        quality: dominant
+        function: dominant
+      - root: C
+        quality: major
+        function: tonic
+
+  inversion_example:
+    original:
+      pitches: [C4, E4, G4]
+    inverted:
+      axis: C4
+      result: [C4, Ab3, F3]
+
+  modulation_example:
+    from_key: C_major
+    to_key: G_major
+    pivot_chord: D_major

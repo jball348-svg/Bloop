@@ -1,0 +1,479 @@
+version: 1.0
+
+# =========================================================
+# TRANSFORMATION OPERATIONS
+# Defines all musical transformations across domains
+# =========================================================
+
+meta:
+
+  description: |
+    Transformations are first-class operations that modify musical structures.
+    All transformations must:
+      - declare input types
+      - declare output types
+      - be composable
+      - be reversible where possible
+      - preserve structural validity
+
+  categories:
+    - pitch
+    - harmony
+    - rhythm
+    - time
+    - structure
+    - arrangement
+    - performance
+
+
+# =========================================================
+# PITCH TRANSFORMATIONS
+# =========================================================
+
+pitch:
+
+  transpose:
+    input:
+      target: "*"
+      interval: int
+    output:
+      target: "*"
+    effect:
+      pitch_shifted: true
+
+  invert:
+    input:
+      target: "*"
+      axis: Pitch
+    output:
+      target: "*"
+    effect:
+      pitch_reflected: true
+
+  retrograde:
+    input:
+      sequence: list
+    output:
+      sequence: list
+    effect:
+      order_reversed: true
+
+  octave_shift:
+    input:
+      target: "*"
+      octaves: int
+    output:
+      target: "*"
+    effect:
+      register_changed: true
+
+  quantize_to_scale:
+    input:
+      target: "*"
+      scale: Scale
+    output:
+      target: "*"
+    effect:
+      pitch_adjusted: true
+
+
+# =========================================================
+# HARMONY TRANSFORMATIONS
+# =========================================================
+
+harmony:
+
+  reharmonize:
+    input:
+      progression: ChordProgression
+      strategy: string
+    output:
+      progression: ChordProgression
+    strategies:
+      - diatonic_substitution
+      - secondary_dominants
+      - modal_interchange
+      - chromatic_passing
+
+  chord_inversion:
+    input:
+      chord: Chord
+      inversion: int
+    output:
+      chord: Chord
+
+  extend_chord:
+    input:
+      chord: Chord
+      extension: int
+    output:
+      chord: Chord
+
+  simplify_harmony:
+    input:
+      progression: ChordProgression
+      factor: float
+    output:
+      progression: ChordProgression
+
+
+# =========================================================
+# RHYTHM TRANSFORMATIONS
+# =========================================================
+
+rhythm:
+
+  rotate:
+    input:
+      pattern: StepPattern
+      steps: int
+    output:
+      pattern: StepPattern
+    effect:
+      phase_shifted: true
+
+  densify:
+    input:
+      pattern: StepPattern
+      factor: float
+    output:
+      pattern: StepPattern
+
+  sparsify:
+    input:
+      pattern: StepPattern
+      factor: float
+    output:
+      pattern: StepPattern
+
+  syncopate:
+    input:
+      pattern: StepPattern
+      amount: float
+    output:
+      pattern: StepPattern
+
+  subdivide:
+    input:
+      pattern: StepPattern
+      factor: int
+    output:
+      pattern: StepPattern
+
+  merge_patterns:
+    input:
+      patterns: list[StepPattern]
+    output:
+      pattern: StepPattern
+
+
+# =========================================================
+# TIME TRANSFORMATIONS
+# =========================================================
+
+time:
+
+  stretch:
+    input:
+      target: "*"
+      factor: float
+    output:
+      target: "*"
+    effect:
+      duration_scaled: true
+
+  compress:
+    input:
+      target: "*"
+      factor: float
+    output:
+      target: "*"
+
+  shift:
+    input:
+      target: "*"
+      offset: float
+    output:
+      target: "*"
+
+  quantize:
+    input:
+      target: "*"
+      grid: Grid
+      strength: float
+    output:
+      target: "*"
+
+  apply_swing:
+    input:
+      target: "*"
+      ratio: float
+    output:
+      target: "*"
+
+
+# =========================================================
+# STRUCTURAL TRANSFORMATIONS
+# =========================================================
+
+structure:
+
+  repeat:
+    input:
+      section: Section
+      times: int
+    output:
+      section: Section
+
+  truncate:
+    input:
+      section: Section
+      length: float
+    output:
+      section: Section
+
+  expand:
+    input:
+      section: Section
+      factor: float
+    output:
+      section: Section
+
+  reorder:
+    input:
+      sections: list[Section]
+      order: list[int]
+    output:
+      sections: list[Section]
+
+  interpolate:
+    input:
+      section_a: Section
+      section_b: Section
+      ratio: float
+    output:
+      section: Section
+
+
+# =========================================================
+# MOTIF & DEVELOPMENT TRANSFORMATIONS
+# =========================================================
+
+motif:
+
+  fragment:
+    input:
+      motif: Motif
+      slice: TimeRange
+    output:
+      motif: Motif
+
+  augment:
+    input:
+      motif: Motif
+      factor: float
+    output:
+      motif: Motif
+
+  diminish:
+    input:
+      motif: Motif
+      factor: float
+    output:
+      motif: Motif
+
+  sequence:
+    input:
+      motif: Motif
+      interval_pattern: list[int]
+    output:
+      motifs: list[Motif]
+
+  canon:
+    input:
+      motif: Motif
+      delay: float
+      voices: int
+    output:
+      structure: list[Motif]
+
+  mobius_transform:
+    description: |
+      Recursive inversion across loop (inspired by Möbius strip)
+    input:
+      motif: Motif
+      axis: Pitch
+    output:
+      motif: Motif
+
+
+# =========================================================
+# ARRANGEMENT TRANSFORMATIONS
+# =========================================================
+
+arrangement:
+
+  reassign_voice:
+    input:
+      voice: Voice
+      instrument: Instrument
+    output:
+      voice: Voice
+
+  register_shift:
+    input:
+      voice: Voice
+      shift: int
+    output:
+      voice: Voice
+
+  thin_texture:
+    input:
+      arrangement: Arrangement
+      factor: float
+    output:
+      arrangement: Arrangement
+
+  thicken_texture:
+    input:
+      arrangement: Arrangement
+      factor: float
+    output:
+      arrangement: Arrangement
+
+  redistribute_roles:
+    input:
+      arrangement: Arrangement
+    output:
+      arrangement: Arrangement
+
+
+# =========================================================
+# PERFORMANCE TRANSFORMATIONS
+# =========================================================
+
+performance:
+
+  apply_dynamics:
+    input:
+      performance: Performance
+      curve: string
+    output:
+      performance: Performance
+
+  humanize:
+    input:
+      performance: Performance
+      timing: float
+      velocity: float
+    output:
+      performance: Performance
+
+  accentuate:
+    input:
+      sequence: RhythmSequence
+      pattern: list[int]
+    output:
+      sequence: RhythmSequence
+
+  phrase_shape:
+    input:
+      phrase: Phrase
+      contour: string
+    output:
+      phrase: Phrase
+
+
+# =========================================================
+# TRANSFORMATION CHAINS
+# =========================================================
+
+composition:
+
+  TransformationChain:
+    description: Ordered sequence of transformations
+    fields:
+      steps: list[string]
+      targets: list[string]
+
+  apply_chain:
+    input:
+      chain: TransformationChain
+      target: "*"
+    output:
+      target: "*"
+
+
+# =========================================================
+# REVERSIBILITY
+# =========================================================
+
+reversibility:
+
+  reversible_ops:
+    - transpose
+    - invert
+    - shift
+    - stretch
+
+  non_reversible_ops:
+    - humanize
+    - stochastic_generation
+    - simplify_harmony
+
+
+# =========================================================
+# CONSTRAINTS
+# =========================================================
+
+constraints:
+
+  - name: valid_target
+    rule: "input.target != null"
+
+  - name: valid_factor
+    rule: "factor > 0"
+
+  - name: valid_interval
+    rule: "interval != 0"
+
+  - name: valid_chain
+    rule: "TransformationChain.steps.length > 0"
+
+
+# =========================================================
+# EXAMPLES
+# =========================================================
+
+examples:
+
+  transpose_phrase:
+    operation: transpose
+    input:
+      target: phrase_01
+      interval: 2
+
+  rhythm_rotation:
+    operation: rotate
+    input:
+      pattern: drum_pattern
+      steps: 3
+
+  motif_development:
+    chain:
+      - fragment
+      - sequence
+      - augment
+
+  canon_example:
+    operation: canon
+    input:
+      motif: motif_01
+      delay: 1.0
+      voices: 2
+
+  mobius_example:
+    operation: mobius_transform
+    input:
+      motif: motif_01
+      axis: C4

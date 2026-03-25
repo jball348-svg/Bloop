@@ -1,0 +1,333 @@
+version: 1.0
+
+# =========================================================
+# RHYTHM SCHEMA
+# Defines rhythmic structures, patterns, and generation
+# =========================================================
+
+rhythm_systems:
+
+  # -------------------------------------------------------
+  # BASIC REPRESENTATION
+  # -------------------------------------------------------
+
+  RhythmEvent:
+    description: A rhythmic onset or silence
+    fields:
+      onset: TimePoint
+      duration: float        # in beats
+      velocity: float        # 0–1
+      accent: float          # 0–1 emphasis
+
+  RhythmSequence:
+    description: Ordered sequence of rhythmic events
+    fields:
+      events: list[RhythmEvent]
+      loop: boolean
+      length: float          # in beats
+
+
+  # -------------------------------------------------------
+  # GRID & STEP SEQUENCING
+  # -------------------------------------------------------
+
+  StepPattern:
+    description: Binary or weighted grid pattern
+    fields:
+      steps: list[float]     # 0 = rest, >0 = intensity
+      subdivision: int       # e.g. 16
+      length: int            # number of steps
+      loop: boolean
+
+  GridReference:
+    description: Mapping to metrical grid
+    fields:
+      meter: string
+      subdivision: int
+
+
+  # -------------------------------------------------------
+  # RHYTHMIC FEATURES
+  # -------------------------------------------------------
+
+  RhythmFeatures:
+    description: Derived characteristics of a pattern
+    fields:
+      density: float         # 0–1 (event frequency)
+      syncopation: float     # 0–1 (off-beat emphasis)
+      regularity: float      # 0–1 (predictability)
+      complexity: float      # 0–1
+      repetition: float      # 0–1
+
+
+# =========================================================
+# GENERATIVE RHYTHM SYSTEMS
+# =========================================================
+
+generators:
+
+  # -------------------------------------------------------
+  # EUCLIDEAN RHYTHM
+  # -------------------------------------------------------
+
+  euclidean:
+    description: Even distribution of pulses
+    input:
+      steps: int
+      pulses: int
+      rotation: int
+    output:
+      pattern: StepPattern
+
+  # -------------------------------------------------------
+  # MODULO GENERATOR
+  # -------------------------------------------------------
+
+  modulo:
+    description: Pattern from modular arithmetic
+    input:
+      sequence: list[int]
+      mod: int
+    output:
+      pattern: StepPattern
+    logic: |
+      step[i] = 1 if sequence[i] % mod == 0 else 0
+
+  # -------------------------------------------------------
+  # FRACTAL / RECURSIVE
+  # -------------------------------------------------------
+
+  recursive:
+    description: Self-similar rhythm generation
+    input:
+      seed_pattern: StepPattern
+      depth: int
+      rule: string
+    output:
+      pattern: StepPattern
+
+  # -------------------------------------------------------
+  # STOCHASTIC
+  # -------------------------------------------------------
+
+  stochastic:
+    description: Probability-based rhythm
+    input:
+      probability: float
+      distribution: string
+    output:
+      pattern: StepPattern
+
+
+# =========================================================
+# POLYRHYTHM & LAYERING
+# =========================================================
+
+layering:
+
+  RhythmLayer:
+    description: Independent rhythmic stream
+    fields:
+      pattern: StepPattern
+      role: string           # "kick", "snare", etc.
+      weight: float          # mix importance
+
+  RhythmStack:
+    description: Combined rhythmic layers
+    fields:
+      layers: list[RhythmLayer]
+      interaction: string    # "independent", "interlocked"
+
+  Polyrhythm:
+    description: Multiple divisions over same time
+    fields:
+      divisions: list[int]   # e.g. [3, 4, 5]
+
+  CrossRhythm:
+    description: Emphasis across conflicting groupings
+    fields:
+      primary: int
+      secondary: int
+
+
+# =========================================================
+# RHYTHMIC TRANSFORMATIONS
+# =========================================================
+
+transformations:
+
+  rotate:
+    description: Circular shift of pattern
+    input:
+      steps: int
+    effect:
+      phase_shifted: true
+
+  invert:
+    description: Swap hits and rests
+    input: {}
+    effect:
+      values_flipped: true
+
+  densify:
+    description: Increase event density
+    input:
+      factor: float
+    effect:
+      more_events: true
+
+  sparsify:
+    description: Reduce event density
+    input:
+      factor: float
+    effect:
+      fewer_events: true
+
+  syncopate:
+    description: Shift emphasis off grid
+    input:
+      amount: float
+    effect:
+      offbeat_bias: true
+
+  quantize:
+    description: Align to grid
+    input:
+      strength: float
+    effect:
+      alignment_adjusted: true
+
+  humanize:
+    description: Add timing/velocity variation
+    input:
+      timing: float
+      velocity: float
+    effect:
+      expressive_variation: true
+
+
+# =========================================================
+# RHYTHMIC ROLES
+# =========================================================
+
+roles:
+
+  - pulse          # steady time reference
+  - subdivision    # fills between beats
+  - accent         # emphasizes structure
+  - syncopation    # creates tension
+  - fill           # transitional activity
+  - texture        # background rhythmic noise
+
+
+# =========================================================
+# CONSTRAINTS
+# =========================================================
+
+constraints:
+
+  - name: valid_step_values
+    rule: "all(step >= 0 for step in StepPattern.steps)"
+
+  - name: non_empty_pattern
+    rule: "StepPattern.length > 0"
+
+  - name: density_range
+    rule: "0 <= RhythmFeatures.density <= 1"
+
+  - name: valid_subdivision
+    rule: "subdivision > 0"
+
+  - name: polyrhythm_valid
+    rule: "all(div > 0 for div in Polyrhythm.divisions)"
+
+
+# =========================================================
+# INTERACTION WITH TIME
+# =========================================================
+
+time_integration:
+
+  align_to_grid:
+    description: Map pattern to metrical grid
+    input:
+      pattern: StepPattern
+      grid: Grid
+    output:
+      RhythmSequence
+
+  apply_swing:
+    description: Apply swing timing
+    input:
+      pattern: StepPattern
+      ratio: float
+    output:
+      RhythmSequence
+
+  apply_tempo:
+    description: Convert to absolute time
+    input:
+      sequence: RhythmSequence
+      tempo_map: TempoMap
+    output:
+      absolute_sequence: RhythmSequence
+
+
+# =========================================================
+# FEATURE ANALYSIS
+# =========================================================
+
+analysis:
+
+  compute_density:
+    description: Ratio of active steps
+    output: float
+
+  compute_syncopation:
+    description: Off-beat weighting
+    output: float
+
+  compute_complexity:
+    description: Irregularity + variation
+    output: float
+
+  detect_repetition:
+    description: Pattern similarity over time
+    output: float
+
+
+# =========================================================
+# EXAMPLES
+# =========================================================
+
+examples:
+
+  basic_kick:
+    steps: [1, 0, 0, 0, 1, 0, 0, 0]
+    subdivision: 8
+    role: pulse
+
+  euclidean_3_8:
+    generator: euclidean
+    steps: 8
+    pulses: 3
+
+  modulo_pattern:
+    sequence: [1,2,3,4,5,6,7,8]
+    mod: 3
+
+  polyrhythm_3_4:
+    divisions: [3, 4]
+
+  syncopated_pattern:
+    steps: [0, 1, 0, 1, 1, 0, 1, 0]
+    syncopation: 0.7
+
+  layered_groove:
+    layers:
+      - role: kick
+        pattern: basic_kick
+      - role: hi_hat
+        generator: euclidean
+      - role: snare
+        pattern: modulo_pattern

@@ -1,0 +1,338 @@
+version: 1.0
+
+# =========================================================
+# CORE ONTOLOGY
+# Defines all primary musical entity types and relationships
+# =========================================================
+
+entities:
+
+  # -------------------------------------------------------
+  # TIME DOMAIN
+  # -------------------------------------------------------
+
+  TimePoint:
+    description: A specific point in time.
+    fields:
+      absolute: float        # seconds
+      bar: int
+      beat: float            # fractional beats allowed
+
+  TimeRange:
+    description: A span between two time points.
+    fields:
+      start: TimePoint
+      end: TimePoint
+
+  Tempo:
+    description: Tempo definition.
+    fields:
+      bpm: float
+      curve: string          # "constant", "linear", "custom"
+
+
+  # -------------------------------------------------------
+  # PITCH DOMAIN
+  # -------------------------------------------------------
+
+  Pitch:
+    description: A pitch representation.
+    fields:
+      frequency: float       # Hz
+      midi: int              # optional MIDI index
+      pitch_class: int       # 0–11
+      name: string           # e.g. "C4"
+
+  Interval:
+    description: Relationship between two pitches.
+    fields:
+      semitones: int
+      ratio: float
+      name: string           # e.g. "perfect_fifth"
+
+  Scale:
+    description: Ordered pitch class collection.
+    fields:
+      root: Pitch
+      intervals: list[int]
+      tuning_system: string  # e.g. "12-TET", "just"
+
+  Chord:
+    description: Set of pitches with harmonic function.
+    fields:
+      root: Pitch
+      intervals: list[int]
+      pitches: list[Pitch]
+      function: string       # e.g. "tonic", "dominant"
+      tension: float         # 0–1 heuristic
+
+
+  # -------------------------------------------------------
+  # EVENT DOMAIN
+  # -------------------------------------------------------
+
+  Note:
+    description: A discrete musical note.
+    fields:
+      pitch: Pitch
+      start: TimePoint
+      duration: float        # in beats
+      velocity: float        # 0–1
+      articulation: string   # "legato", "staccato", etc.
+
+  Rest:
+    description: Silence event.
+    fields:
+      start: TimePoint
+      duration: float
+
+  EventGroup:
+    description: Collection of simultaneous or related events.
+    fields:
+      events: list           # Note | Rest
+      role: string           # e.g. "chord", "cluster"
+
+
+  # -------------------------------------------------------
+  # RHYTHM DOMAIN
+  # -------------------------------------------------------
+
+  RhythmPattern:
+    description: Pattern of onsets over time.
+    fields:
+      meter: string          # e.g. "4/4"
+      subdivision: int       # e.g. 16 = 16th notes
+      steps: list[int]       # 1 = hit, 0 = rest
+      swing: float           # 0–1
+
+  Pulse:
+    description: Underlying temporal grid.
+    fields:
+      bpm: float
+      meter: string
+
+
+  # -------------------------------------------------------
+  # STRUCTURE DOMAIN
+  # -------------------------------------------------------
+
+  Motif:
+    description: Smallest identifiable musical idea.
+    fields:
+      events: list[Note]
+      contour: string        # "ascending", "descending", etc.
+      interval_profile: list[int]
+
+  Phrase:
+    description: A complete musical statement.
+    fields:
+      motifs: list[Motif]
+      time_range: TimeRange
+      cadence: string        # "perfect", "half", etc.
+      role: string           # "statement", "response"
+
+  Section:
+    description: Higher-level structural block.
+    fields:
+      phrases: list[Phrase]
+      name: string           # "intro", "verse", "chorus"
+      energy_level: float    # 0–1
+      density: float         # 0–1
+
+  Composition:
+    description: Full musical work.
+    fields:
+      sections: list[Section]
+      tempo_map: list[Tempo]
+      global_key: Scale
+      duration: float
+
+
+  # -------------------------------------------------------
+  # ARRANGEMENT DOMAIN
+  # -------------------------------------------------------
+
+  Instrument:
+    description: Sound-producing entity.
+    fields:
+      name: string
+      range_low: Pitch
+      range_high: Pitch
+      timbre: string
+      role: string           # "bass", "lead", etc.
+
+  Voice:
+    description: A musical line assigned to an instrument.
+    fields:
+      instrument: Instrument
+      events: list[Note]
+      register: string       # "low", "mid", "high"
+      density: float         # 0–1
+
+  Arrangement:
+    description: Distribution of material across voices.
+    fields:
+      voices: list[Voice]
+      balance: float         # heuristic
+
+
+  # -------------------------------------------------------
+  # PERFORMANCE DOMAIN
+  # -------------------------------------------------------
+
+  Performance:
+    description: Expressive interpretation layer.
+    fields:
+      timing_deviation: float    # microtiming amount
+      dynamics_curve: string     # "crescendo", etc.
+      articulation_map: dict
+      humanization: float        # 0–1
+
+  Gesture:
+    description: Expressive movement over time.
+    fields:
+      parameter: string          # e.g. "velocity"
+      curve: string              # "linear", "exp"
+      time_range: TimeRange
+
+
+  # -------------------------------------------------------
+  # SOUND DOMAIN
+  # -------------------------------------------------------
+
+  SoundPatch:
+    description: Definition of a sound.
+    fields:
+      type: string               # "synth", "sample"
+      parameters: dict
+      modulation: dict
+
+  Effect:
+    description: Audio processing unit.
+    fields:
+      type: string               # "reverb", "delay"
+      parameters: dict
+
+  SignalChain:
+    description: Ordered effects pipeline.
+    fields:
+      effects: list[Effect]
+
+
+  # -------------------------------------------------------
+  # CONTROL / META DOMAIN
+  # -------------------------------------------------------
+
+  Constraint:
+    description: Rule applied to musical structures.
+    fields:
+      target: string
+      rule: string
+      severity: string          # "hard", "soft"
+
+  Transformation:
+    description: Operation applied to entities.
+    fields:
+      type: string              # e.g. "transpose"
+      input: string
+      parameters: dict
+      output: string
+
+  Annotation:
+    description: Metadata for reasoning.
+    fields:
+      target: string
+      tags: list[string]
+      notes: string
+
+
+# =========================================================
+# RELATIONSHIPS
+# Defines allowed connections between entities
+# =========================================================
+
+relationships:
+
+  - from: Note
+    to: Pitch
+    type: uses
+
+  - from: Phrase
+    to: Motif
+    type: contains
+
+  - from: Section
+    to: Phrase
+    type: contains
+
+  - from: Composition
+    to: Section
+    type: contains
+
+  - from: Voice
+    to: Instrument
+    type: assigned_to
+
+  - from: Arrangement
+    to: Voice
+    type: contains
+
+  - from: Performance
+    to: Voice
+    type: modifies
+
+  - from: Transformation
+    to: "*"
+    type: modifies
+
+  - from: Constraint
+    to: "*"
+    type: restricts
+
+
+# =========================================================
+# INVARIANTS
+# Rules that must always hold
+# =========================================================
+
+invariants:
+
+  - name: valid_time_range
+    rule: "start < end"
+
+  - name: positive_duration
+    rule: "duration > 0"
+
+  - name: pitch_defined
+    rule: "Pitch.frequency > 0 OR Pitch.midi != null"
+
+  - name: note_within_voice_range
+    rule: "Voice.instrument.range_low <= Note.pitch <= Voice.instrument.range_high"
+
+  - name: non_empty_phrase
+    rule: "Phrase.motifs.length > 0"
+
+  - name: composition_has_sections
+    rule: "Composition.sections.length > 0"
+
+  - name: valid_velocity_range
+    rule: "0 <= Note.velocity <= 1"
+
+  - name: rhythm_steps_binary
+    rule: "RhythmPattern.steps contains only 0 or 1"
+
+  - name: transformation_has_input
+    rule: "Transformation.input != null"
+
+
+# =========================================================
+# EXTENSION POINTS
+# =========================================================
+
+extensions:
+
+  - microtonal_support
+  - non_linear_time
+  - probabilistic_events
+  - generative_rules
+  - live_performance_input

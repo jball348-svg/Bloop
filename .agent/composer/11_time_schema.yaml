@@ -1,0 +1,328 @@
+version: 1.0
+
+# =========================================================
+# TIME SCHEMA
+# Defines all temporal systems and their relationships
+# =========================================================
+
+time_systems:
+
+  # -------------------------------------------------------
+  # ABSOLUTE TIME
+  # -------------------------------------------------------
+
+  absolute_time:
+    description: Linear, real-world time.
+    unit: seconds
+    properties:
+      continuous: true
+      reference: audio_clock
+
+  # -------------------------------------------------------
+  # METRICAL TIME
+  # -------------------------------------------------------
+
+  metrical_time:
+    description: Beat-based musical time.
+    units:
+      bar: int
+      beat: float
+      subdivision: float
+    properties:
+      grid_based: true
+      tempo_dependent: true
+
+  # -------------------------------------------------------
+  # STRUCTURAL TIME
+  # -------------------------------------------------------
+
+  structural_time:
+    description: High-level form and sections.
+    units:
+      section: string        # "intro", "verse", etc.
+      phrase_index: int
+    properties:
+      hierarchical: true
+      non_uniform_duration: true
+
+  # -------------------------------------------------------
+  # EVENT TIME
+  # -------------------------------------------------------
+
+  event_time:
+    description: Timing of individual events.
+    units:
+      onset: TimePoint
+      offset: TimePoint
+    properties:
+      discrete: true
+      can_overlap: true
+
+  # -------------------------------------------------------
+  # EXPRESSIVE TIME
+  # -------------------------------------------------------
+
+  expressive_time:
+    description: Deviations from strict grid.
+    units:
+      deviation: float       # in milliseconds or fraction of beat
+      swing_ratio: float     # e.g. 0.5–0.75
+    properties:
+      relative: true
+      context_sensitive: true
+
+
+# =========================================================
+# TEMPO SYSTEM
+# =========================================================
+
+tempo_system:
+
+  TempoEvent:
+    description: A change or definition of tempo.
+    fields:
+      time: TimePoint
+      bpm: float
+      curve: string          # "constant", "linear", "exponential"
+
+  TempoMap:
+    description: Sequence of tempo events.
+    fields:
+      events: list[TempoEvent]
+      interpolation: string  # how to move between events
+
+  invariants:
+    - "bpm > 0"
+    - "TempoMap.events.length > 0"
+
+
+# =========================================================
+# METER AND GRID
+# =========================================================
+
+meter_system:
+
+  Meter:
+    description: Defines grouping of beats.
+    fields:
+      numerator: int         # beats per bar
+      denominator: int       # note value (e.g. 4 = quarter)
+      accent_pattern: list[float]   # relative emphasis
+
+  Grid:
+    description: Subdivision grid.
+    fields:
+      meter: Meter
+      subdivision: int       # e.g. 4, 8, 16
+      resolution: float      # smallest unit in beats
+
+  invariants:
+    - "numerator > 0"
+    - "denominator in [1, 2, 4, 8, 16]"
+    - "subdivision > 0"
+
+
+# =========================================================
+# TIME MAPPING FUNCTIONS
+# =========================================================
+
+mappings:
+
+  # Convert beat position → seconds
+  beat_to_seconds:
+    input:
+      bar: int
+      beat: float
+      tempo_map: TempoMap
+    output:
+      seconds: float
+    description: |
+      Converts metrical time to absolute time using tempo map.
+
+  # Convert seconds → beat position
+  seconds_to_beat:
+    input:
+      seconds: float
+      tempo_map: TempoMap
+    output:
+      bar: int
+      beat: float
+
+  # Map structural → metrical
+  structure_to_meter:
+    input:
+      section: string
+      phrase_index: int
+      structure_map: dict
+    output:
+      bar_range: list[int]
+
+  # Apply expressive deviation
+  apply_expressive_offset:
+    input:
+      onset: TimePoint
+      deviation: float
+    output:
+      adjusted_onset: TimePoint
+
+
+# =========================================================
+# EXPRESSIVE TIMING MODELS
+# =========================================================
+
+expressive_models:
+
+  swing:
+    description: Unequal subdivision timing.
+    parameters:
+      ratio: float           # e.g. 0.66 = triplet feel
+      subdivision: int
+
+  rubato:
+    description: Local tempo fluctuation.
+    parameters:
+      intensity: float       # 0–1
+      window: TimeRange
+
+  humanization:
+    description: Randomized microtiming.
+    parameters:
+      amount: float          # max deviation
+      distribution: string   # "uniform", "gaussian"
+
+  anticipation:
+    description: Notes played slightly early.
+    parameters:
+      offset: float
+
+  lag:
+    description: Notes played slightly late.
+    parameters:
+      offset: float
+
+
+# =========================================================
+# POLYRHYTHM AND POLYMETER
+# =========================================================
+
+advanced_time:
+
+  Polyrhythm:
+    description: Multiple rhythmic divisions over same pulse.
+    fields:
+      base_pulse: float
+      layers: list[int]      # e.g. [3, 4, 5]
+
+  Polymeter:
+    description: Different meters running in parallel.
+    fields:
+      meters: list[Meter]
+
+  PhaseShift:
+    description: Gradual temporal offset between layers.
+    fields:
+      rate: float
+      direction: string      # "ahead", "behind"
+
+
+# =========================================================
+# TIME CONSTRAINTS
+# =========================================================
+
+constraints:
+
+  - name: no_negative_time
+    rule: "TimePoint.absolute >= 0"
+
+  - name: valid_event_order
+    rule: "event.offset > event.onset"
+
+  - name: grid_alignment_optional
+    rule: "events may deviate from grid but must map to nearest subdivision"
+
+  - name: tempo_continuity
+    rule: "tempo changes must not create discontinuous jumps unless specified"
+
+  - name: phrase_alignment
+    rule: "phrases should align to bar boundaries unless marked free_time"
+
+
+# =========================================================
+# TIME TRANSFORMATIONS
+# =========================================================
+
+transformations:
+
+  time_scale:
+    description: Stretch or compress time.
+    input:
+      factor: float
+    effect:
+      duration_scaled: true
+      tempo_adjusted: optional
+
+  quantize:
+    description: Snap events to grid.
+    input:
+      grid: Grid
+      strength: float        # 0–1
+    effect:
+      onset_adjustment: true
+
+  swing_apply:
+    description: Apply swing feel.
+    input:
+      ratio: float
+    effect:
+      subdivision_shift: true
+
+  shift:
+    description: Move events in time.
+    input:
+      offset: float
+    effect:
+      onset_shifted: true
+
+  phase_shift:
+    description: Offset one layer relative to another.
+    input:
+      rate: float
+    effect:
+      gradual_offset: true
+
+
+# =========================================================
+# EXAMPLES
+# =========================================================
+
+examples:
+
+  simple_4_4:
+    meter:
+      numerator: 4
+      denominator: 4
+      accent_pattern: [1.0, 0.5, 0.8, 0.5]
+    grid:
+      subdivision: 16
+      resolution: 0.25
+
+  swing_8th:
+    expressive_model:
+      type: swing
+      ratio: 0.66
+      subdivision: 8
+
+  polyrhythm_example:
+    base_pulse: 1.0
+    layers: [3, 4, 5]
+
+  rubato_phrase:
+    model: rubato
+    intensity: 0.3
+    window:
+      start:
+        bar: 1
+        beat: 1
+      end:
+        bar: 2
+        beat: 1
