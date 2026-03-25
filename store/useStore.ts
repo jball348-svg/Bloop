@@ -6677,13 +6677,8 @@ export const useStore = create<AppState>((set, get) => ({
 
         audioNodes.forEach((node: Tone.ToneAudioNode) => node.disconnect());
         get().syncMixerChannels();
-        get().mixerChains.forEach((chain) => {
-            chain.strips.forEach((strip) => {
-                strip.input.disconnect();
-                strip.panVol.disconnect();
-                strip.panVol.connect(chain.output);
-            });
-        });
+        // Mixer strips keep their internal input -> panVol -> output wiring between graph rebuilds.
+        // Only edge-driven source connections are rebuilt here; syncMixerChannels owns strip lifecycle.
         masterOutput.disconnect();
         masterOutput.toDestination();
         if (recordingController) {
